@@ -1,0 +1,9 @@
+{
+  "scenario": "gap_down_open",
+  "variant": 1,
+  "symbol": "US.SPY",
+  "direction": "SHORT",
+  "should_enter": true,
+  "should_exit_reason": "eod",
+  "notes": "Gap-down open; SHORT entry on the gap, flatten at EOD."
+}

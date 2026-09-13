@@ -1,0 +1,9 @@
+{
+  "scenario": "late_day_spike",
+  "variant": 2,
+  "symbol": "US.SPY",
+  "direction": "LONG",
+  "should_enter": true,
+  "should_exit_reason": "eod",
+  "notes": "Flat all day then late spike; late LONG entry then EOD flatten."
+}

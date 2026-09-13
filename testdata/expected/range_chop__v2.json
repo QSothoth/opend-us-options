@@ -1,0 +1,9 @@
+{
+  "scenario": "range_chop",
+  "variant": 2,
+  "symbol": "US.SPY",
+  "direction": "LONG",
+  "should_enter": false,
+  "should_exit_reason": "none",
+  "notes": "Sideways chop; human direction is LONG but no timing signal fires."
+}

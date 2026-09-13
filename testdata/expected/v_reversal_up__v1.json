@@ -1,0 +1,9 @@
+{
+  "scenario": "v_reversal_up",
+  "variant": 1,
+  "symbol": "US.SPY",
+  "direction": "LONG",
+  "should_enter": true,
+  "should_exit_reason": "eod",
+  "notes": "Down then strong up reversal; LONG entry at the turn, flatten at EOD."
+}

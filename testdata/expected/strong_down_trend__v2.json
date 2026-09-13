@@ -1,0 +1,9 @@
+{
+  "scenario": "strong_down_trend",
+  "variant": 2,
+  "symbol": "US.SPY",
+  "direction": "SHORT",
+  "should_enter": true,
+  "should_exit_reason": "eod",
+  "notes": "Steady downtrend; program enters SHORT early and flattens at EOD."
+}

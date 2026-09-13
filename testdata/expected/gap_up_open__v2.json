@@ -1,0 +1,9 @@
+{
+  "scenario": "gap_up_open",
+  "variant": 2,
+  "symbol": "US.SPY",
+  "direction": "LONG",
+  "should_enter": true,
+  "should_exit_reason": "eod",
+  "notes": "Gap-up open; LONG entry on the gap, flatten at EOD."
+}

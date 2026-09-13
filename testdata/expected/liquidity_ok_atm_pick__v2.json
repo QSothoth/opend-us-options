@@ -1,0 +1,9 @@
+{
+  "scenario": "liquidity_ok_atm_pick",
+  "variant": 2,
+  "symbol": "US.SPY",
+  "direction": "LONG",
+  "should_enter": true,
+  "should_exit_reason": "eod",
+  "notes": "Multiple strikes quoted; tight ATM picked, flatten at EOD."
+}

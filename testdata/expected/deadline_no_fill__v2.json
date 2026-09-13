@@ -1,0 +1,9 @@
+{
+  "scenario": "deadline_no_fill",
+  "variant": 2,
+  "symbol": "US.SPY",
+  "direction": "LONG",
+  "should_enter": false,
+  "should_exit_reason": "timeout",
+  "notes": "Order accepted but no fill before deadline."
+}

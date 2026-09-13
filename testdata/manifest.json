@@ -1,0 +1,309 @@
+{
+  "seed": 42,
+  "synthetic": true,
+  "symbol": "US.SPY",
+  "trade_date": "2024-06-21",
+  "expiry": "240621",
+  "bar_interval": "15m",
+  "bar_count_per_signal": 26,
+  "bars_schema": [
+    "time",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume",
+    "turnover"
+  ],
+  "time_convention": "naive ET wall-clock stored as int64 epoch seconds (UTC)",
+  "scenario_count": 14,
+  "total_samples": 28,
+  "balance": {
+    "max_samples": 2,
+    "min_samples": 2,
+    "diff": 0,
+    "balanced": true
+  },
+  "scenarios": [
+    {
+      "scenario": "strong_up_trend",
+      "sample_count": 2,
+      "variants": [
+        1,
+        2
+      ],
+      "signals": [
+        "signals/strong_up_trend__v1.csv",
+        "signals/strong_up_trend__v2.csv"
+      ],
+      "events": [
+        "events/strong_up_trend__v1.jsonl",
+        "events/strong_up_trend__v2.jsonl"
+      ],
+      "expected": [
+        "expected/strong_up_trend__v1.json",
+        "expected/strong_up_trend__v2.json"
+      ]
+    },
+    {
+      "scenario": "strong_down_trend",
+      "sample_count": 2,
+      "variants": [
+        1,
+        2
+      ],
+      "signals": [
+        "signals/strong_down_trend__v1.csv",
+        "signals/strong_down_trend__v2.csv"
+      ],
+      "events": [
+        "events/strong_down_trend__v1.jsonl",
+        "events/strong_down_trend__v2.jsonl"
+      ],
+      "expected": [
+        "expected/strong_down_trend__v1.json",
+        "expected/strong_down_trend__v2.json"
+      ]
+    },
+    {
+      "scenario": "range_chop",
+      "sample_count": 2,
+      "variants": [
+        1,
+        2
+      ],
+      "signals": [
+        "signals/range_chop__v1.csv",
+        "signals/range_chop__v2.csv"
+      ],
+      "events": [
+        "events/range_chop__v1.jsonl",
+        "events/range_chop__v2.jsonl"
+      ],
+      "expected": [
+        "expected/range_chop__v1.json",
+        "expected/range_chop__v2.json"
+      ]
+    },
+    {
+      "scenario": "gap_up_open",
+      "sample_count": 2,
+      "variants": [
+        1,
+        2
+      ],
+      "signals": [
+        "signals/gap_up_open__v1.csv",
+        "signals/gap_up_open__v2.csv"
+      ],
+      "events": [
+        "events/gap_up_open__v1.jsonl",
+        "events/gap_up_open__v2.jsonl"
+      ],
+      "expected": [
+        "expected/gap_up_open__v1.json",
+        "expected/gap_up_open__v2.json"
+      ]
+    },
+    {
+      "scenario": "gap_down_open",
+      "sample_count": 2,
+      "variants": [
+        1,
+        2
+      ],
+      "signals": [
+        "signals/gap_down_open__v1.csv",
+        "signals/gap_down_open__v2.csv"
+      ],
+      "events": [
+        "events/gap_down_open__v1.jsonl",
+        "events/gap_down_open__v2.jsonl"
+      ],
+      "expected": [
+        "expected/gap_down_open__v1.json",
+        "expected/gap_down_open__v2.json"
+      ]
+    },
+    {
+      "scenario": "v_reversal_up",
+      "sample_count": 2,
+      "variants": [
+        1,
+        2
+      ],
+      "signals": [
+        "signals/v_reversal_up__v1.csv",
+        "signals/v_reversal_up__v2.csv"
+      ],
+      "events": [
+        "events/v_reversal_up__v1.jsonl",
+        "events/v_reversal_up__v2.jsonl"
+      ],
+      "expected": [
+        "expected/v_reversal_up__v1.json",
+        "expected/v_reversal_up__v2.json"
+      ]
+    },
+    {
+      "scenario": "v_reversal_down",
+      "sample_count": 2,
+      "variants": [
+        1,
+        2
+      ],
+      "signals": [
+        "signals/v_reversal_down__v1.csv",
+        "signals/v_reversal_down__v2.csv"
+      ],
+      "events": [
+        "events/v_reversal_down__v1.jsonl",
+        "events/v_reversal_down__v2.jsonl"
+      ],
+      "expected": [
+        "expected/v_reversal_down__v1.json",
+        "expected/v_reversal_down__v2.json"
+      ]
+    },
+    {
+      "scenario": "late_day_spike",
+      "sample_count": 2,
+      "variants": [
+        1,
+        2
+      ],
+      "signals": [
+        "signals/late_day_spike__v1.csv",
+        "signals/late_day_spike__v2.csv"
+      ],
+      "events": [
+        "events/late_day_spike__v1.jsonl",
+        "events/late_day_spike__v2.jsonl"
+      ],
+      "expected": [
+        "expected/late_day_spike__v1.json",
+        "expected/late_day_spike__v2.json"
+      ]
+    },
+    {
+      "scenario": "no_entry_signal",
+      "sample_count": 2,
+      "variants": [
+        1,
+        2
+      ],
+      "signals": [
+        "signals/no_entry_signal__v1.csv",
+        "signals/no_entry_signal__v2.csv"
+      ],
+      "events": [
+        "events/no_entry_signal__v1.jsonl",
+        "events/no_entry_signal__v2.jsonl"
+      ],
+      "expected": [
+        "expected/no_entry_signal__v1.json",
+        "expected/no_entry_signal__v2.json"
+      ]
+    },
+    {
+      "scenario": "entry_then_eod_flatten",
+      "sample_count": 2,
+      "variants": [
+        1,
+        2
+      ],
+      "signals": [
+        "signals/entry_then_eod_flatten__v1.csv",
+        "signals/entry_then_eod_flatten__v2.csv"
+      ],
+      "events": [
+        "events/entry_then_eod_flatten__v1.jsonl",
+        "events/entry_then_eod_flatten__v2.jsonl"
+      ],
+      "expected": [
+        "expected/entry_then_eod_flatten__v1.json",
+        "expected/entry_then_eod_flatten__v2.json"
+      ]
+    },
+    {
+      "scenario": "hard_stop_hit",
+      "sample_count": 2,
+      "variants": [
+        1,
+        2
+      ],
+      "signals": [
+        "signals/hard_stop_hit__v1.csv",
+        "signals/hard_stop_hit__v2.csv"
+      ],
+      "events": [
+        "events/hard_stop_hit__v1.jsonl",
+        "events/hard_stop_hit__v2.jsonl"
+      ],
+      "expected": [
+        "expected/hard_stop_hit__v1.json",
+        "expected/hard_stop_hit__v2.json"
+      ]
+    },
+    {
+      "scenario": "wide_spread_reject",
+      "sample_count": 2,
+      "variants": [
+        1,
+        2
+      ],
+      "signals": [
+        "signals/wide_spread_reject__v1.csv",
+        "signals/wide_spread_reject__v2.csv"
+      ],
+      "events": [
+        "events/wide_spread_reject__v1.jsonl",
+        "events/wide_spread_reject__v2.jsonl"
+      ],
+      "expected": [
+        "expected/wide_spread_reject__v1.json",
+        "expected/wide_spread_reject__v2.json"
+      ]
+    },
+    {
+      "scenario": "liquidity_ok_atm_pick",
+      "sample_count": 2,
+      "variants": [
+        1,
+        2
+      ],
+      "signals": [
+        "signals/liquidity_ok_atm_pick__v1.csv",
+        "signals/liquidity_ok_atm_pick__v2.csv"
+      ],
+      "events": [
+        "events/liquidity_ok_atm_pick__v1.jsonl",
+        "events/liquidity_ok_atm_pick__v2.jsonl"
+      ],
+      "expected": [
+        "expected/liquidity_ok_atm_pick__v1.json",
+        "expected/liquidity_ok_atm_pick__v2.json"
+      ]
+    },
+    {
+      "scenario": "deadline_no_fill",
+      "sample_count": 2,
+      "variants": [
+        1,
+        2
+      ],
+      "signals": [
+        "signals/deadline_no_fill__v1.csv",
+        "signals/deadline_no_fill__v2.csv"
+      ],
+      "events": [
+        "events/deadline_no_fill__v1.jsonl",
+        "events/deadline_no_fill__v2.jsonl"
+      ],
+      "expected": [
+        "expected/deadline_no_fill__v1.json",
+        "expected/deadline_no_fill__v2.json"
+      ]
+    }
+  ]
+}
