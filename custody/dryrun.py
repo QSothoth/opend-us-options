@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
 import json
@@ -58,24 +59,26 @@ def _num(value):
 
 
 
-def _push_notify(title, body, *, wxpusher_spt=None, ntfy_url=None):
-    """Best-effort phone push. Prefer WxPusher SPT; else ntfy URL. Never raises."""
-    text = ('%s\n%s' % (title, body)).strip()
+def _push_notify(title, body, *, wxpusher_spt=None):
+    """Best-effort WxPusher phone push for a dryrun event. Never raises.
+
+    WxPusher's proven SPT shape is a plain GET::
+
+        GET https://wxpusher.zjiecode.com/api/send/message/{SPT}/{urlencoded text}
+
+    The SPT is a secret supplied through ``--wxpusher-spt`` or
+    ``CUSTODY_WXPUSHER_SPT``; it is never persisted or logged. Any transport,
+    HTTP or parsing error is swallowed so a flaky push cannot stop the resident
+    dryrun loop.
+    """
+    if not wxpusher_spt:
+        return
     try:
-        if wxpusher_spt:
-            import urllib.parse
-            url = 'https://wxpusher.zjiecode.com/api/send/message/%s/%s' % (
-                str(wxpusher_spt).strip(), urllib.parse.quote(text[:900]))
-            with urllib.request.urlopen(url, timeout=8) as resp:
-                resp.read()
-            return
-        if ntfy_url:
-            req = urllib.request.Request(str(ntfy_url).strip(), data=body.encode('utf-8'), method='POST')
-            req.add_header('Title', title[:250])
-            req.add_header('Priority', 'high')
-            req.add_header('Tags', 'chart_with_upwards_trend')
-            with urllib.request.urlopen(req, timeout=8) as resp:
-                resp.read()
+        text = ('%s\n%s' % (title, body)).strip()
+        url = 'https://wxpusher.zjiecode.com/api/send/message/%s/%s' % (
+            str(wxpusher_spt).strip(), urllib.parse.quote(text[:900]))
+        with urllib.request.urlopen(url, timeout=8) as resp:
+            resp.read()
     except Exception:  # noqa: BLE001 - notify must not break dryrun
         pass
 
@@ -230,7 +233,7 @@ class SignalFrameSource:
 class DryRunRunner:
     """Resident loop: poll market data, advance the controller, log intents."""
 
-    def __init__(self, service, market, job_id, frame_source=None, interval=5.0, logger=None, ntfy_url=None):
+    def __init__(self, service, market, job_id, frame_source=None, interval=5.0, logger=None, wxpusher_spt=None):
         if service.mode != 'dryrun': raise ValueError('DryRunRunner requires CustodyService(mode=dryrun)')
         self.service = service
         self.market = market
@@ -238,7 +241,11 @@ class DryRunRunner:
         self.frame_source = frame_source
         self.interval = float(interval)
         self.log = logger or _json_logger
-        self.ntfy_url = (ntfy_url or os.environ.get('CUSTODY_NTFY_URL') or '').strip() or None
+        # None means "fall back to the environment"; an explicit '' disables pushes
+        # (useful for tests and for residents that must stay silent).
+        if wxpusher_spt is None:
+            wxpusher_spt = os.environ.get('CUSTODY_WXPUSHER_SPT')
+        self.wxpusher_spt = (wxpusher_spt or '').strip() or None
         # Deliberately no broker: the only path to submit/cancel is unreachable.
         self.controller = Controller(service)
         self._seen_intents = set()
@@ -282,11 +289,11 @@ class DryRunRunner:
                      contract=order['contract'], quantity=order['quantity'], limit_price=order['limit_price'],
                      position_effect=order['position_effect'], reason=order['reason'],
                      created_at=order['created_at'], dryrun=True, submitted=False)
-            if self.wxpusher_spt or self.ntfy_url:
+            if self.wxpusher_spt:
                 title = 'dryrun %s %s' % (order['side'], order['contract'])
                 body = '%s qty=%s limit=%s\nreason=%s\nsubmitted=false\nid=%s' % (
                     order['kind'], order['quantity'], order['limit_price'], order.get('reason'), key)
-                _push_notify(title, body, wxpusher_spt=self.wxpusher_spt, ntfy_url=self.ntfy_url)
+                _push_notify(title, body, wxpusher_spt=self.wxpusher_spt)
 
     def run(self, ticks=None):
         executed = 0
@@ -323,8 +330,6 @@ def build_argument_parser():
     parser.add_argument('--no-frames', action='store_true', help='poll quotes only; skip strategy evaluation')
     parser.add_argument('--warmup-days', type=int, default=30, help='calendar days of 1m warmup for frames')
     parser.add_argument('--daily-days', type=int, default=120, help='calendar days of daily warmup for frames')
-    parser.add_argument('--ntfy', default=None,
-                        help='optional ntfy topic URL (or CUSTODY_NTFY_URL)')
     parser.add_argument('--wxpusher-spt', default=None,
                         help='WxPusher SPT token for order_intent pushes (or CUSTODY_WXPUSHER_SPT)')
     return parser
@@ -358,7 +363,7 @@ def main(argv=None):
                                                                 daily_days=args.daily_days),
                                              args.strategy, args.direction)
         runner = DryRunRunner(service, market, job['id'], frame_source=frame_source, interval=args.interval,
-                              ntfy_url=args.ntfy, wxpusher_spt=args.wxpusher_spt)
+                              wxpusher_spt=args.wxpusher_spt)
         _json_logger('dryrun_start', job_id=job['id'], mode=service.mode, strategy_id=args.strategy,
                      symbol=symbol, direction=args.direction, contract=args.contract,
                      state=job['state'], host=args.host, port=args.port, orders_never_submitted=True)

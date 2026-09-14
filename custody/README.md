@@ -121,6 +121,7 @@ python3 -m custody dryrun \
   --symbol US.SKHY --direction SHORT \
   --contract US.SKHY260918P175000 \
   --db /tmp/custody-dryrun.sqlite \
+  --wxpusher-spt "$CUSTODY_WXPUSHER_SPT" \
   --once
 ```
 
@@ -131,6 +132,7 @@ python3 -m custody dryrun \
   1m/5m boundaries.
 - `--no-subscribe` uses snapshots only; the default subscribes underlying + contract to QUOTE/K_1M.
 - `--db` is a durable SQLite file; the account is bound to `dryrun` and cannot be reopened paper/live.
+- `--wxpusher-spt` (or `CUSTODY_WXPUSHER_SPT`) pushes each new `order_intent` to WxPusher; omit it to stay silent.
 
 Unlike paper/live, dryrun accepts an exact contract whose expiry is **on or after** the
 current ET session (so the 4-DTE `US.SKHY260918P175000` put can be watched on `2026-09-14`).
@@ -156,6 +158,17 @@ Fixed data: `eval-data-v2`, manifest `opend_us_options_eval_v2`, SHA256 `df93506
 
 The retained payoffs are repeated-history research observations: **underlying proxy, not true option PnL**. The source and contract are executable and paper-tested; live order submission, native stop support and live reconciliation must be integration-tested in the deployment environment. The `dryrun` path connects read-only to OpenD quotes but never places, cancels or unlocks a trade.
 
-### Optional phone alerts (WxPusher / ntfy)
+### Optional phone alerts (WxPusher)
 
-Pass `--ntfy https://ntfy.sh/<topic>` (or set `CUSTODY_NTFY_URL`) to POST each new `order_intent` to an [ntfy](https://ntfy.sh) topic. Notify failures are swallowed so dryrun never dies on push errors.
+Pass `--wxpusher-spt "$CUSTODY_WXPUSHER_SPT"` (or export `CUSTODY_WXPUSHER_SPT`) to push
+every new dryrun `order_intent` to [WxPusher](https://wxpusher.zjiecode.com). The runner uses the
+proven SPT GET shape:
+
+```text
+GET https://wxpusher.zjiecode.com/api/send/message/{SPT}/{urlencoded message}
+```
+
+The SPT is a **secret**. Never hard-code or commit it: keep it in the environment or a
+local untracked file and pass it at runtime. Push failures are swallowed, so a flaky phone
+notification can never stop the resident dryrun loop. The alert is informational only; the
+intent is still persisted locally and the dryrun path never submits, cancels or unlocks a trade.

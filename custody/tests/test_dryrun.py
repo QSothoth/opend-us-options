@@ -1,12 +1,17 @@
 import ast
 import io
+import os
 import tempfile
 import unittest
+import urllib.error
+import urllib.parse
 from datetime import datetime, time as dtime, timedelta
 from pathlib import Path
+from unittest import mock
 
 from custody.controller import Controller
-from custody.dryrun import DryRunRunner, SignalFrameSource, bar_boundary, build_argument_parser
+from custody.dryrun import (DryRunRunner, SignalFrameSource, _push_notify, bar_boundary,
+                             build_argument_parser)
 from custody.models import Contract, Frame, Quote, Session, ET
 from custody.opend import (OpenDContractResolver, OpenDMarket, OpenDTradingCalendar,
                            parse_option_code)
@@ -114,6 +119,7 @@ def make_dryrun(tmp_path):
 def run_one_tick(service, job, frame_source):
     events = []
     runner = DryRunRunner(service, FakeMarket(good_quote()), job['id'], frame_source=frame_source,
+                          wxpusher_spt='',
                           logger=lambda event, **fields: events.append({'event': event, **fields}))
     state = runner.tick(T)
     return runner, state, events
@@ -193,7 +199,7 @@ class DryRunSafetyTests(unittest.TestCase):
         events = []
         future = good_frame(service, when=T + timedelta(minutes=5))
         runner = DryRunRunner(service, FakeMarket(good_quote()), job['id'],
-                              frame_source=FakeFrameSource(future),
+                              frame_source=FakeFrameSource(future), wxpusher_spt='',
                               logger=lambda event, **fields: events.append({'event': event, **fields}))
         self.assertIsNone(runner.tick(T))  # step raised ValueError but tick swallowed it
         self.assertIn('step_error', {e['event'] for e in events})
@@ -209,6 +215,7 @@ class DryRunSafetyTests(unittest.TestCase):
         events = []
         runner = DryRunRunner(service, FakeMarket(good_quote()), job['id'],
                               frame_source=FakeFrameSource(good_frame(service)), interval=0.0,
+                              wxpusher_spt='',
                               logger=lambda event, **fields: events.append({'event': event, **fields}))
         calls = []
         def boom(*a, **k):
@@ -250,6 +257,61 @@ class DryRunSafetyTests(unittest.TestCase):
                 elif isinstance(node, ast.ImportFrom): used.update(a.name for a in node.names)
                 elif isinstance(node, ast.Import): used.update(a.name.split('.')[-1] for a in node.names)
             self.assertEqual(used & forbidden, set(), name)
+
+
+class WxPusherNotifyTests(unittest.TestCase):
+    """WxPusher is the primary dryrun alert path; pushes must never break the loop."""
+
+    SPT = 'SPT_TEST_ONLY'
+
+    def test_spt_builds_expected_wxpusher_url(self):
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = b'{"code":1000}'
+        with mock.patch('custody.dryrun.urllib.request.urlopen', return_value=response) as urlopen:
+            _push_notify('dryrun BUY_OPEN US.SKHY', 'limit=1.05', wxpusher_spt=self.SPT)
+        urlopen.assert_called_once()
+        url = urlopen.call_args.args[0]
+        self.assertTrue(url.startswith(
+            'https://wxpusher.zjiecode.com/api/send/message/%s/' % self.SPT))
+        encoded = url.split(self.SPT + '/', 1)[1]
+        self.assertEqual(urllib.parse.unquote(encoded), 'dryrun BUY_OPEN US.SKHY\nlimit=1.05')
+        self.assertEqual(urlopen.call_args.kwargs['timeout'], 8)
+
+    def test_empty_or_missing_spt_does_nothing(self):
+        with mock.patch('custody.dryrun.urllib.request.urlopen') as urlopen:
+            _push_notify('t', 'b', wxpusher_spt=None)
+            _push_notify('t', 'b', wxpusher_spt='')
+            _push_notify('t', 'b')
+        urlopen.assert_not_called()
+
+    def test_notify_exception_is_swallowed(self):
+        with mock.patch('custody.dryrun.urllib.request.urlopen',
+                        side_effect=urllib.error.URLError('network down')):
+            _push_notify('t', 'b', wxpusher_spt=self.SPT)  # must not raise
+
+    def test_runner_reads_env_and_push_failure_cannot_break_tick(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            service, job = make_dryrun(Path(tmp) / 'push.sqlite')
+            events = []
+            with mock.patch.dict(os.environ, {'CUSTODY_WXPUSHER_SPT': self.SPT}):
+                runner = DryRunRunner(
+                    service, FakeMarket(good_quote()), job['id'],
+                    frame_source=FakeFrameSource(good_frame(service)),
+                    logger=lambda event, **fields: events.append({'event': event, **fields}))
+            self.assertEqual(runner.wxpusher_spt, self.SPT)
+            dispatch_calls = []
+            service.dispatch_next = lambda *a, **k: dispatch_calls.append(a)
+            with mock.patch('custody.dryrun.urllib.request.urlopen',
+                            side_effect=urllib.error.URLError('network down')) as urlopen:
+                state = runner.tick(T)
+            self.assertIsNotNone(state)
+            urlopen.assert_called_once()
+            intents = [e for e in events if e['event'] == 'order_intent']
+            self.assertEqual(len(intents), 1)
+            self.assertFalse(intents[0]['submitted'])
+            # Push failed but the intent is still local-only: no dispatch path.
+            self.assertEqual(state['orders'][0]['status'], 'CREATED')
+            self.assertEqual(dispatch_calls, [])
 
 
 class OpenDAdapterTests(unittest.TestCase):
