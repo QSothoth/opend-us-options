@@ -156,6 +156,6 @@ Fixed data: `eval-data-v2`, manifest `opend_us_options_eval_v2`, SHA256 `df93506
 
 The retained payoffs are repeated-history research observations: **underlying proxy, not true option PnL**. The source and contract are executable and paper-tested; live order submission, native stop support and live reconciliation must be integration-tested in the deployment environment. The `dryrun` path connects read-only to OpenD quotes but never places, cancels or unlocks a trade.
 
-### Optional ntfy alerts
+### Optional phone alerts (WxPusher / ntfy)
 
 Pass `--ntfy https://ntfy.sh/<topic>` (or set `CUSTODY_NTFY_URL`) to POST each new `order_intent` to an [ntfy](https://ntfy.sh) topic. Notify failures are swallowed so dryrun never dies on push errors.

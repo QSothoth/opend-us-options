@@ -58,17 +58,24 @@ def _num(value):
 
 
 
-def _ntfy_notify(url, title, body, priority='high', tags='chart_with_upwards_trend'):
-    """Best-effort POST to an ntfy (or compatible) topic URL. Never raises."""
-    if not url:
-        return
+def _push_notify(title, body, *, wxpusher_spt=None, ntfy_url=None):
+    """Best-effort phone push. Prefer WxPusher SPT; else ntfy URL. Never raises."""
+    text = ('%s\n%s' % (title, body)).strip()
     try:
-        req = urllib.request.Request(str(url).strip(), data=body.encode('utf-8'), method='POST')
-        req.add_header('Title', title[:250])
-        req.add_header('Priority', priority)
-        req.add_header('Tags', tags)
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            resp.read()
+        if wxpusher_spt:
+            import urllib.parse
+            url = 'https://wxpusher.zjiecode.com/api/send/message/%s/%s' % (
+                str(wxpusher_spt).strip(), urllib.parse.quote(text[:900]))
+            with urllib.request.urlopen(url, timeout=8) as resp:
+                resp.read()
+            return
+        if ntfy_url:
+            req = urllib.request.Request(str(ntfy_url).strip(), data=body.encode('utf-8'), method='POST')
+            req.add_header('Title', title[:250])
+            req.add_header('Priority', 'high')
+            req.add_header('Tags', 'chart_with_upwards_trend')
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                resp.read()
     except Exception:  # noqa: BLE001 - notify must not break dryrun
         pass
 
@@ -275,11 +282,11 @@ class DryRunRunner:
                      contract=order['contract'], quantity=order['quantity'], limit_price=order['limit_price'],
                      position_effect=order['position_effect'], reason=order['reason'],
                      created_at=order['created_at'], dryrun=True, submitted=False)
-            if self.ntfy_url:
+            if self.wxpusher_spt or self.ntfy_url:
                 title = 'dryrun %s %s' % (order['side'], order['contract'])
                 body = '%s qty=%s limit=%s\nreason=%s\nsubmitted=false\nid=%s' % (
                     order['kind'], order['quantity'], order['limit_price'], order.get('reason'), key)
-                _ntfy_notify(self.ntfy_url, title, body)
+                _push_notify(title, body, wxpusher_spt=self.wxpusher_spt, ntfy_url=self.ntfy_url)
 
     def run(self, ticks=None):
         executed = 0
@@ -317,7 +324,9 @@ def build_argument_parser():
     parser.add_argument('--warmup-days', type=int, default=30, help='calendar days of 1m warmup for frames')
     parser.add_argument('--daily-days', type=int, default=120, help='calendar days of daily warmup for frames')
     parser.add_argument('--ntfy', default=None,
-                        help='ntfy topic URL for order_intent pushes (or set CUSTODY_NTFY_URL)')
+                        help='optional ntfy topic URL (or CUSTODY_NTFY_URL)')
+    parser.add_argument('--wxpusher-spt', default=None,
+                        help='WxPusher SPT token for order_intent pushes (or CUSTODY_WXPUSHER_SPT)')
     return parser
 
 
@@ -349,7 +358,7 @@ def main(argv=None):
                                                                 daily_days=args.daily_days),
                                              args.strategy, args.direction)
         runner = DryRunRunner(service, market, job['id'], frame_source=frame_source, interval=args.interval,
-                              ntfy_url=args.ntfy)
+                              ntfy_url=args.ntfy, wxpusher_spt=args.wxpusher_spt)
         _json_logger('dryrun_start', job_id=job['id'], mode=service.mode, strategy_id=args.strategy,
                      symbol=symbol, direction=args.direction, contract=args.contract,
                      state=job['state'], host=args.host, port=args.port, orders_never_submitted=True)
