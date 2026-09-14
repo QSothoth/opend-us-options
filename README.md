@@ -45,7 +45,7 @@ research/aggressive_payoff/  # offline source, retained 27.90 configuration and 
 
 [Custody API and execution contract](custody/README.md) exposes two immutable strategy IDs and a minimal authenticated job interface. Required input: `strategy_id`, `symbol`, `direction`, and exact option `contract`; quantity defaults to1 and date to the current ET session. Paper/live mode and account are server-bound.
 
-The new module includes a persistent one-job-per-underlying/day lock, order intents, partial-fill and cancellation handling, restart reconciliation boundaries, a paper lifecycle demo, and registry-driven real Release regression. No live OpenD/broker adapter is bundled or activated.
+The new module includes a persistent one-job-per-underlying/day lock, order intents, partial-fill and cancellation handling, restart reconciliation boundaries, a paper lifecycle demo, and registry-driven real Release regression. No live broker order connector is bundled or activated. A read-only OpenD market path is bundled for **dryrun**: `python3 -m custody dryrun ...` resolves the exact contract, polls underlying + option quotes via `OpenQuoteContext`, advances the controller and logs order intents while a broker-less controller and a `dryrun`-mode service guarantee no `place_order`/`unlock_trade` call. See [custody/README.md](custody/README.md) for the `US.SKHY260918P175000` example.
 
 ## Offline aggressive timing research
 
