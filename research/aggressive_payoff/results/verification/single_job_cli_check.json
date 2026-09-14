@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "symbol": "US.SPY",
+  "direction": "LONG",
+  "sessions": 83,
+  "trades": 19,
+  "comparison": "CLI trade CSV equals corresponding batch rows exactly",
+  "max_one_round_trip_per_day": true
+}

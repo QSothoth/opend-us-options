@@ -1,0 +1,10 @@
+{
+  "active_research_config": "configs/aggressive_1m_27_90.json",
+  "case_id": "536f0789fb0d",
+  "selected_by_user": true,
+  "status": "retained aggressive offline research baseline; posthoc statistical status unchanged",
+  "live_enabled": false,
+  "data_tag": "eval-data-v2",
+  "sha256": "df93506e498be259a9654c8bf82738aa8ed3604ec2936cf4dfbed0de26aba0c6",
+  "disclaimer": "underlying proxy, not true option PnL"
+}

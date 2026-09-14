@@ -17,3 +17,12 @@ cache/*.tmp
 *.duckdb-wal
 .idea/
 .vscode/
+
+# Offline research: keep Release data and regenerated search logs out of git.
+research/**/opend_us_options_eval_*.zip
+research/**/*.parquet
+research/**/*.pkl
+research/**/stageA_*
+research/**/stageB_*
+research/**/stageC_*
+research/**/stageD_*

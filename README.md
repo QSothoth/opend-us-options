@@ -13,7 +13,7 @@ Split out of a larger private project so offline tooling can use code + eval dat
 ## What this is NOT
 - Not a trading signal service
 - Does **not** ship API tokens, OpenD passwords, or account secrets
-- Synthetic `testdata/` is **schema smoke only** — evaluation must use Release `eval-data-v1`
+- Synthetic `testdata/` is **schema smoke only** — evaluation must use a pinned real Release (`eval-data-v2` for the minute timing research below)
 
 ## Eval data
 Prefer **v2** (includes 5m + 1m):
@@ -33,12 +33,19 @@ backtest_scaffold.py
 evaldata/
 testdata/   # synthetic schema fixtures only
 docs/
+research/aggressive_payoff/  # offline source, retained 27.90 configuration and evidence
 ```
 
 ## Safety
 - Prefer dry-run
 - Never commit `.env`, tokens, or unrelated live dumps
 - OpenD history: warm once, then read local cache only
+
+## Offline aggressive timing research
+
+[Research source, exact configuration and reproduction commands](research/aggressive_payoff/README.md).
+
+The retained 1m research configuration has underlying payoff27.90 across the fixed83-session eval-data-v2 slice at2bps friction. This is a posthoc research result: **underlying proxy, not true option PnL**. The full report includes ablations, execution sensitivity and the historical5m comparison. This module disables networking and does not enable live trading.
 
 ## License
 Code: MIT. Release market data is a small personal research extract for reproducible offline tests.
