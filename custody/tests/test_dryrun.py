@@ -187,6 +187,38 @@ class DryRunSafetyTests(unittest.TestCase):
         self.assertEqual(state['orders'], [])
         self.assertIn('frame_error', {e['event'] for e in events})
 
+    # 5b. A service-side ValueError (stale/future bar) is logged, not fatal.
+    def test_step_error_is_non_fatal_and_loop_continues(self):
+        service, job = make_dryrun(self.path)
+        events = []
+        future = good_frame(service, when=T + timedelta(minutes=5))
+        runner = DryRunRunner(service, FakeMarket(good_quote()), job['id'],
+                              frame_source=FakeFrameSource(future),
+                              logger=lambda event, **fields: events.append({'event': event, **fields}))
+        self.assertIsNone(runner.tick(T))  # step raised ValueError but tick swallowed it
+        self.assertIn('step_error', {e['event'] for e in events})
+        # The loop is still alive: a valid frame on the next tick is processed.
+        runner.frame_source = FakeFrameSource(good_frame(service))
+        state = runner.tick(T)
+        self.assertIsNotNone(state)
+        self.assertEqual(state['state'], 'ENTRY')
+
+    # 5c. run() tolerates a bad frame and keeps executing subsequent ticks.
+    def test_run_survives_step_error(self):
+        service, job = make_dryrun(self.path)
+        events = []
+        runner = DryRunRunner(service, FakeMarket(good_quote()), job['id'],
+                              frame_source=FakeFrameSource(good_frame(service)), interval=0.0,
+                              logger=lambda event, **fields: events.append({'event': event, **fields}))
+        calls = []
+        def boom(*a, **k):
+            calls.append(1)
+            raise ValueError('future or stale bar')
+        runner.controller.step = boom
+        executed = runner.run(ticks=2)
+        self.assertEqual((executed, len(calls)), (2, 2))
+        self.assertEqual([e['event'] for e in events].count('step_error'), 2)
+
     # 6. Even a stale/heavy path cannot reach a broker in dryrun: no status moves past CREATED.
     def test_repeated_ticks_keep_intents_local(self):
         service, job = make_dryrun(self.path)
@@ -283,6 +315,36 @@ class FrameSourceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             bar_boundary(T, 3)
 
+    def test_frame_source_retries_same_boundary_after_error_then_caches(self):
+        service = CustodyService(Path(tempfile.mkdtemp()) / 'retry.sqlite', 'retry', Catalog(), Calendar(), mode='dryrun')
+        job = service.create_job({'strategy_id': SID, 'symbol': 'SKHY', 'direction': 'SHORT',
+                                  'contract': CONTRACT, 'trade_date': DAY}, T)
+
+        class Provider:
+            def __init__(self): self.calls = 0
+            def evaluate(self, *a, **k):
+                self.calls += 1
+                if self.calls == 1: raise ValueError('transient history gap')
+                return good_frame(service, when=a[3])
+        provider = Provider()
+
+        class History:
+            def __init__(self): self.calls = 0
+            def collect(self, boundary):
+                self.calls += 1
+                return [], [], {}
+        history = History()
+        source = SignalFrameSource(provider, history, SID, 'SHORT')
+        with self.assertRaisesRegex(ValueError, 'transient'):
+            source.frame(job, T)
+        # Failure did not commit the boundary: the next tick within it retries.
+        retried = source.frame(job, T + timedelta(seconds=3))
+        self.assertIsNotNone(retried)
+        self.assertEqual((provider.calls, history.calls), (2, 2))
+        # Success is now cached for the rest of the boundary.
+        source.frame(job, T + timedelta(seconds=6))
+        self.assertEqual((provider.calls, history.calls), (2, 2))
+
     def test_frame_source_caches_per_boundary_and_expires(self):
         service = CustodyService(Path(tempfile.mkdtemp()) / 'f.sqlite', 'f', Catalog(), Calendar(), mode='dryrun')
         job = service.create_job({'strategy_id': SID, 'symbol': 'SKHY', 'direction': 'SHORT',
@@ -334,6 +396,47 @@ class HistorySourceTests(unittest.TestCase):
                          ['2026-09-11T09:31:00-04:00', '2026-09-11T09:32:00-04:00', '2026-09-14T09:31:00-04:00'])
         self.assertEqual([r['date'] for r in daily_rows], ['2026-09-11'])  # today excluded
         self.assertEqual(sorted(closes), ['2026-09-11', '2026-09-14'])
+
+    def test_today_history_fallback_is_cached_not_re_requested(self):
+        from custody.dryrun import OpenDHistorySource
+        daily = [{'time_key': '2026-09-11', 'open': 1, 'high': 2, 'low': .5, 'close': 1.5}]
+        prior = [{'time_key': '2026-09-11 09:31:00', 'open': 1, 'high': 2, 'low': .5, 'close': 1.5, 'volume': 10}]
+        today = [
+            {'time_key': '2026-09-14 09:31:00', 'open': 1, 'high': 2, 'low': .5, 'close': 1.7, 'volume': 12},
+            {'time_key': '2026-09-14 10:00:00', 'open': 1, 'high': 2, 'low': .5, 'close': 1.8, 'volume': 13},
+            {'time_key': '2026-09-14 10:01:00', 'open': 1, 'high': 2, 'low': .5, 'close': 1.9, 'volume': 14},
+        ]
+
+        class Market:
+            def __init__(self): self.kline_calls = []
+            def request_kline(self, code, ktype, start, end, max_count=1000):
+                self.kline_calls.append((ktype, start, end))
+                if ktype == 'K_DAY': return list(daily)
+                if str(start).startswith(DAY):
+                    return [r for r in today if start <= r['time_key'] <= end]
+                return list(prior)
+            def current_kline(self, code, count, ktype): return []  # force fallback
+
+        market = Market()
+        events = []
+        source = OpenDHistorySource(market, AnyCalendar(), 'US.SKHY', warmup_days=7, daily_days=40,
+                                    logger=lambda event, **fields: events.append({'event': event, **fields}))
+        boundary = datetime(2026, 9, 14, 10, 0, tzinfo=ET)
+        source.collect(boundary)
+        source.collect(boundary + timedelta(minutes=1))
+        source.collect(boundary + timedelta(minutes=2))
+        today_calls = [c for c in market.kline_calls if c[0] == 'K_1M' and str(c[1]).startswith(DAY)]
+        # The full midnight-start range is requested exactly once; later boundaries
+        # only extend incrementally instead of re-burning history quota.
+        self.assertEqual(len([c for c in today_calls if c[1] == DAY + ' 00:00:00']), 1)
+        self.assertEqual(len(today_calls), 3)
+        self.assertEqual([e['event'] for e in events].count('history_fallback'), 1)
+        # Cached bars survive the incremental merge.
+        cached = source.collect(boundary + timedelta(minutes=2))
+        self.assertEqual([b['close_time'] for b in cached[0]],
+                         ['2026-09-11T09:31:00-04:00', '2026-09-14T09:31:00-04:00',
+                          '2026-09-14T10:00:00-04:00', '2026-09-14T10:01:00-04:00'])
+        self.assertIn('2026-09-14', cached[2])
 
 
 class CliTests(unittest.TestCase):

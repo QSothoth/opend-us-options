@@ -60,11 +60,13 @@ class OpenDHistorySource:
 
     It is read-only and quota-aware: prior sessions are fetched once per run and
     today's stream is read with ``get_cur_kline`` when the caller has subscribed
-    to ``K_1M`` (falling back to one history request). A missing/gappy session
-    simply raises later in the worker; the runner logs and continues polling.
+    to ``K_1M``. Without a subscription it falls back to history, extending the
+    already-fetched today range incrementally instead of re-requesting from
+    midnight every boundary. A missing/gappy session simply raises later in the
+    worker; the runner logs and continues polling.
     """
 
-    def __init__(self, market, calendar, symbol, warmup_days=30, daily_days=120, use_current=True):
+    def __init__(self, market, calendar, symbol, warmup_days=30, daily_days=120, use_current=True, logger=None):
         symbol = str(symbol).upper()
         self.market = market
         self.calendar = calendar
@@ -72,10 +74,17 @@ class OpenDHistorySource:
         self.warmup_days = int(warmup_days)
         self.daily_days = int(daily_days)
         self.use_current = bool(use_current)
+        self.log = logger or _json_logger
         self._daily = None
         self._daily_day = None
         self._prior = None
         self._prior_day = None
+        # Today's history-fallback range is cached and only extended, never
+        # re-requested from midnight on every boundary (history quota guard).
+        self._today = None
+        self._today_day = None
+        self._today_end = None
+        self._fallback_logged = False
 
     def collect(self, boundary):
         boundary = instant(boundary).astimezone(ET)
@@ -104,12 +113,32 @@ class OpenDHistorySource:
                 today = self.market.current_kline(self.code, 600, 'K_1M')
             except Exception:  # noqa: BLE001 - falls back to history below
                 today = []
-        if not today:
-            today = self.market.request_kline(self.code, 'K_1M', day + ' 00:00:00',
-                                              boundary.strftime('%Y-%m-%d %H:%M:%S'))
-        merged = self._prior + self._normalize_bars(today, boundary)
+        if today:
+            today = self._normalize_bars(today, boundary)
+        else:
+            if not self._fallback_logged:
+                self._fallback_logged = True
+                self.log('history_fallback', code=self.code,
+                         reason='get_cur_kline empty or unsubscribed',
+                         start=day + ' 00:00:00')
+            today = self._today_fallback(boundary, day)
+        merged = self._prior + today
         dedup = {bar['close_time']: bar for bar in merged}
         return [dedup[key] for key in sorted(dedup)]
+
+    def _today_fallback(self, boundary, day):
+        """Fetch today's history incrementally, caching the range already seen."""
+        from .opend import _et
+        if self._today_day != day:
+            self._today, self._today_day, self._today_end = [], day, None
+        if self._today_end is not None and boundary <= self._today_end:
+            return list(self._today)
+        start = self._today_end.strftime('%Y-%m-%d %H:%M:%S') if self._today_end is not None else day + ' 00:00:00'
+        rows = self.market.request_kline(self.code, 'K_1M', start, boundary.strftime('%Y-%m-%d %H:%M:%S'))
+        merged = {bar['close_time']: bar for bar in self._today + self._normalize_bars(rows, boundary)}
+        self._today = [merged[key] for key in sorted(merged)]
+        self._today_end = _et(boundary) or boundary
+        return list(self._today)
 
     @staticmethod
     def _normalize_bars(rows, boundary):
@@ -161,10 +190,12 @@ class SignalFrameSource:
         if boundary is None: return None
         key = boundary.isoformat()
         if key != self._key:
-            self._key, self._frame = key, None
+            # Commit the cache key only after a successful collect+evaluate so a
+            # transient failure is retried on the next tick within this boundary.
             bars, daily, closes = self.history.collect(boundary)
-            self._frame = self.provider.evaluate(self.strategy_id, job['request']['symbol'], self.direction,
-                                                 boundary, bars, daily, closes)
+            frame = self.provider.evaluate(self.strategy_id, job['request']['symbol'], self.direction,
+                                           boundary, bars, daily, closes)
+            self._key, self._frame = key, frame
         frame = self._frame
         if frame is None: return None
         if (now - instant(frame.bar_close)).total_seconds() > self.max_age_seconds: return None
@@ -205,7 +236,11 @@ class DryRunRunner:
                 frame = self.frame_source.frame(job, now)
             except Exception as exc:  # noqa: BLE001 - history gaps are non-fatal in dryrun
                 self.log('frame_error', symbol=symbol, error=repr(exc))
-        state = self.controller.step(self.job_id, now, quote, frame, mark, mark_as_of)
+        try:
+            state = self.controller.step(self.job_id, now, quote, frame, mark, mark_as_of)
+        except ValueError as exc:  # stale/future bar or other service-side rejection
+            self.log('step_error', job_id=self.job_id, error=repr(exc))
+            return None
         self._log_new_intents(state)
         self.log('tick', state=state['state'], underlying_mark=mark, frame=frame is not None,
                  position_qty=state['position_qty'], attention=state['attention'],
@@ -252,7 +287,8 @@ def build_argument_parser():
     parser.add_argument('--interval', type=float, default=5.0, help='seconds between polls')
     parser.add_argument('--ticks', type=int, default=None, help='stop after N ticks (default: run forever)')
     parser.add_argument('--once', action='store_true', help='run a single tick')
-    parser.add_argument('--no-subscribe', action='store_true', help='snapshot only; do not subscribe')
+    parser.add_argument('--no-subscribe', action='store_true',
+                        help='snapshot only; frames fall back to cached 1m history')
     parser.add_argument('--no-frames', action='store_true', help='poll quotes only; skip strategy evaluation')
     parser.add_argument('--warmup-days', type=int, default=30, help='calendar days of 1m warmup for frames')
     parser.add_argument('--daily-days', type=int, default=120, help='calendar days of daily warmup for frames')
