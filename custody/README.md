@@ -1,8 +1,8 @@
 # Custody API v1
 
-调用方只需给出 **策略版本、标的、多空方向、具体期权合约**；数量默认1张、日期默认美东当天。1m与5m配置独立保存，可继续增加版本。模拟/实盘模式属于服务端配置，不能在单次请求中切换。当前已实现可运行的接口、持久化状态机和离线闭环；真实券商连接必须在部署环境接入并联调，本次没有连接OpenD或下单。
+调用方只需给出 **策略版本、标的、多空方向、具体期权合约**；数量默认1张、日期默认美东当天。1m与5m配置独立保存，可继续增加版本。模拟/实盘模式属于服务端配置，不能在单次请求中切换。当前已实现可运行的接口、持久化状态机和离线闭环；另有一个只读 OpenD `dryrun` 行情路径（`OpenQuoteContext`，绝不下单），真实券商下单连接仍需在部署环境接入并联调。
 
-A small broker-neutral control API and durable order state machine for the retained1m/5m research strategies. This prepares the execution boundary for deployment while keeping every verification in this repository offline. No live broker connector is bundled or activated.
+A small broker-neutral control API and durable order state machine for the retained1m/5m research strategies. This prepares the execution boundary for deployment while keeping every verification in this repository offline. No live broker connector is bundled or activated; a read-only OpenD market-data adapter (`custody/opend.py`) and dryrun runner (`custody/dryrun.py`) can observe quotes and advance a job without any order API.
 
 ## One request
 
@@ -104,6 +104,42 @@ Default software execution-policy values are5seconds quote age,15seconds frame a
 
 The software underlying safety monitor needs fresh marks and a functioning worker. It is **not** a broker-native resting conditional stop. Backtests used an idealized1m intrabar resting safety-stop simulation; live limit fills, asynchronous timing, partial fills, spread and the software watchdog can differ. No stop or scheduled flatten can guarantee a fill during outages or illiquidity.
 
+## OpenD dryrun live path (read-only, no orders)
+
+`custody/opend.py` + `custody/dryrun.py` add a resident, real OpenD market path that can be
+observed without ever submitting an order. It uses `OpenQuoteContext` only (never
+`OpenSecTradeContext`, `place_order` or `unlock_trade`) and runs the custody service in a
+server-bound `mode='dryrun'` account.
+
+Hard gate: dryrun builds a `Controller` with **no broker**, so `submit`/`cancel` are
+unreachable, and `CustodyService.dispatch_next` itself refuses to dispatch in dryrun mode.
+Order intents are persisted and logged but never leave the process (`submitted=false`).
+
+```bash
+python3 -m custody dryrun \
+  --strategy orb_rvol_rsi_1m_v1 \
+  --symbol US.SKHY --direction SHORT \
+  --contract US.SKHY260918P175000 \
+  --db /tmp/custody-dryrun.sqlite \
+  --once
+```
+
+- `--host/--port` default to `127.0.0.1:11111` (`FUTU_HOST`/`FUTU_PORT` also work).
+- `--once` runs one poll; without it the process is a resident loop (`--interval` seconds).
+- `--no-frames` polls option bid/ask + underlying mark only; the default also evaluates the
+  retained strategy from OpenD 1m/daily history and advances `IDLE→WATCH→ENTRY` at native
+  1m/5m boundaries.
+- `--no-subscribe` uses snapshots only; the default subscribes underlying + contract to QUOTE/K_1M.
+- `--db` is a durable SQLite file; the account is bound to `dryrun` and cannot be reopened paper/live.
+
+Unlike paper/live, dryrun accepts an exact contract whose expiry is **on or after** the
+current ET session (so the 4-DTE `US.SKHY260918P175000` put can be watched on `2026-09-14`).
+Same-day-only enforcement is unchanged for paper/live. `OpenDTradingCalendar` reads
+`request_trading_days` for holidays and early closes; no order can be submitted regardless.
+
+The dryrun units are mock-tested (`custody/tests/test_dryrun.py`) and statically checked to
+reference no trade API. No test connects to OpenD or burns history quota.
+
 ## Offline commands
 
 ```bash
@@ -118,4 +154,4 @@ The demo uses clearly fabricated lifecycle fixtures; it is not a profitability b
 
 Fixed data: `eval-data-v2`, manifest `opend_us_options_eval_v2`, SHA256 `df93506e498be259a9654c8bf82738aa8ed3604ec2936cf4dfbed0de26aba0c6`.
 
-The retained payoffs are repeated-history research observations: **underlying proxy, not true option PnL**. The source and contract are executable and paper-tested; OpenD/broker connectivity, actual option quotes, native stop support and live reconciliation must be integration-tested in the deployment environment. No live broker connector, live test, quote download or order was used in this change.
+The retained payoffs are repeated-history research observations: **underlying proxy, not true option PnL**. The source and contract are executable and paper-tested; live order submission, native stop support and live reconciliation must be integration-tested in the deployment environment. The `dryrun` path connects read-only to OpenD quotes but never places, cancels or unlocks a trade.

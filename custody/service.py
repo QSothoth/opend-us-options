@@ -27,7 +27,7 @@ def encode(x): return json.dumps(x, sort_keys=True, separators=(',', ':'), allow
 
 class CustodyService:
     def __init__(self, db_path, account, contracts, calendar, registry=None, policy=None, mode='paper'):
-        if not account or mode not in ('paper','live'): raise ValueError('account and server mode required')
+        if not account or mode not in ('paper','live','dryrun'): raise ValueError('account and server mode required')
         if str(db_path) == ':memory:': raise ValueError('durable file database required')
         self.path=str(db_path);self.account=account;self.contracts=contracts;self.calendar=calendar
         self.registry=registry or Registry();self.policy=policy or ExecutionPolicy();self.mode=mode
@@ -74,7 +74,7 @@ class CustodyService:
                 if old['fingerprint']!=fingerprint: raise ValueError('one_job_per_symbol_day: existing request differs')
                 return self._load(db,old['id'])
         if now.astimezone(ET).date().isoformat()!=req.trade_date: raise ValueError('active Job date must be today in ET; use replay for historical dates')
-        contract=self.contracts.resolve(req.contract);contract.validate(req)
+        contract=self.contracts.resolve(req.contract);contract.validate(req,same_day_only=self.mode!='dryrun')
         session=self.calendar.session(req.trade_date)
         if session.day!=req.trade_date: raise ValueError('calendar date mismatch')
         e,x=strategy['config']['case']['entry'],strategy['config']['case']['exit']
@@ -253,6 +253,7 @@ class CustodyService:
         NOT mark the original entry canceled; its terminal update is still required.
         """
         now=instant(now)
+        if self.mode=='dryrun': raise ValueError('dryrun mode never dispatches broker orders')
         if adapter.account!=self.account or adapter.mode!=self.mode: raise ValueError('adapter/account/mode mismatch')
         with self._tx() as db:
             candidates=[]
