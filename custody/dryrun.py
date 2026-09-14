@@ -17,6 +17,8 @@ Entry point::
 from __future__ import annotations
 
 import argparse
+import os
+import urllib.request
 from datetime import datetime, timedelta
 import json
 import time
@@ -53,6 +55,22 @@ def _num(value):
     except (TypeError, ValueError):
         return None
     return out
+
+
+
+def _ntfy_notify(url, title, body, priority='high', tags='chart_with_upwards_trend'):
+    """Best-effort POST to an ntfy (or compatible) topic URL. Never raises."""
+    if not url:
+        return
+    try:
+        req = urllib.request.Request(str(url).strip(), data=body.encode('utf-8'), method='POST')
+        req.add_header('Title', title[:250])
+        req.add_header('Priority', priority)
+        req.add_header('Tags', tags)
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            resp.read()
+    except Exception:  # noqa: BLE001 - notify must not break dryrun
+        pass
 
 
 class OpenDHistorySource:
@@ -205,7 +223,7 @@ class SignalFrameSource:
 class DryRunRunner:
     """Resident loop: poll market data, advance the controller, log intents."""
 
-    def __init__(self, service, market, job_id, frame_source=None, interval=5.0, logger=None):
+    def __init__(self, service, market, job_id, frame_source=None, interval=5.0, logger=None, ntfy_url=None):
         if service.mode != 'dryrun': raise ValueError('DryRunRunner requires CustodyService(mode=dryrun)')
         self.service = service
         self.market = market
@@ -213,6 +231,7 @@ class DryRunRunner:
         self.frame_source = frame_source
         self.interval = float(interval)
         self.log = logger or _json_logger
+        self.ntfy_url = (ntfy_url or os.environ.get('CUSTODY_NTFY_URL') or '').strip() or None
         # Deliberately no broker: the only path to submit/cancel is unreachable.
         self.controller = Controller(service)
         self._seen_intents = set()
@@ -256,6 +275,11 @@ class DryRunRunner:
                      contract=order['contract'], quantity=order['quantity'], limit_price=order['limit_price'],
                      position_effect=order['position_effect'], reason=order['reason'],
                      created_at=order['created_at'], dryrun=True, submitted=False)
+            if self.ntfy_url:
+                title = 'dryrun %s %s' % (order['side'], order['contract'])
+                body = '%s qty=%s limit=%s\nreason=%s\nsubmitted=false\nid=%s' % (
+                    order['kind'], order['quantity'], order['limit_price'], order.get('reason'), key)
+                _ntfy_notify(self.ntfy_url, title, body)
 
     def run(self, ticks=None):
         executed = 0
@@ -292,6 +316,8 @@ def build_argument_parser():
     parser.add_argument('--no-frames', action='store_true', help='poll quotes only; skip strategy evaluation')
     parser.add_argument('--warmup-days', type=int, default=30, help='calendar days of 1m warmup for frames')
     parser.add_argument('--daily-days', type=int, default=120, help='calendar days of daily warmup for frames')
+    parser.add_argument('--ntfy', default=None,
+                        help='ntfy topic URL for order_intent pushes (or set CUSTODY_NTFY_URL)')
     return parser
 
 
@@ -322,7 +348,8 @@ def main(argv=None):
                                                                 warmup_days=args.warmup_days,
                                                                 daily_days=args.daily_days),
                                              args.strategy, args.direction)
-        runner = DryRunRunner(service, market, job['id'], frame_source=frame_source, interval=args.interval)
+        runner = DryRunRunner(service, market, job['id'], frame_source=frame_source, interval=args.interval,
+                              ntfy_url=args.ntfy)
         _json_logger('dryrun_start', job_id=job['id'], mode=service.mode, strategy_id=args.strategy,
                      symbol=symbol, direction=args.direction, contract=args.contract,
                      state=job['state'], host=args.host, port=args.port, orders_never_submitted=True)
