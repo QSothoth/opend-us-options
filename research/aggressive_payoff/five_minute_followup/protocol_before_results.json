@@ -1,0 +1,12 @@
+{
+  "disclaimer": "underlying proxy, not true option PnL",
+  "history": "Same83 previously studied sessions; all83 used for ranking. Every chronological subset is descriptive, not an independent holdout.",
+  "objective": "Highest all83 net2bps payoff, then net5bps payoff, average winner and deterministic ID tie. No win-rate percentage, PF, expectancy or drawdown gate.",
+  "sample_only": "At least20 trades,4 positive and8 negative trades under EACH2/5bps cost,8 dates,5 symbols over all83. Same conditional-mean count checks as previous research, now across all83.",
+  "proposals": "20 prior frozen5m shortlist entries; direct5m transfer of retained27.90; one bounded neighbor sweep and predefined +/-20% perturbations around the prior5m winner and direct5m transfer. No additional rounds after results.",
+  "configurations": 398,
+  "data_tag": "eval-data-v2",
+  "sha256": "df93506e498be259a9654c8bf82738aa8ed3604ec2936cf4dfbed0de26aba0c6",
+  "execution": "Signals/strategic exits use completed5m bars only. Unchanged1m execution tape is used for next-open fills, resting safety stop and MTM. DailyATR uses prior completed days. This is pure5m decision timing, not a claim that the replay uses no1m execution data.",
+  "retained_1m_unchanged": "536f0789fb0d"
+}

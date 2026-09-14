@@ -47,5 +47,7 @@ research/aggressive_payoff/  # offline source, retained 27.90 configuration and 
 
 The retained 1m research configuration has underlying payoff27.90 across the fixed83-session eval-data-v2 slice at2bps friction. This is a posthoc research result: **underlying proxy, not true option PnL**. The full report includes ablations, execution sensitivity and the historical5m comparison. This module disables networking and does not enable live trading.
 
+The [5m follow-up](research/aggressive_payoff/five_minute_followup/REPORT.md) tests398 additional configurations: its grid winner has payoff17.22 and the highest subsequent ablation18.45. The1m27.90 configuration stays retained; the5m middle/final periods remain weaker. Exact5m rules and reproducible evidence are included.
+
 ## License
 Code: MIT. Release market data is a small personal research extract for reproducible offline tests.
