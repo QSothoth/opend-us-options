@@ -16,9 +16,15 @@ Split out of a larger private project so offline tooling can use code + eval dat
 - Synthetic `testdata/` is **schema smoke only** — evaluation must use Release `eval-data-v1`
 
 ## Eval data
-- Release: https://github.com/QSothoth/opend-us-options/releases/tag/eval-data-v1
-- Asset: `opend_us_options_eval_v1.zip`
-- Parquet + DuckDB + scenario labels for 10 liquid US names
+Prefer **v2** (includes 5m + 1m):
+
+- Release: https://github.com/QSothoth/opend-us-options/releases/tag/eval-data-v2
+- Asset: `opend_us_options_eval_v2.zip`
+- Primary timing: **5m** (~12 months); fine entry/exit: **1m** (~4 months)
+- Also includes day + 15m for context
+
+Coarse baseline still available: [eval-data-v1](https://github.com/QSothoth/opend-us-options/releases/tag/eval-data-v1).
+
 
 ## Layout
 ```text
