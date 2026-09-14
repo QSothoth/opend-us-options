@@ -1,0 +1,109 @@
+{
+  "passed": true,
+  "data_tag": "eval-data-v2",
+  "sha256": "df93506e498be259a9654c8bf82738aa8ed3604ec2936cf4dfbed0de26aba0c6",
+  "registry_replays": [
+    {
+      "strategy_id": "orb_rvol_rsi_1m_v1",
+      "case_id": "536f0789fb0d",
+      "sessions": 83,
+      "trades": 13,
+      "all_rows_match": true
+    },
+    {
+      "strategy_id": "retest_rvol_adx_5m_v1",
+      "case_id": "2c0ecc056bd3",
+      "sessions": 83,
+      "trades": 5,
+      "all_rows_match": true
+    }
+  ],
+  "completed_prefix_parity": [
+    {
+      "strategy_id": "orb_rvol_rsi_1m_v1",
+      "date": "2026-06-05",
+      "minute": 630,
+      "direction": "LONG",
+      "entry_ready": false
+    },
+    {
+      "strategy_id": "orb_rvol_rsi_1m_v1",
+      "date": "2026-07-14",
+      "minute": 645,
+      "direction": "SHORT",
+      "entry_ready": false
+    },
+    {
+      "strategy_id": "orb_rvol_rsi_1m_v1",
+      "date": "2026-08-18",
+      "minute": 720,
+      "direction": "LONG",
+      "entry_ready": false
+    },
+    {
+      "strategy_id": "orb_rvol_rsi_1m_v1",
+      "date": "2026-09-11",
+      "minute": 750,
+      "direction": "SHORT",
+      "entry_ready": false
+    },
+    {
+      "strategy_id": "orb_rvol_rsi_1m_v1",
+      "date": "2026-05-21",
+      "minute": 660,
+      "direction": "LONG",
+      "entry_ready": true
+    },
+    {
+      "strategy_id": "orb_rvol_rsi_1m_v1",
+      "date": "2026-06-03",
+      "minute": 594,
+      "direction": "SHORT",
+      "entry_ready": true
+    },
+    {
+      "strategy_id": "retest_rvol_adx_5m_v1",
+      "date": "2026-06-05",
+      "minute": 630,
+      "direction": "LONG",
+      "entry_ready": false
+    },
+    {
+      "strategy_id": "retest_rvol_adx_5m_v1",
+      "date": "2026-07-14",
+      "minute": 645,
+      "direction": "SHORT",
+      "entry_ready": false
+    },
+    {
+      "strategy_id": "retest_rvol_adx_5m_v1",
+      "date": "2026-08-18",
+      "minute": 720,
+      "direction": "LONG",
+      "entry_ready": false
+    },
+    {
+      "strategy_id": "retest_rvol_adx_5m_v1",
+      "date": "2026-09-11",
+      "minute": 750,
+      "direction": "SHORT",
+      "entry_ready": false
+    },
+    {
+      "strategy_id": "retest_rvol_adx_5m_v1",
+      "date": "2026-07-06",
+      "minute": 630,
+      "direction": "LONG",
+      "entry_ready": true
+    },
+    {
+      "strategy_id": "retest_rvol_adx_5m_v1",
+      "date": "2026-06-05",
+      "minute": 610,
+      "direction": "SHORT",
+      "entry_ready": true
+    }
+  ],
+  "future_missing_minute_and_current_daily_rejected": true,
+  "scope": "Real underlying Release only; execution lifecycle mocks are separate engineering tests, not option PnL evidence."
+}

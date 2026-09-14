@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CustodyJobRequest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["strategy_id", "symbol", "direction", "contract"],
+  "properties": {
+    "strategy_id": {"type":"string","minLength":1,"description":"Exact immutable registry ID; no automatic best/latest alias."},
+    "symbol": {"type":"string","minLength":1,"description":"Human-selected underlying. US. prefix accepted; uppercase normalized."},
+    "direction": {"type":"string","enum":["LONG","SHORT"],"description":"LONG buys CALL; SHORT buys PUT. Both close by selling owned options."},
+    "contract": {"type":"string","minLength":1,"description":"Exact broker instrument code, resolved and checked against underlying/right/expiry."},
+    "max_qty": {"type":"integer","minimum":1,"default":1},
+    "trade_date": {"type":"string","format":"date","description":"Optional; defaults to current America/New_York date. Active jobs must match today; use separate offline replay for history."}
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "passed": true,
+  "test_command": "python3 -m unittest discover -s custody/tests -v",
+  "tests_run": 19,
+  "network_or_live_broker_used": false,
+  "demo": "python3 -m custody.demo completes BUY_OPEN + SELL_CLOSE with zero residual; fabricated engineering quotes only",
+  "scope": [
+    "strict contract validation",
+    "immutable registry hashes",
+    "concurrent idempotency and cross-strategy daily lock",
+    "persistent account mode and restart outbox",
+    "unknown order not resubmitted",
+    "partial entry waits for terminal cancellation",
+    "partial exit sells remaining only",
+    "duplicate/invalid cumulative events",
+    "independent flatten with missing quotes",
+    "broker lookup outage still records cancellation",
+    "prior-session unresolved job blocks new day",
+    "authenticated HTTP and paper controller",
+    "native5m boundary and LONG/SHORT side mapping"
+  ],
+  "source_sha256": {
+    "custody/demo.py": "d16938b08e6e69c97a8be43df9091a5603877efa93beb59e726ed473a754a811",
+    "custody/models.py": "a25cab4ccc9bedee32fc6c49b1ed52f602f5e3888f02a202495482c22c6311ef",
+    "custody/http.py": "6693a0fa9ca4c745074fb5dd269dfa9cc064387716f64cd4d800e7f0bd03a49a",
+    "custody/signals.py": "4dc8432bbd27f9b4e10cacc8833e8217fe24b91266d8344a84b4014e65677c81",
+    "custody/service.py": "1e92a464180a67a77c1d225992264fa73320cd2efc2d9bbe71e3def396889504",
+    "custody/ports.py": "0d3b12221c2505627c85377f17db1c88deafc1bad647d1b3ce9c3e13ab4e2b00",
+    "custody/registry.py": "c4ddd65fae119f0ae4ee1729aa510c690605dcd89026b250942eac66c7efd53d",
+    "custody/__main__.py": "2701de885997e066fbf95d389f6ea0af218cb139a4474674c4ad364e8b666246",
+    "custody/__init__.py": "d5b419108ba9ddad05683b0d9d22b1b010169ecff856eb8c6945229578521796",
+    "custody/replay.py": "46a0fe8c1eee6f0d888e23b9af6623332b43470f4e8b5f362c7483b466a44d0e",
+    "custody/controller.py": "75e1e8d337c0e4f1249f0f9d6d979423aad1163c66475318811c382f4f3fcaf6",
+    "custody/tests/test_runtime.py": "18e87e851498172842e7ffd239688b4bbb2d2ed970e776a9b91188af45f786b5",
+    "research/aggressive_payoff/code/feature_worker.py": "97683db8bb23c1096298be05fb6d10981640559559174d9c346a807e91339bc7",
+    "research/aggressive_payoff/code/verify_custody_release.py": "9fd896dd39668702a5fc2a746c70aef1d6ccb358401602849996416fb04a78ca"
+  },
+  "real_release_evidence": "verification_release.json"
+}

@@ -15,6 +15,9 @@ cache/*.fetched.json
 cache/*.tmp
 *.duckdb
 *.duckdb-wal
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
 .idea/
 .vscode/
 

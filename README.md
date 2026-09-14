@@ -41,6 +41,12 @@ research/aggressive_payoff/  # offline source, retained 27.90 configuration and 
 - Never commit `.env`, tokens, or unrelated live dumps
 - OpenD history: warm once, then read local cache only
 
+## Versioned custody API
+
+[Custody API and execution contract](custody/README.md) exposes two immutable strategy IDs and a minimal authenticated job interface. Required input: `strategy_id`, `symbol`, `direction`, and exact option `contract`; quantity defaults to1 and date to the current ET session. Paper/live mode and account are server-bound.
+
+The new module includes a persistent one-job-per-underlying/day lock, order intents, partial-fill and cancellation handling, restart reconciliation boundaries, a paper lifecycle demo, and registry-driven real Release regression. No live OpenD/broker adapter is bundled or activated.
+
 ## Offline aggressive timing research
 
 [Research source, exact configuration and reproduction commands](research/aggressive_payoff/README.md).
