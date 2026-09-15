@@ -1,0 +1,25 @@
+name: Custody offline Python dependency
+on:
+  push:
+    branches: [agent/custody-must-trade-20260915]
+    paths: [.github/workflows/custody-python-deps.yml]
+permissions:
+  contents: read
+jobs:
+  wheel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Download only the pinned public PyArrow wheel
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/custody-wheel
+          python -m pip download --only-binary=:all: --no-deps --platform manylinux_2_28_x86_64 --implementation cp --python-version 3.13 --abi cp313 pyarrow==21.0.0 -d /tmp/custody-wheel
+          cd /tmp/custody-wheel
+          sha256sum *.whl > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: custody-pyarrow-wheel
+          path: /tmp/custody-wheel/
+          retention-days: 3
+          compression-level: 0
