@@ -114,10 +114,11 @@
     "manifest": "manifest.json",
     "cases": "cases.json",
     "cases_locked": [
-      {"symbol": "US.QQQ", "direction": "LONG", "contract": "US.QQQ260914C705000"},
-      {"symbol": "US.SKHY", "direction": "SHORT", "contract": "US.SKHY260918P175000"},
-      {"symbol": "US.BABA", "direction": "LONG", "contract": "US.BABA260918C109000"}
+      {"symbol": "US.QQQ", "direction": "LONG", "contract": "US.QQQ260914C705000", "expiry": "2026-09-14", "dte": 0},
+      {"symbol": "US.SKHY", "direction": "SHORT", "contract": "US.SKHY260918P175000", "expiry": "2026-09-18", "dte": 4},
+      {"symbol": "US.BABA", "direction": "LONG", "contract": "US.BABA260918C109000", "expiry": "2026-09-18", "dte": 4}
     ],
+    "product_constraint": "Custody targets same-day/0DTE and near-ATM; QQQ case is 0DTE, SKHY/BABA are 4 DTE (flag for replacement if strictly 0DTE). All three are within ~0.7% of strike.",
     "series_bar_counts": {
       "US.QQQ": 390, "US.SKHY": 390, "US.BABA": 390,
       "US.QQQ260914C705000": 405, "US.SKHY260918P175000": 390, "US.BABA260918C109000": 390

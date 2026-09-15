@@ -23,6 +23,8 @@ Locked cases for `trade_date = 2026-09-14`:
 | US.SKHY | SHORT | US.SKHY260918P175000 |
 | US.BABA | LONG | US.BABA260918C109000 |
 
+Expiry/DTE: `US.QQQ260914C705000` is **0DTE** (expiry == trade date); `US.SKHY260918P175000` and `US.BABA260918C109000` are **4 DTE**. All three are near-ATM (within ~0.7% of strike at open/close/mid). The custody / 末日 product targets 0DTE, so the two 4-DTE contracts are retained only for data-plumbing eval and are flagged for replacement if the product is strictly 0DTE.
+
 Each case carries the same-day underlying 1m and option 1m series plus `manifest.json` (bar counts, time range, fetch time, OpenD host, per-file SHA256) and `cases.json`. Fetch once (read-only, quota-aware) and reuse the files:
 
 ```bash
