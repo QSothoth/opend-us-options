@@ -25,6 +25,18 @@ Prefer **v2** (includes 5m + 1m):
 
 Coarse baseline still available: [eval-data-v1](https://github.com/QSothoth/opend-us-options/releases/tag/eval-data-v1).
 
+## Train/research vs eval/custody
+
+- **train/research** → `eval-data-v2` / `eval-data-v1` (underlying-proxy K-lines; offline alpha research and `custody replay`). Keep available; this is **not** the custody eval set.
+- **eval/custody** → frozen `custody-eval-2026-09-14` slice (same-day **underlying 1m + option 1m** OHLCV for three real 2026-09-14 jobs: QQQ LONG, SKHY SHORT, BABA LONG), fetched once from read-only OpenD and replayed through the shared market-data provider. See [custody/README.md](custody/README.md).
+
+The must-trade custody product must complete exactly one entry+exit per day; the retained research gates can `no_entry` all day and are **not** the custody eval success criterion. Real OpenD market data only — never synthetic.
+
+```bash
+python3 -m custody fetch-eval --out /path/to/custody-eval-2026-09-14   # read-only OpenD, once
+python3 -m custody eval-session --slice /path/to/custody-eval-2026-09-14
+```
+
 
 ## Layout
 ```text

@@ -14,12 +14,15 @@ file can be inspected/source-scanned without side effects.
 from __future__ import annotations
 
 from datetime import date, datetime, time as dtime, timedelta
-import math
 import os
 import re
-from zoneinfo import ZoneInfo
 
+from .marketdata import Bar, _day, _et, _num, normalize_bar_rows
 from .models import Contract, Quote, Session, ET, instant
+
+__all__ = ['DEFAULT_HOST', 'DEFAULT_PORT', 'OpenDMarket', 'OpenDContractResolver',
+           'OpenDTradingCalendar', 'parse_option_code', 'Bar', '_num', '_et', '_day',
+           'normalize_bar_rows', 'FORBIDDEN_TRADE_NAMES']
 
 
 DEFAULT_HOST = '127.0.0.1'
@@ -45,14 +48,6 @@ def _futu():
     return futu
 
 
-def _num(value):
-    try:
-        out = float(value)
-    except (TypeError, ValueError):
-        return None
-    return out if math.isfinite(out) else None
-
-
 def _records(frame):
     """Convert a futu/pandas DataFrame to a plain list of dicts without importing pandas."""
     if frame is None:
@@ -63,29 +58,6 @@ def _records(frame):
         except TypeError:  # pragma: no cover - defensive
             return list(frame.to_dict('records'))
     return list(frame)
-
-
-def _et(value):
-    """Parse an OpenD market-local timestamp into an aware ET datetime."""
-    if value is None:
-        return None
-    if isinstance(value, datetime):
-        return value if value.tzinfo else value.replace(tzinfo=ET)
-    text = str(value).strip()
-    if not text or text.upper().startswith('NAT'):
-        return None
-    text = text.replace('T', ' ')
-    for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d'):
-        try:
-            return datetime.strptime(text[: len(fmt) + 2], fmt).replace(tzinfo=ET)
-        except ValueError:
-            continue
-    return None
-
-
-def _day(value):
-    parsed = _et(value)
-    return parsed.date().isoformat() if parsed else None
 
 
 def parse_option_code(code):
@@ -209,6 +181,21 @@ class OpenDMarket:
         if ret != 0:
             raise RuntimeError('get_cur_kline failed for %s %s: %s' % (code, ktype, data))
         return _records(data)
+
+    # --- Shared MarketDataProvider surface ---------------------------------
+    # These are the methods the custody eval/replay and dryrun history source
+    # use, so an OfflineMarket can be swapped in without touching callers.
+    def history_bars(self, code, ktype, start, end, boundary=None):
+        """Normalized completed :class:`Bar`s from OpenD history (read-only)."""
+        interval = '1m' if str(ktype).upper() in ('K_1M', 'K1M') else str(ktype).lower()
+        rows = self.request_kline(code, ktype, start, end)
+        return normalize_bar_rows(rows, code, interval=interval, boundary=boundary, source='opend_kline')
+
+    def current_bars(self, code, count, ktype, boundary=None):
+        """Normalized bars from the subscribed stream (read-only)."""
+        interval = '1m' if str(ktype).upper() in ('K_1M', 'K1M') else str(ktype).lower()
+        rows = self.current_kline(code, count, ktype)
+        return normalize_bar_rows(rows, code, interval=interval, boundary=boundary, source='opend_stream')
 
 
 class OpenDContractResolver:

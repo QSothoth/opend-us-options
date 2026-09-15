@@ -50,15 +50,6 @@ def _json_logger(event, **fields):
     print(json.dumps({'event': event, **fields}, sort_keys=True, default=str), flush=True)
 
 
-def _num(value):
-    try:
-        out = float(value)
-    except (TypeError, ValueError):
-        return None
-    return out
-
-
-
 def _push_notify(title, body, *, wxpusher_spt=None):
     """Best-effort WxPusher phone push for a dryrun event. Never raises.
 
@@ -119,31 +110,35 @@ class OpenDHistorySource:
         day = boundary.date().isoformat()
         if self._daily is None or self._daily_day != day:
             start = (boundary.date() - timedelta(days=self.daily_days)).isoformat()
-            rows = self.market.request_kline(self.code, 'K_DAY', start, day)
-            self._daily = [r for r in self._normalize_daily(rows) if r['date'] < day]
+            bars = self.market.history_bars(self.code, 'K_DAY', start, day)
+            self._daily = [self._daily_record(bar) for bar in bars
+                           if bar.close_time.astimezone(ET).date().isoformat() < day]
             self._daily_day = day
         bars = self._intraday(boundary)
         closes = {}
-        for session_day in sorted({bar['close_time'][:10] for bar in bars}):
+        for session_day in sorted({bar.close_time.astimezone(ET).date().isoformat() for bar in bars}):
             closes[session_day] = self.calendar.session(session_day).closes.isoformat()
-        return bars, list(self._daily), closes
+        return [bar.to_record() for bar in bars], list(self._daily), closes
+
+    @staticmethod
+    def _daily_record(bar):
+        return {'date': bar.close_time.astimezone(ET).date().isoformat(), 'open': bar.open,
+                'high': bar.high, 'low': bar.low, 'close': bar.close}
 
     def _intraday(self, boundary):
         day = boundary.date().isoformat()
         if self._prior is None or self._prior_day != day:
             start = (boundary.date() - timedelta(days=self.warmup_days)).isoformat() + ' 00:00:00'
             end = (boundary.date() - timedelta(days=1)).isoformat() + ' 23:59:59'
-            self._prior = self._normalize_bars(self.market.request_kline(self.code, 'K_1M', start, end), None)
+            self._prior = self.market.history_bars(self.code, 'K_1M', start, end)
             self._prior_day = day
         today = []
         if self.use_current:
             try:
-                today = self.market.current_kline(self.code, 600, 'K_1M')
+                today = self.market.current_bars(self.code, 600, 'K_1M', boundary=boundary)
             except Exception:  # noqa: BLE001 - falls back to history below
                 today = []
-        if today:
-            today = self._normalize_bars(today, boundary)
-        else:
+        if not today:
             if not self._fallback_logged:
                 self._fallback_logged = True
                 self.log('history_fallback', code=self.code,
@@ -151,48 +146,22 @@ class OpenDHistorySource:
                          start=day + ' 00:00:00')
             today = self._today_fallback(boundary, day)
         merged = self._prior + today
-        dedup = {bar['close_time']: bar for bar in merged}
+        dedup = {bar.close_time: bar for bar in merged}
         return [dedup[key] for key in sorted(dedup)]
 
     def _today_fallback(self, boundary, day):
         """Fetch today's history incrementally, caching the range already seen."""
-        from .opend import _et
         if self._today_day != day:
             self._today, self._today_day, self._today_end = [], day, None
         if self._today_end is not None and boundary <= self._today_end:
             return list(self._today)
         start = self._today_end.strftime('%Y-%m-%d %H:%M:%S') if self._today_end is not None else day + ' 00:00:00'
-        rows = self.market.request_kline(self.code, 'K_1M', start, boundary.strftime('%Y-%m-%d %H:%M:%S'))
-        merged = {bar['close_time']: bar for bar in self._today + self._normalize_bars(rows, boundary)}
+        bars = self.market.history_bars(self.code, 'K_1M', start, boundary.strftime('%Y-%m-%d %H:%M:%S'),
+                                        boundary=boundary)
+        merged = {bar.close_time: bar for bar in self._today + bars}
         self._today = [merged[key] for key in sorted(merged)]
-        self._today_end = _et(boundary) or boundary
+        self._today_end = boundary
         return list(self._today)
-
-    @staticmethod
-    def _normalize_bars(rows, boundary):
-        from .opend import _et
-        out = []
-        for row in rows:
-            when = _et(row.get('time_key'))
-            if when is None or (boundary is not None and when > boundary): continue
-            values = {key: _num(row.get(key)) for key in ('open', 'high', 'low', 'close', 'volume')}
-            if any(values[key] is None for key in values): continue
-            out.append({'close_time': when.isoformat(), **values})
-        dedup = {bar['close_time']: bar for bar in out}
-        return [dedup[key] for key in sorted(dedup)]
-
-    @staticmethod
-    def _normalize_daily(rows):
-        from .opend import _day
-        out = []
-        for row in rows:
-            day = _day(row.get('time_key'))
-            if day is None: continue
-            values = {key: _num(row.get(key)) for key in ('open', 'high', 'low', 'close')}
-            if any(values[key] is None or values[key] <= 0 for key in values): continue
-            out.append({'date': day, **values})
-        dedup = {bar['date']: bar for bar in out}
-        return [dedup[key] for key in sorted(dedup)]
 
 
 class SignalFrameSource:

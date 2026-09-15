@@ -3,6 +3,12 @@
 This package builds and validates a **fixed real-market evaluation set** used as
 the development / regression benchmark for US options timing work.
 
+> **Role note (custody):** this underlying-proxy slice is the **train/research**
+> dataset. The custody product eval set is the separate same-day underlying+option
+> 1m `custody-eval-2026-09-14` slice documented in
+> [`custody/README.md`](../custody/README.md). Do not use this slice as the
+> custody must-trade eval.
+
 ## Important
 
 | Dataset | Role |

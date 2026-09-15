@@ -12,6 +12,7 @@ from unittest import mock
 from custody.controller import Controller
 from custody.dryrun import (DryRunRunner, SignalFrameSource, _push_notify, bar_boundary,
                              build_argument_parser)
+from custody.marketdata import normalize_bar_rows
 from custody.models import Contract, Frame, Quote, Session, ET
 from custody.opend import (OpenDContractResolver, OpenDMarket, OpenDTradingCalendar,
                            parse_option_code)
@@ -47,11 +48,13 @@ class FakeHistoryMarket:
     def __init__(self, daily, prior, current=None):
         self.daily, self.prior, self.current = daily, prior, current or []
 
-    def request_kline(self, code, ktype, start, end, max_count=1000):
-        return list(self.daily if ktype == 'K_DAY' else self.prior)
+    def history_bars(self, code, ktype, start, end, boundary=None):
+        rows = self.daily if ktype == 'K_DAY' else self.prior
+        rows = [dict(r, volume=r.get('volume', 0)) for r in rows]
+        return normalize_bar_rows(rows, code, boundary=boundary)
 
-    def current_kline(self, code, count, ktype):
-        return list(self.current)
+    def current_bars(self, code, count, ktype, boundary=None):
+        return normalize_bar_rows(self.current, code, boundary=boundary)
 
 
 class Rows:
@@ -471,13 +474,16 @@ class HistorySourceTests(unittest.TestCase):
 
         class Market:
             def __init__(self): self.kline_calls = []
-            def request_kline(self, code, ktype, start, end, max_count=1000):
+            def history_bars(self, code, ktype, start, end, boundary=None):
                 self.kline_calls.append((ktype, start, end))
-                if ktype == 'K_DAY': return list(daily)
-                if str(start).startswith(DAY):
-                    return [r for r in today if start <= r['time_key'] <= end]
-                return list(prior)
-            def current_kline(self, code, count, ktype): return []  # force fallback
+                if ktype == 'K_DAY':
+                    rows = [dict(r, volume=r.get('volume', 0)) for r in daily]
+                elif str(start).startswith(DAY):
+                    rows = [r for r in today if start <= r['time_key'] <= end]
+                else:
+                    rows = list(prior)
+                return normalize_bar_rows(rows, code, boundary=boundary)
+            def current_bars(self, code, count, ktype, boundary=None): return []  # force fallback
 
         market = Market()
         events = []

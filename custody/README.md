@@ -4,6 +4,46 @@
 
 A small broker-neutral control API and durable order state machine for the retained1m/5m research strategies. This prepares the execution boundary for deployment while keeping every verification in this repository offline. No live broker connector is bundled or activated; a read-only OpenD market-data adapter (`custody/opend.py`) and dryrun runner (`custody/dryrun.py`) can observe quotes and advance a job without any order API.
 
+## Train/research vs eval/custody data (do not confuse)
+
+| Role | Dataset | Contents | Use |
+| --- | --- | --- | --- |
+| **train/research** | `eval-data-v2` (also `eval-data-v1`) GitHub Release | underlying proxy K_DAY/K_15M/K_1M,83 sessions, no option path | offline indicator / alpha research and `custody replay` |
+| **eval/custody** | `custody-eval-2026-09-14` (frozen slice, zipped under the job `out/`) | same-day **underlying 1m + option 1m** OHLCV for three real2026-09-14 jobs | must-trade data plumbing and custody runtime eval |
+
+The custody product must complete **exactly one entry+exit per day** (flatten before close). The retained research gates (`orb_rvol_rsi_1m_v1`, `retest_rvol_adx_5m_v1`) can `no_entry` all day and are therefore **not** the custody eval success criterion. The custody eval slice is real OpenD market data only; no synthetic prices. Keep the research Release available for replay — it is not the custody eval set.
+
+### Custody eval slice (`eval/custody`)
+
+Locked cases for `trade_date = 2026-09-14`:
+
+| Underlying | Direction | Contract |
+| --- | --- | --- |
+| US.QQQ | LONG | US.QQQ260914C705000 |
+| US.SKHY | SHORT | US.SKHY260918P175000 |
+| US.BABA | LONG | US.BABA260918C109000 |
+
+Each case carries the same-day underlying 1m and option 1m series plus `manifest.json` (bar counts, time range, fetch time, OpenD host, per-file SHA256) and `cases.json`. Fetch once (read-only, quota-aware) and reuse the files:
+
+```bash
+python3 -m custody fetch-eval --out /path/to/custody-eval-2026-09-14
+python3 -m custody eval-session --slice /path/to/custody-eval-2026-09-14 --out /tmp/eval-session.json
+```
+
+`eval-session` loads the three cases, feeds the shared provider with the frozen underlying+option 1m bars and needs **no multi-day warmup**. Its timing policy is an explicitly-labelled placeholder (`DeadlineFallbackPolicy`), not an alpha; it records the real option 1m bar closes as the reference fills.
+
+## One market-data boundary: frozen slice ↔ live OpenD
+
+`custody/marketdata.py` defines the shared `Bar` type and the `MarketDataProvider` protocol (`quote`, `underlying_mark`, `history_bars`, `current_bars`). Two providers implement it:
+
+- `custody.opend.OpenDMarket` — read-only live OpenD (`OpenQuoteContext` only), used by `dryrun`.
+- `custody.offline.OfflineMarket` — reads the frozen custody eval slice files.
+
+Both return the same `Bar` records, so `custody.eval_session`, `OpenDHistorySource` and the custody controller are provider-agnostic: **offline = swap in `OfflineMarket`, live = swap in `OpenDMarket`**, no controller rewrite. `OpenDMarket.history_bars` wraps `request_history_kline`; `OpenDMarket.current_bars` wraps `get_cur_kline`.
+
+Honesty note: 1m history is trade **OHLCV** for both the underlying and the option, offline and live. Option **bid/ask** exists only live; the frozen slice does not contain NBBO, so `OfflineMarket.quote` returns `None` by default and never fabricates a spread. The placeholder must-trade stub may opt into the clearly-labelled `option_bar_close` mapping (bid == ask == frozen bar close) for plumbing only; live always uses real option quotes. The switch stays honest because both providers expose the same methods and the fill basis is recorded as `option_bar_close` offline versus a live quote.
+
+
 ## One request
 
 `POST /v1/jobs` with `Authorization: Bearer <server token>` and JSON:
@@ -148,6 +188,7 @@ reference no trade API. No test connects to OpenD or burns history quota.
 python3 -m custody strategies
 python3 -m custody.demo
 python3 -m unittest discover -s custody/tests -v
+python3 -m custody eval-session --slice /path/to/custody-eval-2026-09-14 --out /tmp/eval-session.json
 python3 -m custody replay --strategy orb_rvol_rsi_1m_v1 --symbol SPY --direction LONG --zip /absolute/path/opend_us_options_eval_v2.zip --out /tmp/registered_replay
 python3 research/aggressive_payoff/code/verify_custody_release.py --zip /absolute/path/opend_us_options_eval_v2.zip --out /tmp/custody_release_verification.json
 ```
