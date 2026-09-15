@@ -119,7 +119,7 @@
   ],
   "future_missing_minute_and_current_daily_rejected": true,
   "custody_eval": {
-    "role": "validation/eval/custody (frozen manifest role tag: eval/custody)",
+    "role": "validation/eval/custody",
     "dataset": "custody-eval-2026-09-14",
     "paired": true,
     "required_series": [
@@ -167,7 +167,11 @@
     "fetched_from": "read-only OpenD 127.0.0.1:11111",
     "entrypoint": "python3 -m custody eval-session --slice <slice-dir>",
     "price_note": "Underlying and option series are 1m trade OHLCV, not NBBO. Offline quote() returns None unless the labelled option_bar_close plumbing mapping is opted in; live uses real quotes through the same provider boundary.",
-    "research_release_unchanged": "eval-data-v2"
+    "research_release_unchanged": "eval-data-v2",
+    "data_tag": "custody-eval-2026-09-14",
+    "release": "https://github.com/QSothoth/opend-us-options/releases/tag/custody-eval-2026-09-14",
+    "sha256": "fd7c92bbada5cf854564a3f12b6db3d581ed34c8c524e525b15d78ef412a7160",
+    "case_count": 3
   },
   "custody_train": {
     "role": "train/custody",
@@ -264,7 +268,7 @@
     },
     "quality_note": "DTE<=4 is the formal heavy-theta proxy. Calendar overlap with the eval window is NOT quality: the 830-case parent spans 2026-05-14..2026-09-11 but reaches DTE 99 because OpenD no longer carries pre-2026-08-21 weeklies. Only the DTE<=4 cases are formal train; the long-DTE rows are a raw/parent cache and must not be cited as train or alpha evidence.",
     "prospective_freeze_note": "After each new session, freeze that session's front-expiry (DTE<=4) paired underlying+option 1m bars while the chain still exists and append them here; OpenD drops old weeklies, so the formal train only grows if the front expiry is captured the same day.",
-    "asset": "/workspace/pi-jobs/custody-train-dte4/out/custody-train-dte4",
+    "asset": "custody-train-dte4.zip",
     "asset_zip": "/workspace/pi-jobs/custody-train-dte4/out/custody-train-dte4.zip",
     "zip_sha256": "d72e190e6467f780782f809302a51f9dc8d6f72a00885c2dfb1aa96bf65c51f0",
     "entrypoint": "python3 -m custody eval-session --slice /workspace/pi-jobs/custody-train-dte4/out/custody-train-dte4 --out /tmp/train-report.json",
@@ -275,7 +279,10 @@
       "note": "placeholder must-trade policy; option-bar-close fills; not an alpha"
     },
     "underlying_only_v2_refused": true,
-    "status": "canonical formal paired custody train; DTE<=4 heavy-theta slice"
+    "status": "canonical formal paired custody train; DTE<=4 heavy-theta slice",
+    "data_tag": "custody-train-dte4",
+    "release": "https://github.com/QSothoth/opend-us-options/releases/tag/custody-train-dte4",
+    "sha256": "d72e190e6467f780782f809302a51f9dc8d6f72a00885c2dfb1aa96bf65c51f0"
   },
   "custody_train_raw_cache": {
     "role": "raw/opend-option-cache (NOT formal train)",
