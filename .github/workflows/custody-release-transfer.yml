@@ -1,0 +1,37 @@
+name: Custody pinned release transfer
+on:
+  push:
+    branches: [agent/custody-must-trade-20260915]
+    paths: [.github/workflows/custody-release-transfer.yml]
+permissions:
+  contents: read
+jobs:
+  transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: daad65c2a573fa078e9500022df989f0ce105bdc
+          persist-credentials: false
+      - name: Download only the two approved Release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/custody-transfer
+          gh release download custody-train-dte4 --repo QSothoth/opend-us-options --pattern custody-train-dte4.zip --dir /tmp/custody-transfer
+          gh release download custody-eval-2026-09-14 --repo QSothoth/opend-us-options --pattern custody-eval-2026-09-14.zip --dir /tmp/custody-transfer
+          cd /tmp/custody-transfer
+          printf '%s\n' 'd72e190e6467f780782f809302a51f9dc8d6f72a00885c2dfb1aa96bf65c51f0  custody-train-dte4.zip' 'fd7c92bbada5cf854564a3f12b6db3d581ed34c8c524e525b15d78ef412a7160  custody-eval-2026-09-14.zip' > SHA256SUMS
+          sha256sum -c SHA256SUMS
+      - name: Export the pinned main source without running project code
+        run: |
+          git archive --format=zip --output=/tmp/custody-transfer/source-daad65c2.zip HEAD
+          git rev-parse HEAD > /tmp/custody-transfer/SOURCE_COMMIT
+      - uses: actions/upload-artifact@v4
+        with:
+          name: custody-pinned-inputs
+          path: /tmp/custody-transfer/
+          retention-days: 3
+          compression-level: 0
