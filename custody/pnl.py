@@ -31,6 +31,7 @@ CUSTODY_ROLES = frozenset({
     'validation/custody',
     'validation/eval',
     'train/custody',
+    'train/custody-starter',
 })
 
 # Roles that describe underlying-proxy research, never custody PnL.

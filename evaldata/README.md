@@ -9,7 +9,9 @@ the development / regression benchmark for US options timing work.
 > underlying 1m + option 1m, and the custody metric path refuses this slice
 > (`assert_paired_slice` / `assert_custody_role`; see [`custody/pnl.py`](../custody/pnl.py)).
 > The custody validation/eval set is the separate `custody-eval-2026-09-14`
-> slice and the real paired train starter is `custody-train-2026-09-08_11`, both
+> slice and the canonical paired train is `custody-train-v2window-paired`
+> (this slice's underlying 1m paired with OpenD option 1m), with the tiny
+> `custody-train-2026-09-08_11` retained as a `train/custody-starter`. Both are
 > documented in [`custody/README.md`](../custody/README.md).
 
 ## Important
@@ -75,7 +77,8 @@ Or read parquet directly with pandas/polars.
 - Underlying **K_DAY** + **K_15M** only (no 1m/tick).
 - Option contract history is **not** in this slice (OpenD limitation). Paired
   same-day underlying+option 1m now exists in the separate custody
-  `custody-eval-2026-09-14` (validation) and `custody-train-2026-09-08_11`
-  (train) slices; this research Release deliberately stays underlying-only and
+  `custody-eval-2026-09-14` (validation) and `custody-train-v2window-paired`
+  (canonical train, which reuses this slice's underlying 1m and adds OpenD
+  option 1m) slices; this research Release deliberately stays underlying-only and
   must not be used as custody train or custody PnL evidence.
 - Private / self-use Release — not for public redistribution.

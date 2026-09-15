@@ -162,7 +162,7 @@ class TrainBuilderTests(unittest.TestCase):
             root = Path(tmp) / 'custody-train-test'
             manifest = build_train_slice(root, sessions=[DAY], underlyings=['US.QQQ'],
                                          expiry=DAY, market=market, logger=lambda *a, **k: None)
-            self.assertEqual(manifest['role'], 'train/custody')
+            self.assertEqual(manifest['role'], 'train/custody-starter')
             self.assertTrue(manifest['paired'])
             self.assertEqual(len(manifest['cases']), 1)
             self.assertEqual(manifest['cases'][0]['direction'], 'SHORT')
@@ -172,7 +172,7 @@ class TrainBuilderTests(unittest.TestCase):
             loaded_manifest, cases = assert_paired_slice(root)
             self.assertEqual(cases['cases'][0]['contract'], 'US.QQQ260914P705000')
             report = eval_session(root)
-            self.assertEqual(report['role'], 'train/custody')
+            self.assertEqual(report['role'], 'train/custody-starter')
             self.assertIsNotNone(report['cases'][0]['option_pnl']['option_pnl'])
 
 

@@ -23,7 +23,10 @@ from .opend import DEFAULT_HOST, DEFAULT_PORT
 from .sliceio import write_series, write_slice_docs, zip_tree
 
 # A small, fixed real train starter: recent liquid sessions x liquid underlyings.
+# This is plumbing only; the canonical custody train is the expanded
+# ``custody-train-v2window-paired`` set built by :mod:`custody.train_window`.
 TRAIN_TAG = 'custody-train-2026-09-08_11'
+TRAIN_ROLE = 'train/custody-starter'
 TRAIN_SESSIONS = ['2026-09-08', '2026-09-09', '2026-09-10', '2026-09-11']
 TRAIN_UNDERLYINGS = ['US.SPY', 'US.QQQ', 'US.AAPL']
 # A still-listed short-dated expiry so history exists for every train session.
@@ -143,14 +146,15 @@ def build_train_slice(out_dir, sessions=None, underlyings=None, expiry=TRAIN_EXP
         series.append(write_series(root, kind, code, _dedupe(bars)))
 
     dataset = TRAIN_TAG
-    cases_doc = {'schema_version': 1, 'dataset': dataset, 'role': 'train/custody',
+    cases_doc = {'schema_version': 1, 'dataset': dataset, 'role': TRAIN_ROLE,
                  'paired': True, 'required_series': ['underlying', 'option'],
                  'sessions': sessions, 'underlyings': underlyings, 'cases': cases}
     manifest = {
         'schema_version': 1,
         'dataset': dataset,
-        'role': 'train/custody',
-        'role_note': 'real paired custody train starter (underlying 1m timing + option 1m fills)',
+        'role': TRAIN_ROLE,
+        'role_note': ('real paired custody train starter / plumbing benchmark; the canonical train set is '
+                      'custody-train-v2window-paired'),
         'timezone': 'America/New_York',
         'interval': '1m',
         'paired': True,
@@ -181,8 +185,8 @@ def build_train_slice(out_dir, sessions=None, underlyings=None, expiry=TRAIN_EXP
 def build_argument_parser():
     import argparse
     parser = argparse.ArgumentParser(
-        prog='custody fetch-train',
-        description='Fetch a small real paired custody train starter from read-only OpenD (quota-aware).')
+        prog='custody fetch-train-starter',
+        description='Fetch a small real paired custody train STARTER from read-only OpenD (quota-aware).')
     parser.add_argument('--out', required=True, help='output directory, e.g. out/custody-train-2026-09-08_11')
     parser.add_argument('--sessions', default=','.join(TRAIN_SESSIONS),
                         help='comma-separated ET trade dates (default %s)' % ','.join(TRAIN_SESSIONS))

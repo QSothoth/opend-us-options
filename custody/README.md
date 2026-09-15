@@ -24,7 +24,8 @@ An **underlying return × multiplier** (or any "underlying-proxy payoff") is **n
 | Role | Dataset | Contents | Use |
 | --- | --- | --- | --- |
 | **research / underlying-proxy** | `eval-data-v2` (also `eval-data-v1`) GitHub Release | underlying proxy K_DAY/K_15M/K_1M,83 sessions, **no option path** | offline indicator / alpha research and `custody replay`; **not** custody train or eval |
-| **train/custody** | `custody-train-2026-09-08_11` (real paired starter, zipped under the job `out/`) | 4 recent sessions × 3 liquid underlyings (SPY/QQQ/AAPL), same-day **underlying 1m + near-ATM option 1m**, 12 cases | custody train starter; paired by construction |
+| **train/custody** | `custody-train-v2window-paired` (canonical, real paired) | the full `eval-data-v2` 1m window 2026-05-14…2026-09-11 × 10 underlyings, same-day **underlying 1m + near-ATM option 1m** | canonical custody train; paired by construction; underlying reused from v2, option fetched once from OpenD |
+| **train/custody-starter** | `custody-train-2026-09-08_11` (tiny real paired starter) | 4 recent sessions × 3 liquid underlyings (SPY/QQQ/AAPL), same-day **underlying 1m + near-ATM option 1m**, 12 cases | plumbing/measurement starter only; **not** the main train |
 | **validation/eval/custody** | `custody-eval-2026-09-14` (frozen slice, zipped under the job `out/`) | same-day **underlying 1m + option 1m** OHLCV for three real2026-09-14 jobs | must-trade data plumbing and custody runtime validation |
 
 `eval-data-v2` is **underlying-only** and therefore **cannot be custody train**: it has no option series, so it can never express option PnL. Do not relabel v2 as custody train. Both custody train and validation must contain **paired** same-day underlying 1m + option 1m (or quote path) for every case, and the offline loaders enforce this (`custody.offline.assert_paired_slice`, `custody.marketdata.require_paired_bars`).
@@ -58,18 +59,33 @@ python3 -m custody eval-session --slice /path/to/custody-eval-2026-09-14 --out /
 
 It loads the three cases, feeds the shared provider with the frozen underlying+option 1m bars and needs **no multi-day warmup**. Its timing policy is an explicitly-labelled placeholder (`DeadlineFallbackPolicy`), not an alpha; it records the real option 1m bar closes as the reference fills.
 
-### Train starter (`train/custody`, real paired)
+### Canonical train (`train/custody`, expanded paired)
 
-`eval-data-v2` is underlying-only and is **refused** by the custody metric path. The real paired train starter is built once from read-only OpenD:
+The canonical custody train set is the expanded `custody-train-v2window-paired`:
+
+- **coverage** — the whole `eval-data-v2` K_1M window (2026-05-14 → 2026-09-11), all **10** underlyings, one option case per `(symbol, session)`;
+- **timing asset** — the same-day **underlying 1m**, **reused** from the `eval-data-v2` Release (no OpenD underlying re-fetch);
+- **PnL asset** — the same-day **option 1m**, fetched once from read-only OpenD;
+- **contract policy** — the nearest retrievable heavy-theta expiry (same-day 0DTE from 2026-08-17; the `2026-08-21` weekly for the earliest sessions) with the listed strike nearest the session first-bar underlying open that has real 1m bars;
+- **direction policy** — `eval-data-v2` `session_1m` scenario labels (`strong_down`/`v_reversal_down`/`gap_down` → SHORT/PUT; `strong_up`/`v_reversal_up`/`gap_up` → LONG/CALL; else LONG). Labels define the case direction only and never enter the timing features.
 
 ```bash
-python3 -m custody fetch-train --out out/custody-train-2026-09-08_11
+python3 -m custody fetch-train --out out/custody-train-v2window-paired --v2-dir /path/to/opend_us_options_eval_v2
+python3 -m custody eval-session --slice out/custody-train-v2window-paired --out /tmp/train-report.json
+```
+
+### Train starter (`train/custody-starter`, real paired)
+
+`eval-data-v2` is underlying-only and is **refused** by the custody metric path. The tiny starter is retained for plumbing/measurement only:
+
+```bash
+python3 -m custody fetch-train-starter --out out/custody-train-2026-09-08_11
 python3 -m custody eval-session --slice out/custody-train-2026-09-08_11 --out /tmp/train-report.json
 ```
 
-`fetch-train` picks, per session × liquid underlying, the listed strike nearest the session first-bar underlying open (CALL for LONG, PUT for SHORT) at a fixed short-dated expiry, then freezes the **same layout** as the validation slice (`underlying/` + `option/` + `cases.json` + `manifest.json`, role `train/custody`). It is quota-aware (option chain cached per underlying/expiry/right; each history series fetched once) and read-only. The starter is intentionally small: a plumbing/measurement benchmark, not an alpha. Series that span several sessions are concatenated per code and filtered by session at read time.
+`fetch-train-starter` picks, per session × liquid underlying, the listed strike nearest the session first-bar underlying open (CALL for LONG, PUT for SHORT) at a fixed short-dated expiry, then freezes the **same layout** as the validation slice (`underlying/` + `option/` + `cases.json` + `manifest.json`, role `train/custody-starter`). It is quota-aware (option chain cached per underlying/expiry/right; each history series fetched once) and read-only. The starter is intentionally small: a plumbing/measurement benchmark, not an alpha. Series that span several sessions are concatenated per code and filtered by session at read time.
 
-Starter status (this job's real run): 12 cases (4 sessions 2026-09-08…11 × US.SPY/US.QQQ/US.AAPL), 13 frozen series, every case 390 underlying bars + 390–405 option bars. See the job `out/REPORT.md`.
+Starter status (the original standalone run): 12 cases (4 sessions 2026-09-08…11 × US.SPY/US.QQQ/US.AAPL), 13 frozen series, every case 390 underlying bars + 390–405 option bars. See the job `out/REPORT.md`.
 
 ## One market-data boundary: frozen slice ↔ live OpenD
 
@@ -228,8 +244,9 @@ python3 -m custody strategies
 python3 -m custody.demo
 python3 -m unittest discover -s custody/tests -v
 python3 -m custody eval-session --slice /path/to/custody-eval-2026-09-14 --out /tmp/validation-report.json
-python3 -m custody fetch-train --out out/custody-train-2026-09-08_11
-python3 -m custody eval-session --slice out/custody-train-2026-09-08_11 --out /tmp/train-report.json
+python3 -m custody fetch-train --out out/custody-train-v2window-paired --v2-dir /path/to/opend_us_options_eval_v2
+python3 -m custody eval-session --slice out/custody-train-v2window-paired --out /tmp/train-report.json
+python3 -m custody fetch-train-starter --out out/custody-train-2026-09-08_11
 python3 -m custody replay --strategy orb_rvol_rsi_1m_v1 --symbol SPY --direction LONG --zip /absolute/path/opend_us_options_eval_v2.zip --out /tmp/registered_replay
 python3 research/aggressive_payoff/code/verify_custody_release.py --zip /absolute/path/opend_us_options_eval_v2.zip --out /tmp/custody_release_verification.json
 ```
