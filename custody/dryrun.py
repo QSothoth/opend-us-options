@@ -200,23 +200,49 @@ class SignalFrameSource:
 
 
 class SameDayHistorySource:
-    """Baseline input: only today's 1m bars. Never request K_DAY or prior days."""
+    """Current-session OHLCV only, with same-day backfill and restart recovery."""
     def __init__(self, market, calendar, symbol):
         self.market, self.calendar, self.symbol = market, calendar, symbol
+        self._day = None
+        self._bars = {}
 
     def collect(self, boundary):
-        day = instant(boundary).astimezone(ET).date().isoformat()
-        bars = self.market.current_bars(self.symbol, 600, 'K_1M', boundary=boundary)
+        from .models import symbol as normalize_symbol
+        boundary = instant(boundary)
+        day = boundary.astimezone(ET).date().isoformat()
         session = self.calendar.session(day)
-        bars = [b for b in bars if session.opens < b.close_time <= boundary]
-        expected = int((boundary-session.opens).total_seconds()//60)
-        if len({b.close_time for b in bars}) < expected:
-            extra = self.market.history_bars(self.symbol,'K_1M',day,day,boundary=boundary)
-            merged = {b.close_time:b for b in extra if session.opens < b.close_time <= boundary}
-            merged.update({b.close_time:b for b in bars})
-            bars = [merged[t] for t in sorted(merged)]
-        if len(bars) != expected:
-            raise ValueError('incomplete same-day underlying history')
+        if not session.opens < boundary <= session.closes:
+            raise ValueError('same-day boundary outside trading session')
+        if self._day != day:
+            self._bars = {}
+            self._day = day
+        expected = [session.opens + timedelta(minutes=i)
+                    for i in range(1, int((boundary-session.opens).total_seconds()//60)+1)]
+        def accept(rows):
+            for bar in rows:
+                if session.opens < bar.close_time <= boundary:
+                    if bar.interval != '1m' or normalize_symbol(bar.code) != normalize_symbol(self.symbol):
+                        raise ValueError('wrong symbol/interval in same-day market data')
+                    self._bars[bar.close_time] = bar
+        # Subscriptions or get_cur_kline may be unavailable. History is an
+        # independent same-day source, not a previous-day warmup fallback.
+        try:
+            current = self.market.current_bars(self.symbol, 600, 'K_1M', boundary=boundary)
+        except Exception:
+            current = []
+        accept(current)
+        missing = [t for t in expected if t not in self._bars]
+        if missing:
+            try:
+                extra = self.market.history_bars(self.symbol, 'K_1M', day, day, boundary=boundary)
+            except Exception as exc:
+                raise ValueError('same-day data not ready: %d missing 1m bars; history unavailable' % len(missing)) from exc
+            accept(extra)
+            accept(current)  # freshest completed stream observation wins
+        missing = [t for t in expected if t not in self._bars]
+        if missing:
+            raise ValueError('same-day data not ready: %d missing 1m bars; first=%s' % (len(missing), missing[0].isoformat()))
+        bars = [self._bars[t] for t in expected]
         return [b.to_record() for b in bars], [], {day:session.closes.isoformat()}
 
 

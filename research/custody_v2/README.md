@@ -1,5 +1,7 @@
 # 托管择时 v2：31,295 组合的训练内搜索
 
+后续数据隔离、当天行情恢复与当前复现命令见 [DATA_ISOLATION.md](DATA_ISOLATION.md)。本页搜索结果为原冻结阶段记录；固定验证集复测结果另存，未用于重新调参。
+
 基于 main `daad65c2a573fa078e9500022df989f0ce105bdc` 的已发布 v1 基线 `0f5a1a47b5cca596a19d1b099c8590a8a811309c` 继续开发。只使用 Release `custody-train-dte4`，124 个合约/交易日，19 个交易日。完整搜索记录、候选参数、逐笔成交索引、压力情景及服务核对均随代码保存。
 
 本轮保留两个 dryrun 候选：`custody_payoff_aggressive_1m_v2` 优先名义情景盈亏比；`custody_payoff_1m_v2` 优先成本和延迟压力下的最差盈亏比。这里的“最佳”仅指已搜索集合、既定选择标准下的最优，不能外推为未来最优。
@@ -118,8 +120,8 @@ python3 -m pip install -r research/custody_v2/requirements.txt
 python3 research/custody_v2/prepare.py --train /path/to/custody-train-dte4
 python3 research/custody_v2/search.py --train /path/to/custody-train-dte4 --out research/custody_v2/results
 python3 research/custody_v2/search.py --train /path/to/custody-train-dte4 --out research/custody_v2/results --phase pressure
-python3 research/custody_v2/refine.py
-python3 research/custody_v2/global_pressure.py
+python3 research/custody_v2/refine.py --train /path/to/custody-train-dte4
+python3 research/custody_v2/global_pressure.py --train /path/to/custody-train-dte4
 python3 research/custody_v2/confirm.py --train /path/to/custody-train-dte4
 python3 research/custody_v2/diagnostics.py --train /path/to/custody-train-dte4
 ```

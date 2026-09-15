@@ -4,13 +4,17 @@ The worst-scenario dual payoff cannot exceed the primary-scenario dual payoff.
 Thus candidates below the incumbent robust score cannot win; all other feasible
 primary candidates are checked, rather than trusting a heuristic shortlist.
 """
+import argparse
+from data_boundary import load_training_cache
 import json
 from pathlib import Path
 import numpy as np
 from search import evaluate,stats
 
 def main():
+    ap=argparse.ArgumentParser();ap.add_argument('--train',required=True);a=ap.parse_args()
     out=Path(__file__).parent/'results'
+    fs,pp,nb,dte,blocks,_=load_training_cache(a.train,out)
     allrows=json.loads((out/'all_results.json').read_text())+json.loads((out/'refinement_results.json').read_text())
     incumbent=json.loads((out/'SELECTED2_BEFORE_SERVICE_REPLAY.json').read_text())
     assert incumbent['robust_feasible']
@@ -19,7 +23,6 @@ def main():
        'feasible':'complete and positive USD/return in all 5 scenarios plus positive primary return in all 3 blocks',
        'incumbent_before_results':incumbent['id'],'candidate_count':len(allrows)}
     (out/'GLOBAL_PRESSURE_PROTOCOL_BEFORE_RESULTS.json').write_text(json.dumps(rules,indent=2))
-    z=np.load(out/'cache.npz');fs,pp,nb,dte,blocks=[z[k] for k in ('features','prices','next_bar','dtes','blocks')]
     checked=[];candidates=sorted([r for r in allrows if r['eligible'] and r['block_positive']==3],key=lambda r:(r['dual_payoff'],r['mean'],r['id']),reverse=True)
     for c in candidates:
         if c['dual_payoff']<incumbent['worst_dual_payoff']:break

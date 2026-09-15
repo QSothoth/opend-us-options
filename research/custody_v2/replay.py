@@ -6,21 +6,14 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO))
-from custody.baseline import replay_case, session_for, summarize, verify_slice
+from custody.baseline import replay_case, session_for, summarize
 from custody.marketdata import require_paired_bars
 from custody.offline import OfflineMarket, assert_paired_slice
 from custody.registry import Registry
 
 STRATEGIES = ('custody_payoff_1m_v2', 'custody_payoff_aggressive_1m_v2')
 
-def training_slice(root):
-    manifest, _ = assert_paired_slice(root)
-    if manifest.get('role') != 'train/custody' or 'custody-eval' in str(root):
-        raise ValueError('This command accepts the training Release only; holdout forbidden')
-    manifest, cases, checked = verify_slice(root)
-    if len(cases) != 124:
-        raise ValueError('Expected all 124 training contract/session cases')
-    return manifest, cases, checked
+from data_boundary import training_slice
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)

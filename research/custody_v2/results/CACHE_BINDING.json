@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "role": "train/custody",
+  "source_sha256": "b52698616d0af16f93df8621c3eb43ba5114cfbfc982cc105cc973a056e32875",
+  "pins_sha256": "d7c5607268db281ef3954fb2751d17303348b5c96d52b381187ea91c1c73968e",
+  "cache_sha256": "0e6094a82435dbec9a8e40d8c8d481c0a66c2970cc0ccef22c7307d19dce4ab2",
+  "metadata_sha256": "1ae97eca26eb0b1d56895fed28626a3037d4a8396640a13dc2a4829fbd2690f8"
+}

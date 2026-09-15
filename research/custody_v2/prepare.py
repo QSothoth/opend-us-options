@@ -2,7 +2,7 @@
 import argparse
 import gzip
 from pathlib import Path
-from replay import training_slice
+from data_boundary import training_slice
 from search import load_data
 
 def main():

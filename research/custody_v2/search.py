@@ -9,9 +9,10 @@ REPO=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(REPO))
 from custody.adaptive import (AdaptiveIndicators, make_strategy, entry_rule, exit_rule,
     DEFAULT_ENTRY, DEFAULT_EXIT, ENTRY_KEYS, EXIT_KEYS, PROFILES, validate_vectors)
-from custody.baseline import verify_slice, session_for
+from custody.baseline import session_for
 from custody.offline import OfflineMarket
 from custody.marketdata import require_paired_bars
+from research.custody_v2.data_boundary import training_slice, load_training_cache, bind_cache
 
 fast_entry=njit(entry_rule,cache=True)
 fast_exit=njit(exit_rule,cache=True)
@@ -52,9 +53,7 @@ def evaluate(features,prices,next_bar,dtes,e,x,delay):
 
 
 def load_data(root,out):
-    if 'custody-eval' in str(root):raise ValueError('holdout forbidden')
-    manifest,cases,checked=verify_slice(root)
-    if manifest['role']!='train/custody' or len(cases)!=124:raise ValueError('only frozen124 training allowed')
+    manifest,cases,checked=training_slice(root)
     market=OfflineMarket(root,prefer_csv=True)
     prices=np.zeros((len(cases),391));next_bar=np.full((len(cases),391),390,dtype=np.int64)
     dtes=[];banks=[];sessions=[];underlying=[]
@@ -89,6 +88,7 @@ def load_data(root,out):
     metadata={'cases':cases,'dates':dates,'source':'custody-train-dte4','checksums_verified':checked}
     (out/'cache_metadata.json').write_text(json.dumps(metadata,indent=2))
     np.savez_compressed(out/'cache.npz',features=features,prices=prices,next_bar=next_bar,dtes=dtes,blocks=blocks)
+    bind_cache(out)
     return features,prices,next_bar,dtes,blocks,metadata
 
 
@@ -154,13 +154,8 @@ def proposals():
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--train',required=True);ap.add_argument('--out',required=True);ap.add_argument('--phase',default='search',choices=['search','pressure'])
     a=ap.parse_args();out=Path(a.out);out.mkdir(parents=True,exist_ok=True)
-    from replay import training_slice
-    _, verified_cases, _ = training_slice(a.train)
     if (out/'cache.npz').exists():
-        z=np.load(out/'cache.npz');features,prices,next_bar,dtes,blocks=[z[k] for k in ('features','prices','next_bar','dtes','blocks')]
-        metadata=json.loads((out/'cache_metadata.json').read_text())
-        if metadata.get('source') != 'custody-train-dte4' or metadata['cases'] != verified_cases:
-            raise ValueError('cache metadata does not match the verified training Release; rebuild with prepare.py')
+        features,prices,next_bar,dtes,blocks,metadata=load_training_cache(a.train,out)
     else:features,prices,next_bar,dtes,blocks,metadata=load_data(a.train,out)
     rows=[];traces=[];configs=[]
     def run(items,stage):

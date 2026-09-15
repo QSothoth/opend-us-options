@@ -22,6 +22,8 @@ class SignalProvider:
             from .models import ET, Session
             from .marketdata import Bar
             from .timing import IntradayIndicators
+            if item.get('timing_model') == 'intraday_v2' and daily:
+                raise ValueError('intraday_v2 forbids daily/cross-session OHLCV inputs')
             day = as_of.astimezone(ET).date()
             session = Session(day.isoformat(), datetime.combine(day,time(9,30),tzinfo=ET),
                               instant(session_closes[day.isoformat()]))
@@ -36,6 +38,11 @@ class SignalProvider:
                 if t > as_of: raise ValueError('future bar')
                 if t.astimezone(ET).date() != day:
                     raise ValueError('baseline only accepts current-session bars')
+                if item.get('timing_model') == 'intraday_v2':
+                    if t <= session.opens or row.get('interval', '1m') != '1m':
+                        raise ValueError('intraday_v2 requires regular-session 1m bars')
+                    if symbol(row.get('code', underlying)) != underlying:
+                        raise ValueError('wrong underlying in intraday input')
                 if t <= session.opens: continue
                 bar = Bar('US.'+underlying,t,**{k:row[k] for k in ['open','high','low','close','volume']})
                 result = engine.step(bar)

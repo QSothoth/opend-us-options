@@ -174,6 +174,16 @@ def replay_case(case, underlying, option, session, variant='baseline', delay_min
         registry = CandidateRegistry(strategy_override)
         strategy = registry.get(registry.item['strategy_id'])
         indicators = AdaptiveIndicators(strategy,case['symbol'],case['direction'],session)
+        # Reject contaminated tapes rather than silently filtering another day.
+        for tape, expected in ((underlying, case['symbol']), (option, case['contract'])):
+            previous = None
+            for bar in tape:
+                if (bar.close_time.astimezone(ET).date().isoformat() != session.day
+                        or bar.interval != '1m'
+                        or bar.code.upper().removeprefix('US.') != expected.upper().removeprefix('US.')
+                        or (previous is not None and bar.close_time <= previous)):
+                    raise ValueError('v2 replay requires ordered same-session 1m contract/underlying bars')
+                previous = bar.close_time
     else:
         registry = VariantRegistry(variant)
         strategy = registry.get(registry.item['strategy_id'])

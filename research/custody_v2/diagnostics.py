@@ -1,4 +1,5 @@
 """Training-only final diagnostics, no promotion from post-selection ablations."""
+from data_boundary import training_slice, load_training_cache
 import argparse,copy,hashlib,json
 from pathlib import Path
 from datetime import datetime
@@ -6,7 +7,7 @@ import numpy as np
 from numba import njit
 from search import evaluate,stats,fast_exit,REPO
 from custody.adaptive import make_strategy,DEFAULT_EXIT,validate_vectors
-from custody.baseline import replay_case,verify_slice,session_for,summarize
+from custody.baseline import replay_case,session_for,summarize
 from custody.offline import OfflineMarket
 from custody.marketdata import require_paired_bars
 
@@ -27,9 +28,9 @@ def transplanted(features,prices,nb,dtes,entry_intents,x,delay=1):
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--train',required=True);a=ap.parse_args()
-    out=Path(__file__).parent/'results';z=np.load(out/'cache.npz')
-    fs,pp,nb,dtes,blocks=[z[k] for k in ('features','prices','next_bar','dtes','blocks')]
-    meta=json.loads((out/'cache_metadata.json').read_text());cases=meta['cases']
+    out=Path(__file__).parent/'results'
+    fs,pp,nb,dtes,blocks,meta=load_training_cache(a.train,out)
+    cases=meta['cases']
     selected=json.loads((out/'FINAL_SELECTION_BEFORE_CONFIRMATION.json').read_text())
     nominal=json.loads((out/'NOMINAL_CHAMPION.json').read_text())
     def ev(c,delay=1):return evaluate(fs[c['profile']],pp,nb,dtes,np.array(c['e'],float),np.array(c['x'],float),delay)
@@ -102,7 +103,7 @@ def main():
     index['strategies'][strategy['strategy_id']].update(file=p.name,status='trained_candidate_dryrun',description='Highest primary net dual-payoff in searched space; more latency-sensitive')
     ip.write_text(json.dumps(index,indent=2)+'\n')
     if 'custody-eval' in a.train:raise ValueError('holdout forbidden')
-    manifest,actualcases,_=verify_slice(a.train);assert manifest['role']=='train/custody'
+    manifest,actualcases,_=training_slice(a.train);assert manifest['role']=='train/custody'
     market=OfflineMarket(a.train,prefer_csv=True);reports={}
     for delay in (1,2,3):
         fast=ev(nominal,delay);rows=[]

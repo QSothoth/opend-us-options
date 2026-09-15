@@ -1,11 +1,15 @@
 """Predeclared second training-only refinement; selection criteria unchanged."""
+import argparse
+from data_boundary import load_training_cache
 import copy,json,random,time
 from pathlib import Path
 import numpy as np
 from search import evaluate,stats,config_id,ED,XD,validate_vectors
 
 def main():
+    ap=argparse.ArgumentParser();ap.add_argument('--train',required=True);a=ap.parse_args()
     out=Path(__file__).parent/'results'
+    fs,pp,nb,dte,blocks,_=load_training_cache(a.train,out)
     old=json.loads((out/'all_results.json').read_text())
     pressure=json.loads((out/'pressure_results.json').read_text())
     leaders=[]
@@ -29,7 +33,6 @@ def main():
         if uid in seen:continue
         seen.add(uid);c.update(id=uid,parent=lead['id'],family='guided_refinement');items.append(c)
     (out/'REFINEMENT_CANDIDATES_BEFORE_RESULTS.json').write_text(json.dumps(items,separators=(',',':')))
-    z=np.load(out/'cache.npz');fs,pp,nb,dte,blocks=[z[k] for k in ('features','prices','next_bar','dtes','blocks')]
     rows=[];trades=[];started=time.monotonic()
     for i,c in enumerate(items):
         t=evaluate(fs[c['profile']],pp,nb,dte,np.array(c['e'],float),np.array(c['x'],float),1)

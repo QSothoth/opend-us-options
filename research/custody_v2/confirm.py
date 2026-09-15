@@ -1,11 +1,12 @@
 """Confirm the frozen selection with CustodyService; training Release only."""
+from data_boundary import training_slice, load_training_cache
 import argparse,hashlib,json,sys,time
 from pathlib import Path
 from datetime import datetime
 import numpy as np
 from search import REPO,evaluate,stats
 from custody.adaptive import make_strategy
-from custody.baseline import replay_case,verify_slice,session_for,summarize
+from custody.baseline import replay_case,session_for,summarize
 from custody.offline import OfflineMarket
 from custody.marketdata import require_paired_bars
 
@@ -13,7 +14,8 @@ def main():
     ap=argparse.ArgumentParser();ap.add_argument('--train',required=True);a=ap.parse_args()
     out=Path(__file__).parent/'results';selected=json.loads((out/'FINAL_SELECTION_BEFORE_CONFIRMATION.json').read_text())
     if 'custody-eval' in a.train:raise ValueError('holdout forbidden')
-    manifest,cases,checked=verify_slice(a.train)
+    manifest,cases,checked=training_slice(a.train)
+    fs,pp,nb,dte,blocks,_=load_training_cache(a.train,out)
     if manifest['role']!='train/custody' or len(cases)!=124:raise ValueError('train124 required')
     strategy=make_strategy(selected['profile'],selected['e'],selected['x'],'custody_payoff_1m_v2')
     path=REPO/'custody/strategies/custody_payoff_1m_v2.json'
@@ -26,7 +28,6 @@ def main():
        'selection_file_sha256':hashlib.sha256((out/'FINAL_SELECTION_BEFORE_CONFIRMATION.json').read_bytes()).hexdigest(),
        'validation_used':False,'source_sha256':{str(p.relative_to(REPO)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted((REPO/'custody').glob('*.py'))}}
     (out/'FROZEN_BEFORE_SERVICE_REPLAY.json').write_text(json.dumps(frozen,indent=2))
-    z=np.load(out/'cache.npz');fs,pp,nb,dte,blocks=[z[k] for k in ('features','prices','next_bar','dtes','blocks')]
     market=OfflineMarket(a.train,prefer_csv=True)
     datasets=[]
     for c in cases:
