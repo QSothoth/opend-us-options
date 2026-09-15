@@ -1,14 +1,16 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "CustodyJobRequest v1",
+  "description": "Public custody input. Layers: input = exact option contract to trade; signals = same-day underlying 1m K-line for entry/exit timing; success metric = option path/fills only (option PnL). Underlying-proxy payoff is forbidden.",
+  "$comment": "The underlying 'symbol' supplies timing bars only and is never the traded/measured asset. 'contract' is the exact broker option code resolved and checked against underlying/right/expiry. Custody success must be measured on the option contract (custody/pnl.py); an underlying return x multiplier is not custody PnL.",
   "type": "object",
   "additionalProperties": false,
   "required": ["strategy_id", "symbol", "direction", "contract"],
   "properties": {
     "strategy_id": {"type":"string","minLength":1,"description":"Exact immutable registry ID; no automatic best/latest alias."},
-    "symbol": {"type":"string","minLength":1,"description":"Human-selected underlying. US. prefix accepted; uppercase normalized."},
-    "direction": {"type":"string","enum":["LONG","SHORT"],"description":"LONG buys CALL; SHORT buys PUT. Both close by selling owned options."},
-    "contract": {"type":"string","minLength":1,"description":"Exact broker instrument code, resolved and checked against underlying/right/expiry."},
+    "symbol": {"type":"string","minLength":1,"description":"Human-selected underlying used ONLY for same-day 1m entry/exit timing signals. US. prefix accepted; uppercase normalized. Not the traded or measured asset."},
+    "direction": {"type":"string","enum":["LONG","SHORT"],"description":"LONG buys CALL; SHORT buys PUT. Both are long the option and close by selling owned options; the product never writes/shorts an option."},
+    "contract": {"type":"string","minLength":1,"description":"Exact broker option instrument code that is traded and measured. Resolved and checked against underlying/right/expiry; near-ATM and near expiry are expected."},
     "max_qty": {"type":"integer","minimum":1,"default":1},
     "trade_date": {"type":"string","format":"date","description":"Optional; defaults to current America/New_York date. Active jobs must match today; use separate offline replay for history."}
   }

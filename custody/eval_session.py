@@ -19,9 +19,10 @@ from dataclasses import asdict, dataclass
 from datetime import date, datetime, time as dtime, timedelta
 from pathlib import Path
 
-from .marketdata import day_bars
+from .marketdata import require_paired_bars
 from .models import ET
-from .offline import OfflineMarket, load_cases, load_manifest
+from .offline import OfflineMarket, assert_paired_slice
+from .pnl import OPTION_MULTIPLIER, assert_custody_role, custody_case_pnl
 
 DEFAULT_ENTRY_AT = '10:00'
 DEFAULT_FLATTEN_BEFORE_CLOSE_MINUTES = 15
@@ -84,11 +85,18 @@ def _default_session_close(day):
     return datetime.combine(date.fromisoformat(day), dtime(16, 0), tzinfo=ET)
 
 
-def eval_session(root, out=None, provider=None, entry_at=DEFAULT_ENTRY_AT):
-    """Run the placeholder must-trade plumbing over every frozen custody case."""
+def eval_session(root, out=None, provider=None, entry_at=DEFAULT_ENTRY_AT, qty=1,
+                 multiplier=OPTION_MULTIPLIER):
+    """Run the placeholder must-trade plumbing over every frozen custody case.
+
+    Refuses anything that is not a paired custody dataset and reports
+    **option-only** PnL fields (entry/exit option premium, contract PnL and
+    return). Underlying prices are used only as timing context, never as the
+    payoff asset.
+    """
     root = Path(root)
-    manifest = load_manifest(root)
-    cases_doc = load_cases(root)
+    manifest, cases_doc = assert_paired_slice(root)
+    assert_custody_role(manifest.get('role'))
     cases = cases_doc.get('cases', [])
     provider = provider or OfflineMarket(root)
     session_close = None
@@ -97,16 +105,32 @@ def eval_session(root, out=None, provider=None, entry_at=DEFAULT_ENTRY_AT):
     policy = DeadlineFallbackPolicy(entry_at=entry_at)
     results = []
     for case in cases:
-        underlying = day_bars(provider, case['symbol'], case['trade_date'])
-        option = day_bars(provider, case['contract'], case['trade_date'])
+        underlying, option = require_paired_bars(
+            provider, case['symbol'], case['contract'], case['trade_date'])
         close = session_close or _default_session_close(case['trade_date'])
-        results.append(policy.run(case, underlying, option, close))
+        result = policy.run(case, underlying, option, close)
+        result['option_pnl'] = custody_case_pnl(
+            result.get('entry'), result.get('exit'), qty=int(case.get('qty', qty)),
+            multiplier=int(case.get('multiplier', multiplier)), direction=case.get('direction'))
+        results.append(result)
+    total = sum(item['option_pnl']['option_pnl'] or 0.0 for item in results)
     report = {
         'dataset': manifest.get('dataset'),
-        'role': 'eval/custody',
+        'role': manifest.get('role'),
         'provider': type(provider).__name__,
         'entry_at': entry_at,
+        'success_metric': 'option_pnl',
+        'metric_asset': 'option_contract',
+        'underlying_proxy_metric_forbidden': True,
+        'multiplier': multiplier,
         'cases': results,
+        'pnl_summary': {
+            'currency': 'USD',
+            'multiplier': multiplier,
+            'case_count': len(results),
+            'one_round_trip_count': sum(1 for item in results if item.get('one_round_trip')),
+            'total_option_pnl': total,
+        },
     }
     if out:
         out = Path(out)
@@ -141,9 +165,12 @@ def main(argv=None):
     finally:
         if market is not None:
             market.close()
-    print(json.dumps({'dataset': report['dataset'], 'provider': report['provider'], 'cases': [
+    print(json.dumps({'dataset': report['dataset'], 'role': report['role'],
+                      'success_metric': report['success_metric'], 'provider': report['provider'],
+                      'pnl_summary': report['pnl_summary'], 'cases': [
         {'symbol': item['case']['symbol'], 'direction': item['case']['direction'],
          'contract': item['case']['contract'], 'underlying_bars': item['underlying_bar_count'],
          'option_bars': item['option_bar_count'], 'one_round_trip': item['one_round_trip'],
-         'entry': item['entry'], 'exit': item['exit']} for item in report['cases']]}, indent=2))
+         'entry': item['entry'], 'exit': item['exit'], 'option_pnl': item['option_pnl']}
+        for item in report['cases']]}, indent=2))
     return 0

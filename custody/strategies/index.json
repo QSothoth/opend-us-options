@@ -1,5 +1,12 @@
 {
   "schema_version": 1,
+  "metric_contract": {
+    "input": "exact option contract (nearest heavy-theta expiry; near-ATM; need not be strict 0DTE)",
+    "signals": "same-day underlying 1m K-line for entry/exit timing only",
+    "execution": "trade the option contract, never the stock",
+    "success_metric": "option path/fills only (option PnL)",
+    "forbidden": "underlying-proxy payoff / underlying return x multiplier"
+  },
   "strategies": {
     "orb_rvol_rsi_1m_v1": {
       "file": "orb_rvol_rsi_1m_v1.json",

@@ -27,6 +27,9 @@ from typing import Protocol, runtime_checkable
 
 from .models import Quote, ET, instant
 
+__all__ = ['Bar', 'MarketDataProvider', 'MissingCustodyPairError', 'normalize_bar_rows',
+           'normalize_daily_rows', 'day_range', 'day_bars', 'require_paired_bars']
+
 
 def _num(value):
     """Return a finite float or ``None``; never a bool or NaN/inf."""
@@ -160,6 +163,37 @@ def day_bars(provider, code, day, ktype='K_1M', boundary=None):
     """Provider-agnostic single-session fetch used by fetch and eval paths."""
     start, end = day_range(day)
     return provider.history_bars(code, ktype, start, end, boundary=boundary)
+
+
+class MissingCustodyPairError(ValueError):
+    """A custody case needs both the same-day underlying and option series."""
+
+
+def require_paired_bars(provider, symbol, contract, day, ktype='K_1M', boundary=None):
+    """Load a custody case's paired same-day underlying + option bars or fail.
+
+    Custody timing watches the underlying 1m, but the traded and measured asset
+    is the option. A case that silently lacks one side (for example an
+    underlying-only research slice) must never be evaluated as custody.
+    """
+    try:
+        underlying = day_bars(provider, symbol, day, ktype=ktype, boundary=boundary)
+    except KeyError:
+        underlying = []
+    try:
+        option = day_bars(provider, contract, day, ktype=ktype, boundary=boundary)
+    except KeyError:
+        option = []
+    missing = []
+    if not underlying:
+        missing.append('underlying ' + str(symbol))
+    if not option:
+        missing.append('option ' + str(contract))
+    if missing:
+        raise MissingCustodyPairError(
+            'custody case %s/%s on %s requires paired underlying + option bars; missing %s'
+            % (symbol, contract, day, ', '.join(missing)))
+    return underlying, option
 
 
 @runtime_checkable

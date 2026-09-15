@@ -20,8 +20,11 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
-from .marketdata import Bar, MarketDataProvider, _et
+from .marketdata import Bar, MarketDataProvider, MissingCustodyPairError, _et
 from .models import ET, Quote, instant
+
+__all__ = ['OfflineMarket', 'MissingCustodyPairError', 'load_manifest', 'load_cases',
+           'read_bar_file', 'assert_paired_slice', 'slice_kinds']
 
 MANIFEST_NAME = 'manifest.json'
 CASES_NAME = 'cases.json'
@@ -106,6 +109,7 @@ class OfflineMarket:
         self.quote_model = quote_model
         self.manifest = load_manifest(self.root)
         self._files = {}
+        self._kinds = {}
         series = self.manifest.get('series') or []
         for item in series:
             code = str(item.get('code', '')).strip().upper()
@@ -114,6 +118,7 @@ class OfflineMarket:
             candidate = item.get('parquet') or item.get('csv')
             if candidate:
                 self._files[code] = (self.root / candidate)
+                self._kinds[code] = str(item.get('kind') or '').strip().lower()
         if not self._files:
             self._scan()
         self._cache = {}
@@ -127,9 +132,17 @@ class OfflineMarket:
                 if path.suffix not in ('.csv', '.parquet'):
                     continue
                 self._files.setdefault(path.stem.upper(), path)
+                self._kinds.setdefault(path.stem.upper(), kind)
 
     def codes(self):
         return sorted(self._files)
+
+    def kinds(self):
+        """Map frozen code -> ``'underlying'``/``'option'`` (best effort)."""
+        return dict(self._kinds)
+
+    def has_kind(self, code, kind):
+        return self._kinds.get(str(code).strip().upper()) == str(kind).strip().lower()
 
     def _bars(self, code):
         code = str(code).strip().upper()
@@ -181,3 +194,50 @@ class OfflineMarket:
         # Plumbing stub only: frozen trade close stands in for both sides of the
         # spread because no NBBO was frozen. Live uses real bid/ask quotes.
         return Quote(code, bar.close, bar.close, bar.close_time)
+
+
+def slice_kinds(root):
+    """Return the set of ``(code, kind)`` pairs declared by a slice manifest."""
+    manifest = load_manifest(root)
+    pairs = set()
+    for item in manifest.get('series') or []:
+        code = str(item.get('code', '')).strip().upper()
+        kind = str(item.get('kind') or '').strip().lower()
+        if code:
+            pairs.add((code, kind))
+    if not pairs:
+        # Fall back to the folder layout (underlying/ + option/).
+        root = Path(root)
+        for kind in ('underlying', 'option'):
+            folder = root / kind
+            if not folder.is_dir():
+                continue
+            for path in folder.iterdir():
+                if path.suffix in ('.csv', '.parquet'):
+                    pairs.add((path.stem.upper(), kind))
+    return pairs
+
+
+def assert_paired_slice(root):
+    """Require every case to have BOTH an underlying and an option series.
+
+    Returns ``(manifest, cases)`` on success. This is the custody guard that
+    refuses an underlying-only research slice (e.g. ``eval-data-v2``).
+    """
+    manifest = load_manifest(root)
+    cases_doc = load_cases(root)
+    cases = cases_doc.get('cases', [])
+    if not cases:
+        raise MissingCustodyPairError('custody slice %s declares no cases' % root)
+    pairs = slice_kinds(root)
+    missing = []
+    for case in cases:
+        symbol = str(case.get('symbol', '')).strip().upper()
+        contract = str(case.get('contract', '')).strip().upper()
+        if (symbol, 'underlying') not in pairs or (contract, 'option') not in pairs:
+            missing.append('%s/%s' % (symbol, contract))
+    if missing:
+        raise MissingCustodyPairError(
+            'custody slice %s is not paired (needs same-day underlying 1m + option 1m for every case); '
+            'missing series for: %s' % (root, ', '.join(missing)))
+    return manifest, cases_doc

@@ -25,16 +25,29 @@ Prefer **v2** (includes 5m + 1m):
 
 Coarse baseline still available: [eval-data-v1](https://github.com/QSothoth/opend-us-options/releases/tag/eval-data-v1).
 
-## Train/research vs eval/custody
+## Custody product contract (input=option, signals=underlying, PnL=option)
 
-- **train/research** → `eval-data-v2` / `eval-data-v1` (underlying-proxy K-lines; offline alpha research and `custody replay`). Keep available; this is **not** the custody eval set.
-- **eval/custody** → frozen `custody-eval-2026-09-14` slice (same-day **underlying 1m + option 1m** OHLCV for three real 2026-09-14 jobs: QQQ LONG, SKHY SHORT, BABA LONG), fetched once from read-only OpenD and replayed through the shared market-data provider. See [custody/README.md](custody/README.md).
+The custody bot separates three layers:
+
+- **input** — an **exact option contract** (nearest heavy-theta expiry, near-ATM / not deep OTM; need not be strict 0DTE);
+- **signals** — the **same-day underlying 1m K-line**, watched for entry/exit *timing* only;
+- **PnL** — the **option path / fills only**. An underlying return × multiplier ("underlying-proxy payoff") is **forbidden** as custody PnL and now raises `CustodyMetricError` ([`custody/pnl.py`](custody/pnl.py)).
+
+## Train/research vs train/custody vs validation/eval/custody
+
+- **research / underlying-proxy** → `eval-data-v2` / `eval-data-v1` (underlying-only K-lines; offline alpha research and `custody replay`). Keep available; this is **not** custody train and **not** the custody validation set.
+- **train/custody** → the real **paired** starter `custody-train-2026-09-08_11` (4 recent sessions × US.SPY/US.QQQ/US.AAPL, same-day **underlying 1m + near-ATM option 1m**), built once from read-only OpenD with `python3 -m custody fetch-train`.
+- **validation/eval/custody** → frozen `custody-eval-2026-09-14` slice (same-day **underlying 1m + option 1m** OHLCV for three real 2026-09-14 jobs: QQQ LONG, SKHY SHORT, BABA LONG), replayed through the shared market-data provider. See [custody/README.md](custody/README.md).
+
+Both custody train and validation are **paired**: every case carries the same-day underlying 1m for timing and the option 1m for fills. `eval-data-v2` is underlying-only, so it **cannot** be custody train; the offline loaders (`assert_paired_slice`, `require_paired_bars`) and `assert_custody_role` refuse it.
 
 The must-trade custody product must complete exactly one entry+exit per day; the retained research gates can `no_entry` all day and are **not** the custody eval success criterion. Real OpenD market data only — never synthetic.
 
 ```bash
 python3 -m custody fetch-eval --out /path/to/custody-eval-2026-09-14   # read-only OpenD, once
 python3 -m custody eval-session --slice /path/to/custody-eval-2026-09-14
+python3 -m custody fetch-train --out out/custody-train-2026-09-08_11    # read-only OpenD, once
+python3 -m custody eval-session --slice out/custody-train-2026-09-08_11 --out /tmp/train-report.json
 ```
 
 
@@ -63,7 +76,7 @@ The new module includes a persistent one-job-per-underlying/day lock, order inte
 
 [Research source, exact configuration and reproduction commands](research/aggressive_payoff/README.md).
 
-The retained 1m research configuration has underlying payoff27.90 across the fixed83-session eval-data-v2 slice at2bps friction. This is a posthoc research result: **underlying proxy, not true option PnL**. The full report includes ablations, execution sensitivity and the historical5m comparison. This module disables networking and does not enable live trading.
+The retained 1m research configuration has underlying payoff27.90 across the fixed83-session eval-data-v2 slice at2bps friction. This is a posthoc **underlying-proxy** research result: **not true option PnL and never a custody metric**. The full report includes ablations, execution sensitivity and the historical5m comparison. This module disables networking and does not enable live trading.
 
 The [5m follow-up](research/aggressive_payoff/five_minute_followup/REPORT.md) tests398 additional configurations: its grid winner has payoff17.22 and the highest subsequent ablation18.45. The1m27.90 configuration stays retained; the5m middle/final periods remain weaker. Exact5m rules and reproducible evidence are included.
 

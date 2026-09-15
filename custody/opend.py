@@ -157,6 +157,27 @@ class OpenDMarket:
             raise RuntimeError('request_trading_days failed: ' + str(data))
         return _records(data)
 
+    def option_chain(self, code, expiry, right=None):
+        """List real option contracts for one underlying+expiry (read-only).
+
+        Used by the paired train builder to pick a near-ATM contract instead of
+        guessing strikes from text. Returns plain row dicts.
+        """
+        futu = _futu()
+        if right == 'CALL':
+            option_type = futu.OptionType.CALL
+        elif right == 'PUT':
+            option_type = futu.OptionType.PUT
+        else:
+            option_type = futu.OptionType.ALL
+        ret, data = self.context.get_option_chain(
+            code=str(code).upper(), start=str(expiry), end=str(expiry),
+            option_type=option_type, option_cond_type=futu.OptionCondType.ALL,
+        )
+        if ret != 0:
+            raise RuntimeError('get_option_chain failed for %s %s: %s' % (code, expiry, data))
+        return _records(data)
+
     def request_kline(self, code, ktype, start, end, max_count=1000):
         """Page ``request_history_kline`` and return a list of row dicts."""
         futu = _futu()

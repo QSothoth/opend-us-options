@@ -3,17 +3,20 @@
 This package builds and validates a **fixed real-market evaluation set** used as
 the development / regression benchmark for US options timing work.
 
-> **Role note (custody):** this underlying-proxy slice is the **train/research**
-> dataset. The custody product eval set is the separate same-day underlying+option
-> 1m `custody-eval-2026-09-14` slice documented in
-> [`custody/README.md`](../custody/README.md). Do not use this slice as the
-> custody must-trade eval.
+> **Role note (custody):** this slice is **research / underlying-proxy only**:
+> underlying K-lines with **no option path**. It is **not** custody train and
+> **not** custody validation. The custody product requires paired same-day
+> underlying 1m + option 1m, and the custody metric path refuses this slice
+> (`assert_paired_slice` / `assert_custody_role`; see [`custody/pnl.py`](../custody/pnl.py)).
+> The custody validation/eval set is the separate `custody-eval-2026-09-14`
+> slice and the real paired train starter is `custody-train-2026-09-08_11`, both
+> documented in [`custody/README.md`](../custody/README.md).
 
 ## Important
 
 | Dataset | Role |
 | --- | --- |
-| **GitHub Release `eval-data-v1`** (`opend_us_options_eval_v1`) | **Evaluation benchmark** — real OpenD QFQ K-lines |
+| **GitHub Release `eval-data-v1`/`eval-data-v2`** (`opend_us_options_eval_*`) | **Research / underlying-proxy benchmark** — real OpenD QFQ **underlying** K-lines only, **no options** |
 | `scripts/opend_us_options/testdata/` | **Schema / CI smoke only** — synthetic, **not** a performance baseline |
 
 Do **not** treat synthetic `testdata/` as a measure of strategy quality.
@@ -70,6 +73,9 @@ Or read parquet directly with pandas/polars.
 ## Scope notes
 
 - Underlying **K_DAY** + **K_15M** only (no 1m/tick).
-- Option contract history is **not** in this slice (OpenD limitation); contract
-  path may be added later via daily snapshots.
+- Option contract history is **not** in this slice (OpenD limitation). Paired
+  same-day underlying+option 1m now exists in the separate custody
+  `custody-eval-2026-09-14` (validation) and `custody-train-2026-09-08_11`
+  (train) slices; this research Release deliberately stays underlying-only and
+  must not be used as custody train or custody PnL evidence.
 - Private / self-use Release — not for public redistribution.

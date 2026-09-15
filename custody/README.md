@@ -4,16 +4,34 @@
 
 A small broker-neutral control API and durable order state machine for the retained1m/5m research strategies. This prepares the execution boundary for deployment while keeping every verification in this repository offline. No live broker connector is bundled or activated; a read-only OpenD market-data adapter (`custody/opend.py`) and dryrun runner (`custody/dryrun.py`) can observe quotes and advance a job without any order API.
 
-## Train/research vs eval/custody data (do not confuse)
+## Custody product contract: three unmistakable layers
+
+The custody product separates **what is traded**, **what is watched for timing**, and **what is measured**:
+
+| Layer | Asset | Where enforced |
+| --- | --- | --- |
+| **1. API input** | An **exact option contract** the caller names (nearest heavy-theta expiry is typical; near-ATM / not deep OTM; need not be strict 0DTE). `JobRequest.contract`. | `custody/models.py`, `custody/job_request.schema.json`, `custody/service.py` contract resolver |
+| **2. Signals / timing** | The **same-day underlying 1m** K-line only. The underlying is watched for entry/exit *timing*; it is never bought. `JobRequest.symbol`. | `custody/signals.py`, `custody/dryrun.py`, `custody/eval_session.py` |
+| **3. Execution** | **That option** (LONG buys CALL, SHORT buys PUT; both close by selling the owned option). The product never writes/shorts an option. | `custody/controller.py`, `custody/service.py` |
+| **4. PnL / success** | **Option path / fills only** ([`custody/pnl.py`](pnl.py)): entry/exit option premium, contract PnL and premium return. | `custody/pnl.py`, `custody/eval_session.py`, report fields |
+
+### Underlying-proxy payoff is deprecated as custody verification
+
+An **underlying return × multiplier** (or any "underlying-proxy payoff") is **not** custody PnL and must never be used as the custody train/eval success metric. The retained research numbers (27.90 / 17.22 / 18.45) are repeated-history **underlying-proxy** observations from `eval-data-v2`; they remain valid only for the separate offline alpha research module. `custody.pnl.underlying_proxy_pnl(...)` raises `CustodyMetricError`, and the custody eval/train loaders require a **paired** underlying+option dataset with a custody role before any PnL is computed. The dryrun **no-orders** invariant is unchanged: dryrun persists and logs intents but never submits, cancels or unlocks a trade.
+
+## Train/research vs validation/eval/custody data (do not confuse)
 
 | Role | Dataset | Contents | Use |
 | --- | --- | --- | --- |
-| **train/research** | `eval-data-v2` (also `eval-data-v1`) GitHub Release | underlying proxy K_DAY/K_15M/K_1M,83 sessions, no option path | offline indicator / alpha research and `custody replay` |
-| **eval/custody** | `custody-eval-2026-09-14` (frozen slice, zipped under the job `out/`) | same-day **underlying 1m + option 1m** OHLCV for three real2026-09-14 jobs | must-trade data plumbing and custody runtime eval |
+| **research / underlying-proxy** | `eval-data-v2` (also `eval-data-v1`) GitHub Release | underlying proxy K_DAY/K_15M/K_1M,83 sessions, **no option path** | offline indicator / alpha research and `custody replay`; **not** custody train or eval |
+| **train/custody** | `custody-train-2026-09-08_11` (real paired starter, zipped under the job `out/`) | 4 recent sessions × 3 liquid underlyings (SPY/QQQ/AAPL), same-day **underlying 1m + near-ATM option 1m**, 12 cases | custody train starter; paired by construction |
+| **validation/eval/custody** | `custody-eval-2026-09-14` (frozen slice, zipped under the job `out/`) | same-day **underlying 1m + option 1m** OHLCV for three real2026-09-14 jobs | must-trade data plumbing and custody runtime validation |
+
+`eval-data-v2` is **underlying-only** and therefore **cannot be custody train**: it has no option series, so it can never express option PnL. Do not relabel v2 as custody train. Both custody train and validation must contain **paired** same-day underlying 1m + option 1m (or quote path) for every case, and the offline loaders enforce this (`custody.offline.assert_paired_slice`, `custody.marketdata.require_paired_bars`).
 
 The custody product must complete **exactly one entry+exit per day** (flatten before close). The retained research gates (`orb_rvol_rsi_1m_v1`, `retest_rvol_adx_5m_v1`) can `no_entry` all day and are therefore **not** the custody eval success criterion. The custody eval slice is real OpenD market data only; no synthetic prices. Keep the research Release available for replay — it is not the custody eval set.
 
-### Custody eval slice (`eval/custody`)
+### Validation/eval slice (`eval/custody`) — paired underlying+option
 
 Locked cases for `trade_date = 2026-09-14`:
 
@@ -32,7 +50,26 @@ python3 -m custody fetch-eval --out /path/to/custody-eval-2026-09-14
 python3 -m custody eval-session --slice /path/to/custody-eval-2026-09-14 --out /tmp/eval-session.json
 ```
 
-`eval-session` loads the three cases, feeds the shared provider with the frozen underlying+option 1m bars and needs **no multi-day warmup**. Its timing policy is an explicitly-labelled placeholder (`DeadlineFallbackPolicy`), not an alpha; it records the real option 1m bar closes as the reference fills.
+`eval-session` now **refuses any non-paired or non-custody dataset** (it calls `assert_paired_slice` + `assert_custody_role`) and emits **option-only PnL fields**:
+
+- per case `option_pnl`: `entry_price`, `exit_price`, `qty`, `multiplier`, `option_pnl`, `option_return`, `basis`;
+- report `pnl_summary`: `total_option_pnl`, `case_count`, `one_round_trip_count`;
+- report flags `success_metric: "option_pnl"`, `metric_asset: "option_contract"`, `underlying_proxy_metric_forbidden: true`.
+
+It loads the three cases, feeds the shared provider with the frozen underlying+option 1m bars and needs **no multi-day warmup**. Its timing policy is an explicitly-labelled placeholder (`DeadlineFallbackPolicy`), not an alpha; it records the real option 1m bar closes as the reference fills.
+
+### Train starter (`train/custody`, real paired)
+
+`eval-data-v2` is underlying-only and is **refused** by the custody metric path. The real paired train starter is built once from read-only OpenD:
+
+```bash
+python3 -m custody fetch-train --out out/custody-train-2026-09-08_11
+python3 -m custody eval-session --slice out/custody-train-2026-09-08_11 --out /tmp/train-report.json
+```
+
+`fetch-train` picks, per session × liquid underlying, the listed strike nearest the session first-bar underlying open (CALL for LONG, PUT for SHORT) at a fixed short-dated expiry, then freezes the **same layout** as the validation slice (`underlying/` + `option/` + `cases.json` + `manifest.json`, role `train/custody`). It is quota-aware (option chain cached per underlying/expiry/right; each history series fetched once) and read-only. The starter is intentionally small: a plumbing/measurement benchmark, not an alpha. Series that span several sessions are concatenated per code and filtered by session at read time.
+
+Starter status (this job's real run): 12 cases (4 sessions 2026-09-08…11 × US.SPY/US.QQQ/US.AAPL), 13 frozen series, every case 390 underlying bars + 390–405 option bars. See the job `out/REPORT.md`.
 
 ## One market-data boundary: frozen slice ↔ live OpenD
 
@@ -62,7 +99,7 @@ Honesty note: 1m history is trade **OHLCV** for both the underlying and the opti
 
 Only the first four fields are required. `max_qty` defaults to1; `trade_date` defaults to the current **America/New_York** date. Callers cannot override indicator parameters, account, or paper/live mode. Unknown fields (including the old per-request `dry_run`) are rejected. The server is bound to an account and defaults to `mode='paper'`; a database account cannot be reopened in another mode.
 
-`symbol` supplies underlying K lines. `contract` supplies the actual option to buy and later sell. LONG means buy CALL, SHORT means buy PUT; neither means writing a short option. A trusted instrument resolver verifies the exact code, underlying, right, same-day expiry, tradability, USD currency and contract sizing. The API does not guess an ATM contract or parse arbitrary instrument strings as authoritative metadata.
+`symbol` supplies underlying K lines **for entry/exit timing only**; `contract` supplies the actual option to buy and later sell and is the asset whose fills are measured. LONG means buy CALL, SHORT means buy PUT; neither means writing a short option. A trusted instrument resolver verifies the exact code, underlying, right, same-day expiry, tradability, USD currency and contract sizing. The API does not guess an ATM contract or parse arbitrary instrument strings as authoritative metadata. Custody PnL is computed from the option fills ([`custody/pnl.py`](pnl.py)); an underlying-proxy payoff is never a custody success metric.
 
 Example response fields:
 
@@ -89,7 +126,7 @@ All routes require authentication. `create_app(service, token)` returns a framew
 
 ## Retained strategies and N baselines
 
-| strategy_id | Signal bars | Case | Historical payoff |
+| strategy_id | Signal bars | Case | Research underlying-proxy payoff (not custody PnL) |
 | --- | --- | --- | ---: |
 | orb_rvol_rsi_1m_v1 | 1m | 536f0789fb0d | 27.90 |
 | retest_rvol_adx_5m_v1 | 5m | 2c0ecc056bd3 | 18.45 |
@@ -190,16 +227,18 @@ reference no trade API. No test connects to OpenD or burns history quota.
 python3 -m custody strategies
 python3 -m custody.demo
 python3 -m unittest discover -s custody/tests -v
-python3 -m custody eval-session --slice /path/to/custody-eval-2026-09-14 --out /tmp/eval-session.json
+python3 -m custody eval-session --slice /path/to/custody-eval-2026-09-14 --out /tmp/validation-report.json
+python3 -m custody fetch-train --out out/custody-train-2026-09-08_11
+python3 -m custody eval-session --slice out/custody-train-2026-09-08_11 --out /tmp/train-report.json
 python3 -m custody replay --strategy orb_rvol_rsi_1m_v1 --symbol SPY --direction LONG --zip /absolute/path/opend_us_options_eval_v2.zip --out /tmp/registered_replay
 python3 research/aggressive_payoff/code/verify_custody_release.py --zip /absolute/path/opend_us_options_eval_v2.zip --out /tmp/custody_release_verification.json
 ```
 
-The demo uses clearly fabricated lifecycle fixtures; it is not a profitability benchmark. Replay uses only the fixed real Release, verifies SHA256 and outputs strategy/version metadata. No contract is needed for this separate underlying replay command because it cannot value or execute an option.
+The demo uses clearly fabricated lifecycle fixtures; it is not a profitability benchmark. Replay uses only the fixed real Release, verifies SHA256 and outputs strategy/version metadata. That replay command is a separate **underlying-proxy research** path and cannot value or execute an option, so it must never be cited as custody PnL.
 
-Fixed data: `eval-data-v2`, manifest `opend_us_options_eval_v2`, SHA256 `df93506e498be259a9654c8bf82738aa8ed3604ec2936cf4dfbed0de26aba0c6`.
+Fixed research data: `eval-data-v2`, manifest `opend_us_options_eval_v2`, SHA256 `df93506e498be259a9654c8bf82738aa8ed3604ec2936cf4dfbed0de26aba0c6`.
 
-The retained payoffs are repeated-history research observations: **underlying proxy, not true option PnL**. The source and contract are executable and paper-tested; live order submission, native stop support and live reconciliation must be integration-tested in the deployment environment. The `dryrun` path connects read-only to OpenD quotes but never places, cancels or unlocks a trade.
+The retained research payoffs are repeated-history observations: **underlying proxy, never custody option PnL**. The source and contract are executable and paper-tested; live order submission, native stop support and live reconciliation must be integration-tested in the deployment environment. The `dryrun` path connects read-only to OpenD quotes but never places, cancels or unlocks a trade.
 
 ### Optional phone alerts (WxPusher)
 

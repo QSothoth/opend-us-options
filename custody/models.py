@@ -31,6 +31,15 @@ def symbol(value):
 
 @dataclass(frozen=True)
 class JobRequest:
+    """Public custody input (three distinct layers).
+
+    * **input**: ``contract`` names the exact option to trade and measure;
+    * **signals**: ``symbol`` only supplies same-day underlying 1m bars used for
+      entry/exit *timing*;
+    * **PnL**: success is measured on the option contract path/fills only
+      (:mod:`custody.pnl`). Underlying-proxy payoff is forbidden.
+    """
+
     strategy_id: str
     symbol: str
     direction: str

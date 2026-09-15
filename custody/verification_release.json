@@ -1,6 +1,19 @@
 {
   "passed": true,
   "data_tag": "eval-data-v2",
+  "metric_contract": {
+    "input": "exact option contract (nearest heavy-theta expiry; near-ATM; need not be strict 0DTE)",
+    "signals": "same-day underlying 1m K-line for entry/exit timing only",
+    "execution": "trade the option contract, never the stock",
+    "success_metric": "option path/fills only (option PnL)",
+    "forbidden": "underlying-proxy payoff / underlying return x multiplier",
+    "enforcement": [
+      "custody/pnl.py: underlying_proxy_pnl() raises CustodyMetricError",
+      "custody/offline.py: assert_paired_slice() requires underlying + option series per case",
+      "custody/marketdata.py: require_paired_bars() requires both bar streams",
+      "custody/pnl.py: assert_custody_role() rejects research/underlying-only roles"
+    ]
+  },
   "sha256": "df93506e498be259a9654c8bf82738aa8ed3604ec2936cf4dfbed0de26aba0c6",
   "registry_replays": [
     {
@@ -106,8 +119,14 @@
   ],
   "future_missing_minute_and_current_daily_rejected": true,
   "custody_eval": {
-    "role": "eval/custody",
+    "role": "validation/eval/custody (frozen manifest role tag: eval/custody)",
     "dataset": "custody-eval-2026-09-14",
+    "paired": true,
+    "required_series": [
+      "underlying",
+      "option"
+    ],
+    "success_metric": "option_pnl",
     "trade_date": "2026-09-14",
     "asset": "custody-eval-2026-09-14.zip",
     "zip_sha256": "fd7c92bbada5cf854564a3f12b6db3d581ed34c8c524e525b15d78ef412a7160",
@@ -128,5 +147,36 @@
     "price_note": "Underlying and option series are 1m trade OHLCV, not NBBO. Offline quote() returns None unless the labelled option_bar_close plumbing mapping is opted in; live uses real quotes through the same provider boundary.",
     "research_release_unchanged": "eval-data-v2"
   },
-  "scope": "Real underlying Release only; execution lifecycle mocks are separate engineering tests, not option PnL evidence."
+  "custody_train": {
+    "role": "train/custody",
+    "dataset": "custody-train-2026-09-08_11",
+    "paired": true,
+    "required_series": [
+      "underlying",
+      "option"
+    ],
+    "success_metric": "option_pnl",
+    "asset": "custody-train-2026-09-08_11.zip",
+    "sessions": [
+      "2026-09-08",
+      "2026-09-09",
+      "2026-09-10",
+      "2026-09-11"
+    ],
+    "underlyings": [
+      "US.SPY",
+      "US.QQQ",
+      "US.AAPL"
+    ],
+    "expiry": "2026-09-18",
+    "case_count": 12,
+    "series_count": 13,
+    "per_case_bars": "390 underlying 1m + 390-405 option 1m",
+    "contract_selection": "nearest listed strike to the session first-bar underlying open; CALL for LONG, PUT for SHORT",
+    "fetched_from": "read-only OpenD 127.0.0.1:11111",
+    "entrypoint": "python3 -m custody fetch-train --out out/custody-train-2026-09-08_11",
+    "status": "real paired train starter (small, for plumbing/measurement; not an alpha)",
+    "underlying_only_v2_refused": true
+  },
+  "scope": "Underlying Release is research/underlying-proxy only; custody metrics are option-only and require paired underlying+option data with a custody role. Execution lifecycle mocks are separate engineering tests, not option PnL evidence."
 }
