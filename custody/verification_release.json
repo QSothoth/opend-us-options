@@ -370,7 +370,8 @@
     ],
     "recoverable_case_count": 42,
     "volume_floor_index": 57000,
-    "volume_floor_single": 5000
+    "volume_floor_single": 5000,
+    "note": "True 0DTE only; index+Mag7 diversified. custody-train-dte4 is archived (mixed DTE)."
   },
   "custody_train_dte4_archive": {
     "role": "train/custody-archive (mixed DTE, NOT formal train)",
