@@ -48,8 +48,9 @@ An **underlying return × multiplier** (or any "underlying-proxy payoff") is **n
 | Role | Dataset | Contents | Use |
 | --- | --- | --- | --- |
 | **research / underlying-proxy** | `eval-data-v2` (also `eval-data-v1`) GitHub Release | underlying proxy K_DAY/K_15M/K_1M,83 sessions, **no option path** | offline indicator / alpha research and `custody replay`; **not** custody train or eval |
-| **train/custody (canonical)** | `custody-train-dte4` (frozen, real paired, **DTE≤4**) | 19 sessions 2026-08-17…2026-09-11 × 10 underlyings, **124** cases (114 option contracts, **36 true 0DTE**, DTE histogram 0:36 / 1:24 / 2:23 / 3:23 / 4:18), same-day **underlying 1m + near-ATM front-expiry option 1m** | formal custody train; paired by construction; **calendar overlap ≠ quality** |
-| **raw/opend cache (NOT train)** | `custody-train-v2window-paired` (830 cases) | the full `eval-data-v2` 1m window 2026-05-14…2026-09-11 × 10 underlyings, same-day underlying 1m + option 1m, **DTE 0…99** | parent cache for the DTE≤4 filter only; long-DTE pairings appear because OpenD lost the pre-2026-08-21 weeklies; **do not cite as train or alpha evidence** |
+| **train/custody (canonical)** | `custody-train-0dte` (frozen, real paired, **true 0DTE only**) | 14 sessions 2026-08-17…2026-09-14, **36** cases, **every case `expiry == trade_date` (DTE 0)**; 10 underlyings — index SPY 12 / QQQ 5 / IWM 2, single names AAPL 5 / MSFT 4 / META 4 / NVDA 1 / TSLA 1 / AMD 1 / MU 1 (**47.2% non-ETF**); two-tier floor (index 57,000/day, single names 5,000/day); SPY share 33.3% (cap 35%); same-day **underlying 1m + near-ATM CALL/PUT option 1m** | formal custody train; paired by construction; **no DTE 1–4 padding** |
+| **train/custody archive (mixed DTE, NOT formal)** | `custody-train-dte4` (frozen, real paired, **DTE≤4**) | 19 sessions 2026-08-17…2026-09-11 × 10 underlyings, **124** cases (114 option contracts, **36 true 0DTE**, DTE histogram 0:36 / 1:24 / 2:23 / 3:23 / 4:18) | archive only; demoted because non-0DTE and 0DTE trade very differently |
+| **raw/opend cache (NOT train)** | `custody-train-v2window-paired` (830 cases) | the full `eval-data-v2` 1m window 2026-05-14…2026-09-11 × 10 underlyings, same-day underlying 1m + option 1m, **DTE 0…99** | parent option cache; long-DTE pairings appear because OpenD lost the pre-2026-08-21 weeklies; **do not cite as train or alpha evidence** |
 | **train/custody-starter** | `custody-train-2026-09-08_11` (tiny real paired starter) | 4 recent sessions × 3 liquid underlyings (SPY/QQQ/AAPL), same-day **underlying 1m + near-ATM option 1m**, 12 cases | plumbing/measurement starter only; **not** the main train |
 | **validation/eval/custody** | `custody-eval-2026-09-14` (frozen slice, zipped under the job `out/`) | same-day **underlying 1m + option 1m** OHLCV for three real2026-09-14 jobs | must-trade data plumbing and custody runtime validation |
 
@@ -67,7 +68,7 @@ Locked cases for `trade_date = 2026-09-14`:
 | US.SKHY | SHORT | US.SKHY260918P175000 |
 | US.BABA | LONG | US.BABA260918C109000 |
 
-Expiry/DTE: `US.QQQ260914C705000` is **0DTE** (expiry == trade date); `US.SKHY260918P175000` and `US.BABA260918C109000` are **4 DTE**. All three are near-ATM (within ~0.7% of strike at open/close/mid). The custody / 末日 product targets 0DTE, so the two 4-DTE contracts are retained only for data-plumbing eval and are flagged for replacement if the product is strictly 0DTE.
+Expiry/DTE: `US.QQQ260914C705000` is **0DTE** (expiry == trade date); `US.SKHY260918P175000` and `US.BABA260918C109000` are **4 DTE**. All three are near-ATM (within ~0.7% of strike at open/close/mid). The custody / 末日 product targets 0DTE, so the two 4-DTE contracts are retained only for data-plumbing eval and are **flagged for the supervisor**: replace them with same-day contracts before treating the validation slice as strictly 0DTE. They are deliberately not silently rewritten.
 
 Each case carries the same-day underlying 1m and option 1m series plus `manifest.json` (bar counts, time range, fetch time, OpenD host, per-file SHA256) and `cases.json`. Fetch once (read-only, quota-aware) and reuse the files:
 
@@ -84,42 +85,53 @@ python3 -m custody eval-session --slice /path/to/custody-eval-2026-09-14 --out /
 
 It loads the three cases, feeds the shared provider with the frozen underlying+option 1m bars and needs **no multi-day warmup**. Its timing policy is an explicitly-labelled placeholder (`DeadlineFallbackPolicy`), not an alpha; it records the real option 1m bar closes as the reference fills.
 
-### Canonical train (`train/custody`, DTE≤4 frozen)
+### Canonical train (`train/custody`, TRUE 0DTE frozen)
 
-The canonical custody train set is the frozen **`custody-train-dte4`** slice at
-`/workspace/pi-jobs/custody-train-dte4/out/custody-train-dte4` (zip + `.sha256` beside it):
+The canonical custody train set is the frozen **`custody-train-0dte`** slice at
+`/workspace/pi-jobs/custody-train-0dte/out/custody-train-0dte` (zip + `.sha256` beside it):
 
-- **coverage** — 19 sessions **2026-08-17 → 2026-09-11**, all **10** underlyings, **124** paired cases (**114** option contracts; **36 true 0DTE**; DTE histogram 0:36 / 1:24 / 2:23 / 3:23 / 4:18);
-- **timing asset** — the same-day **underlying 1m**, reused from the `eval-data-v2` Release (no OpenD underlying re-fetch);
-- **PnL asset** — the same-day **option 1m**, fetched once from read-only OpenD;
-- **max_dte** — **4**; cases whose only retrievable pair was a long-dated expiry are dropped (830 → 124, 706 long-DTE rows removed);
-- **zip SHA256** — `d72e190e6467f780782f809302a51f9dc8d6f72a00885c2dfb1aa96bf65c51f0`;
-- **direction policy** — `eval-data-v2` `session_1m` scenario labels (`strong_down`/`v_reversal_down`/`gap_down` → SHORT/PUT; `strong_up`/`v_reversal_up`/`gap_up` → LONG/CALL; else LONG). Labels define the case direction only and never enter the timing features.
-
-**Calendar overlap is not quality.** The `eval-data-v2` calendar (2026-05-14 → 2026-09-11) overlaps the raw builder window, but covering those dates does not make a good custody train: OpenD no longer carries the pre-2026-08-21 weeklies, so the 830-case builder output pairs many sessions with long-DTE contracts (up to **99 DTE**). The formal train keeps only the front-expiry heavy-theta cases that actually exist (DTE≤4). The 830-case set is demoted to a **raw/parent OpenD cache** (see `custody_train_raw_cache` in [`verification_release.json`](verification_release.json)) and must not be cited as train or alpha evidence.
+- **true 0DTE only** — every case has `expiry == trade_date` (DTE 0). The builder refuses to pad with DTE 1–4: non-0DTE and 0DTE trade very differently (non-0DTE fills are often poor; 0DTE volume is high and fillable);
+- **coverage** — 14 sessions **2026-08-17 → 2026-09-14**, **36** paired cases, **10 underlyings**: index ETFs **US.SPY 12**, **US.QQQ 5**, **US.IWM 2** (19 total) and single names **US.AAPL 5**, **US.MSFT 4**, **US.META 4**, **US.NVDA 1**, **US.TSLA 1**, **US.AMD 1**, **US.MU 1** (17 total; **47.2% non-ETF**);
+- **contract per (symbol, session)** — the near-ATM listed strike nearest the session first-bar underlying open, with **both** the CALL and PUT ATM series fetched; the traded right is the side with the **higher same-day option volume** (LONG buys CALL, SHORT buys PUT). No scenario label is used;
+- **two-tier volume floor** — **index 57,000 contracts/day**, auto-derived as 10% of the pooled **SPY/QQQ/IWM** ATM 0DTE median day-volume (median 570,485); **single names 5,000/day**, 10% of the index floor (min 1,000). The lower single-name tier deliberately preserves Mag7/hot names that are below SPY-sized volume: the previous one-tier 57,000 floor dropped META ×4, MSFT ×4, MU ×1, AMD ×1 and AAPL 2026-09-11 ×1; all 17 single-name candidates now clear the 5,000 floor (`filtered_below_floor` = 0);
+- **diversification (SPY share cap 35%)** — SPY is the deepest 0DTE underlying, so the builder caps its share at **35%** by holding out the **lowest-day-volume SPY sessions** (the 6 held-out sessions are recorded in `spy_cap_dropped`, not silently deleted). Actual mix: **SPY 33.3%, index ETFs 52.8%, single names 47.2%**;
+- **AMZN / GOOGL** — requested as Mag7 七姐妹 but **not recoverable**: OpenD's option quota is fully spent (`option: 60/60`) and neither has a warm same-day expiry group, so they never enter `zero_dte_targets`. They are listed in the manifest `unavailable_symbols`; no DTE≥1 contract is substituted;
+- **timing asset** — same-day **underlying 1m**, reused from the `eval-data-v2` Release through 2026-09-11 and read-only OpenD for 2026-09-14;
+- **PnL asset** — the same-day **option 1m**, read-only OpenD;
+- **max_dte** — **0**; **zip SHA256** — `65398673c6617ef0a013c1795936016404babe4a1d4fc1777e16502c2621c7d3`;
+- **OpenD retention** — option history is quota-accounted per `(underlying, expiry)` group and brand-new groups were refused during the build. Only warm same-day groups were recoverable: SPY 18 of 20 window sessions, QQQ the Friday/2026-09-14 chains, IWM 2026-08-21 and 2026-09-11, and single names only on their warm same-day expiries (AAPL 5 sessions; MSFT/META 4; NVDA/TSLA/AMD/MU 1). The SPY share cap then held out 6 SPY sessions. These are recorded as `opend_gaps` / `unavailable_symbols`; **no DTE≥1 contract is substituted** for a missing 0DTE group.
 
 ```bash
-python3 -m custody eval-session --slice /workspace/pi-jobs/custody-train-dte4/out/custody-train-dte4 --out /tmp/train-report.json
+python3 -m custody eval-session --slice /workspace/pi-jobs/custody-train-0dte/out/custody-train-0dte --out /tmp/train-report.json
 ```
 
-Rebuilding the raw cache still requires read-only OpenD (`fetch-train`), after which the offline DTE≤4 filter is applied:
+Build it (read-only OpenD, quota-aware):
 
 ```bash
-python3 -m custody fetch-train --out out/custody-train-v2window-paired --v2-dir /path/to/opend_us_options_eval_v2
-# then keep only cases with dte<=4 -> /workspace/pi-jobs/custody-train-dte4/out/custody-train-dte4
+python3 -m custody fetch-train-0dte --out out/custody-train-0dte --v2-dir /path/to/opend_us_options_eval_v2
 ```
 
 > **Prospective freeze (grow the formal train while chains exist):** freeze each new session's
-> front-expiry (DTE≤4) paired underlying+option 1m bars the same day and append them to the
-> canonical set; OpenD drops old weeklies, so the formal train only grows with a daily freeze.
-> See `CANONICAL_TRAIN_DIR` / `PROSPECTIVE_FREEZE_NOTE` in [`train_window.py`](train_window.py).
+> **same-day (0DTE)** paired underlying+option 1m bars the same day and append them to the
+> canonical set; OpenD drops old weeklies and the option quota blocks new expiry groups, so the
+> 0DTE set only grows with a daily freeze. See `CANONICAL_TRAIN_DIR` / `PROSPECTIVE_FREEZE_NOTE`
+> in [`train_window.py`](train_window.py) and [`train_0dte.py`](train_0dte.py).
+
+### Mixed-DTE archive (`custody-train-dte4`, NOT formal train)
+
+The former canonical train **`custody-train-dte4`** (19 sessions 2026-08-17 → 2026-09-11,
+**124** cases, DTE histogram 0:36 / 1:24 / 2:23 / 3:23 / 4:18, zip SHA256
+`d72e190e6467f780782f809302a51f9dc8d6f72a00885c2dfb1aa96bf65c51f0`) is demoted to
+**archive**. 88 of its 124 cases are DTE 1–4, which trade differently from 0DTE. It is kept only
+because earlier reports reference it and must not be cited as the canonical train.
 
 ### Raw/parent OpenD cache (NOT formal train)
 
 The expanded builder output `custody-train-v2window-paired` (830 cases, window 2026-05-14 →
 2026-09-11, DTE 0…99, zip SHA256 `b3536cb6a1e9eb00103cbb43442b3101679e879f3fe2b6db23dd4e490810a8c6`)
-is retained only as the **parent cache** for the DTE≤4 filter. It is demoted from canonical
-train because long-DTE pairings are a data-availability artifact, not a heavy-theta product.
+is retained only as the **parent option cache**. It is demoted from canonical
+train because long-DTE pairings are a data-availability artifact, not a heavy-theta product, and
+the formal train is now strictly true-0DTE (`custody-train-0dte`).
 
 The `fetch-train` builder still emits this raw cache:
 
@@ -297,8 +309,9 @@ python3 -m custody strategies
 python3 -m custody.demo
 python3 -m unittest discover -s custody/tests -v
 python3 -m custody eval-session --slice /path/to/custody-eval-2026-09-14 --out /tmp/validation-report.json
-python3 -m custody eval-session --slice /workspace/pi-jobs/custody-train-dte4/out/custody-train-dte4 --out /tmp/train-report.json
-python3 -m custody fetch-train --out out/custody-train-v2window-paired --v2-dir /path/to/opend_us_options_eval_v2  # raw/parent cache, then filter dte<=4
+python3 -m custody eval-session --slice /workspace/pi-jobs/custody-train-0dte/out/custody-train-0dte --out /tmp/train-report.json
+python3 -m custody fetch-train-0dte --out out/custody-train-0dte --v2-dir /path/to/opend_us_options_eval_v2  # formal true-0DTE train (read-only OpenD)
+python3 -m custody fetch-train --out out/custody-train-v2window-paired --v2-dir /path/to/opend_us_options_eval_v2  # raw/parent cache
 python3 -m custody fetch-train-starter --out out/custody-train-2026-09-08_11
 python3 -m custody replay --strategy orb_rvol_rsi_1m_v1 --symbol SPY --direction LONG --zip /absolute/path/opend_us_options_eval_v2.zip --out /tmp/registered_replay
 python3 research/aggressive_payoff/code/verify_custody_release.py --zip /absolute/path/opend_us_options_eval_v2.zip --out /tmp/custody_release_verification.json

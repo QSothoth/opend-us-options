@@ -9,11 +9,13 @@ the development / regression benchmark for US options timing work.
 > underlying 1m + option 1m, and the custody metric path refuses this slice
 > (`assert_paired_slice` / `assert_custody_role`; see [`custody/pnl.py`](../custody/pnl.py)).
 > The custody validation/eval set is the separate `custody-eval-2026-09-14`
-> slice and the canonical paired train is the frozen **DTE≤4** `custody-train-dte4`
-> set (124 cases, 2026-08-17 → 2026-09-11) at
-> `/workspace/pi-jobs/custody-train-dte4/out/custody-train-dte4`. The expanded
+> slice and the canonical paired train is the frozen **true-0DTE** `custody-train-0dte`
+> set (36 cases, 2026-08-17 → 2026-09-14; 10 underlyings, **47.2% non-ETF** single
+> names; every case `expiry == trade_date`) at
+> `/workspace/pi-jobs/custody-train-0dte/out/custody-train-0dte`. The former mixed-DTE
+> `custody-train-dte4` set (124 cases, DTE 0…4) is demoted to archive. The expanded
 > `custody-train-v2window-paired` (830 cases, DTE 0…99) is retained only as the
-> **raw/opend parent cache** for the DTE≤4 filter — its calendar overlap with this
+> **raw/opend parent cache** — its calendar overlap with this
 > slice is **not** quality, because OpenD lost the pre-2026-08-21 weeklies. The tiny
 > `custody-train-2026-09-08_11` remains a `train/custody-starter` (plumbing only).
 > All are documented in [`custody/README.md`](../custody/README.md).
@@ -81,9 +83,10 @@ Or read parquet directly with pandas/polars.
 - Underlying **K_DAY** + **K_15M** only (no 1m/tick).
 - Option contract history is **not** in this slice (OpenD limitation). Paired
   same-day underlying+option 1m now exists in the separate custody
-  `custody-eval-2026-09-14` (validation) and `custody-train-dte4`
-  (canonical formal train, DTE≤4, which reuses this slice's underlying 1m and adds
-  OpenD option 1m) slices; the 830-case `custody-train-v2window-paired` is only the
-  raw/parent cache for the DTE filter. This research Release deliberately stays
+  `custody-eval-2026-09-14` (validation) and `custody-train-0dte`
+  (canonical formal train, **true 0DTE only**, 10 underlyings, **47.2% non-ETF**,
+  which reuses this slice's underlying 1m
+  and adds OpenD option 1m) slices; the 830-case `custody-train-v2window-paired` is only the
+  raw/parent cache. This research Release deliberately stays
   underlying-only and must not be used as custody train or custody PnL evidence.
 - Private / self-use Release — not for public redistribution.

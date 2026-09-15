@@ -23,8 +23,8 @@ from .opend import DEFAULT_HOST, DEFAULT_PORT
 from .sliceio import write_series, write_slice_docs, zip_tree
 
 # A small, fixed real train starter: recent liquid sessions x liquid underlyings.
-# This is plumbing only; the canonical custody train is the DTE<=4
-# ``custody-train-dte4`` set (see :mod:`custody.train_window`).
+# This is plumbing only; the canonical custody train is the true-0DTE
+# ``custody-train-0dte`` set (see :mod:`custody.train_0dte`).
 TRAIN_TAG = 'custody-train-2026-09-08_11'
 TRAIN_ROLE = 'train/custody-starter'
 TRAIN_SESSIONS = ['2026-09-08', '2026-09-09', '2026-09-10', '2026-09-11']
@@ -154,7 +154,7 @@ def build_train_slice(out_dir, sessions=None, underlyings=None, expiry=TRAIN_EXP
         'dataset': dataset,
         'role': TRAIN_ROLE,
         'role_note': ('real paired custody train starter / plumbing benchmark; the canonical train set is '
-                      'custody-train-dte4 (DTE<=4)'),
+                      'the true-0DTE custody-train-0dte'),
         'timezone': 'America/New_York',
         'interval': '1m',
         'paired': True,

@@ -19,7 +19,9 @@ def main(argv=None):
     sub.add_parser('fetch-eval', add_help=False,
                    help='fetch and freeze the real custody eval slice from read-only OpenD (once)')
     sub.add_parser('fetch-train', add_help=False,
-                   help='build the expanded paired raw/parent option cache (v2 window + OpenD options); filter to DTE<=4 for the formal train')
+                   help='build the expanded paired raw/parent option cache (v2 window + OpenD options); not the formal train')
+    sub.add_parser('fetch-train-0dte', add_help=False,
+                   help='build the formal TRUE-0DTE paired custody train (expiry == trade_date only)')
     sub.add_parser('fetch-train-starter', add_help=False,
                    help='fetch the small real paired custody train starter from read-only OpenD (plumbing only)')
     sub.add_parser('eval-session', add_help=False,
@@ -39,6 +41,9 @@ def main(argv=None):
     if args.command == 'fetch-train':
         from .train_window import main as train_window_main
         return train_window_main(rest)
+    if args.command == 'fetch-train-0dte':
+        from .train_0dte import main as train_0dte_main
+        return train_0dte_main(rest)
     if args.command == 'fetch-train-starter':
         from .train_slice import main as train_main
         return train_main(rest)
