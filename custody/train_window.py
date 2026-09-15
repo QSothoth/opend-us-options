@@ -1,6 +1,9 @@
-"""Build the expanded, full-window paired custody **train** slice.
+"""Build the expanded, full-window paired custody **raw/parent option cache**.
 
-This is the canonical custody train set: it reuses the real **underlying 1m**
+This builder produces the raw OpenD option cache (``custody-train-v2window-paired``);
+it is **not** the formal train. Filter it to ``dte<=4`` (see ``CANONICAL_TRAIN_*``
+below) for the canonical ``custody-train-dte4`` set, because the raw window contains
+many long-DTE pairings once OpenD drops old weeklies. It reuses the real **underlying 1m**
 already frozen in the ``eval-data-v2`` research Release (no underlying re-fetch)
 and pairs each ``(symbol, session)`` with the same-day **option 1m** path fetched
 once from read-only OpenD.
@@ -37,9 +40,22 @@ from .opend import DEFAULT_HOST, DEFAULT_PORT
 from .sliceio import sha256, write_series, write_slice_docs, zip_tree
 
 # --- dataset identity ------------------------------------------------------
+# ``custody-train-v2window-paired`` is the RAW/PARENT cache (long DTE included).
 TRAIN_TAG = 'custody-train-v2window-paired'
 ROLE = 'train/custody'
 STARTER_ROLE = 'train/custody-starter'
+
+# --- canonical/formal train location --------------------------------------
+# The formal custody train is the frozen, offline-filtered DTE<=4 set, not the
+# raw 830-case builder output. Absolute path (may live outside this repo):
+CANONICAL_TRAIN_TAG = 'custody-train-dte4'
+CANONICAL_TRAIN_MAX_DTE = 4
+CANONICAL_TRAIN_DIR = '/workspace/pi-jobs/custody-train-dte4/out/custody-train-dte4'
+PROSPECTIVE_FREEZE_NOTE = (
+    "Freeze each session's DTE<=4 front-expiry paired underlying+option 1m bars the same day, "
+    "while the chain still exists, and append them to the formal train (%s); OpenD drops old "
+    'weeklies, so the canonical set only grows with a daily freeze.' % CANONICAL_TRAIN_DIR
+)
 
 # ``eval-data-v2`` 1m window (10 underlyings x 83 sessions = 830 symbol-sessions).
 V2_SYMBOLS = [
@@ -481,8 +497,9 @@ def build_v2window_train_slice(out_dir, v2_dir=None, start=V2_START, end=V2_END,
         'schema_version': 1,
         'dataset': dataset,
         'role': ROLE,
-        'role_note': ('expanded canonical paired custody train over the eval-data-v2 1m window; '
-                      'underlying 1m reused from eval-data-v2, option 1m fetched from read-only OpenD'),
+        'role_note': ('raw/parent paired OpenD option cache over the eval-data-v2 1m window; NOT the formal train; '
+                      'filter to dte<=4 for the canonical custody-train-dte4 set because long-DTE pairings appear '
+                      'once OpenD drops old weeklies. underlying 1m reused from eval-data-v2, option 1m fetched from read-only OpenD'),
         'timezone': 'America/New_York',
         'interval': '1m',
         'paired': True,
@@ -601,8 +618,11 @@ def build_argument_parser():
     import argparse
     parser = argparse.ArgumentParser(
         prog='custody fetch-train',
-        description='Build the expanded canonical paired custody train set from eval-data-v2 + read-only OpenD.')
-    parser.add_argument('--out', required=True, help='output directory, e.g. out/custody-train-v2window-paired')
+        description='Build the expanded paired raw/parent option cache (eval-data-v2 window + read-only OpenD); filter to DTE<=4 for the formal train.')
+    parser.add_argument('--out', required=True,
+                        help='raw/parent option-cache output directory, e.g. '
+                             'out/custody-train-v2window-paired (formal DTE<=4 train is filtered '
+                             'to %s)' % CANONICAL_TRAIN_DIR)
     parser.add_argument('--v2-dir', default=None,
                         help='eval-data-v2 directory (klines_1m.parquet + scenario_labels.parquet); '
                              'defaults to $CUSTODY_V2_DIR')

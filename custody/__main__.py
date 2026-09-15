@@ -19,7 +19,7 @@ def main(argv=None):
     sub.add_parser('fetch-eval', add_help=False,
                    help='fetch and freeze the real custody eval slice from read-only OpenD (once)')
     sub.add_parser('fetch-train', add_help=False,
-                   help='build the canonical expanded paired custody train set (v2 window + OpenD options)')
+                   help='build the expanded paired raw/parent option cache (v2 window + OpenD options); filter to DTE<=4 for the formal train')
     sub.add_parser('fetch-train-starter', add_help=False,
                    help='fetch the small real paired custody train starter from read-only OpenD (plumbing only)')
     sub.add_parser('eval-session', add_help=False,

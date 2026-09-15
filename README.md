@@ -36,20 +36,24 @@ The custody bot separates three layers:
 ## Train/research vs train/custody vs validation/eval/custody
 
 - **research / underlying-proxy** → `eval-data-v2` / `eval-data-v1` (underlying-only K-lines; offline alpha research and `custody replay`). Keep available; this is **not** custody train and **not** the custody validation set.
-- **train/custody** → the canonical **paired** `custody-train-v2window-paired` set: the full `eval-data-v2` 1m window (2026-05-14 → 2026-09-11, all 10 underlyings, all 83 sessions) paired with the same-day near-ATM option 1m. Underlying 1m is **reused** from the v2 Release; only the option legs are fetched once from read-only OpenD. Built with `python3 -m custody fetch-train --out out/custody-train-v2window-paired --v2-dir <eval-data-v2>`.
+- **train/custody (canonical)** → the frozen **DTE≤4** paired `custody-train-dte4` slice at `/workspace/pi-jobs/custody-train-dte4/out/custody-train-dte4` (zip + `.sha256` beside it): 19 sessions 2026-08-17 → 2026-09-11, all 10 underlyings, **124** paired cases (114 option contracts, **36 true 0DTE**), max **DTE 4**, zip SHA256 `d72e190e6467f780782f809302a51f9dc8d6f72a00885c2dfb1aa96bf65c51f0`. Underlying 1m is reused from the v2 Release; only the option legs are fetched once from read-only OpenD. **Calendar overlap is not quality:** the parent builder window (2026-05-14 → 2026-09-11) overlaps v2, but OpenD lost the pre-2026-08-21 weeklies, so the full builder output spans DTE 0…99 and is not formal train. Replay with `python3 -m custody eval-session --slice /workspace/pi-jobs/custody-train-dte4/out/custody-train-dte4`.
+- **raw/opend cache (NOT train)** → `custody-train-v2window-paired` (830 cases, DTE 0…99, zip SHA256 `b3536cb6a1e9eb00103cbb43442b3101679e879f3fe2b6db23dd4e490810a8c6`), the parent cache for the DTE≤4 filter. Built with `python3 -m custody fetch-train --out out/custody-train-v2window-paired --v2-dir <eval-data-v2>`. Long-DTE rows are a data-availability artifact; **do not cite as train or alpha evidence**.
 - **train/custody-starter** → the tiny paired `custody-train-2026-09-08_11` (4 sessions × US.SPY/US.QQQ/US.AAPL = 12 cases). Plumbing/measurement starter only, **not** the main train set. Built with `python3 -m custody fetch-train-starter`.
 - **validation/eval/custody** → frozen `custody-eval-2026-09-14` slice (same-day **underlying 1m + option 1m** OHLCV for three real 2026-09-14 jobs: QQQ LONG, SKHY SHORT, BABA LONG), replayed through the shared market-data provider. See [custody/README.md](custody/README.md).
 
 Both custody train and validation are **paired**: every case carries the same-day underlying 1m for timing and the option 1m for fills. `eval-data-v2` is underlying-only, so it **cannot** be custody train by itself; the offline loaders (`assert_paired_slice`, `require_paired_bars`) and `assert_custody_role` refuse it.
+
+**Grow the formal train while chains exist:** freeze each new session's front-expiry (DTE≤4) paired underlying+option 1m bars the same day and append them to the canonical set; OpenD drops old weeklies, so the set only grows with a daily freeze (see `CANONICAL_TRAIN_DIR` / `PROSPECTIVE_FREEZE_NOTE` in [`custody/train_window.py`](custody/train_window.py)).
 
 The must-trade custody product must complete exactly one entry+exit per day; the retained research gates can `no_entry` all day and are **not** the custody eval success criterion. Real OpenD market data only — never synthetic.
 
 ```bash
 python3 -m custody fetch-eval --out /path/to/custody-eval-2026-09-14   # read-only OpenD, once
 python3 -m custody eval-session --slice /path/to/custody-eval-2026-09-14
-# canonical train: reuse eval-data-v2 underlying 1m + fetch the option legs once
+# canonical formal train (DTE<=4, frozen): replay only, no fetch
+python3 -m custody eval-session --slice /workspace/pi-jobs/custody-train-dte4/out/custody-train-dte4 --out /tmp/train-report.json
+# raw/parent cache rebuild (read-only OpenD, once) then filter dte<=4
 python3 -m custody fetch-train --out out/custody-train-v2window-paired --v2-dir /path/to/opend_us_options_eval_v2
-python3 -m custody eval-session --slice out/custody-train-v2window-paired --out /tmp/train-report.json
 python3 -m custody fetch-train-starter --out out/custody-train-2026-09-08_11   # tiny plumbing starter, once
 ```
 
