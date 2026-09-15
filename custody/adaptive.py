@@ -142,6 +142,13 @@ class AdaptiveIndicators:
         self.e=[strategy['config']['case']['entry']['adaptive'][k] for k in ENTRY_KEYS]
         self.rows=deque(maxlen=61);self.crosses=deque(maxlen=20)
         self.prev_vwap=None;self.break_time=-999;self.ready_count=0
+        regime=strategy['config']['case']['entry'].get('regime')
+        self.regime=None
+        if regime is not None:
+            from .regime import vectors
+            self.regime=vectors(regime)
+            self.regime_state=[0.,0.,0.,1000.,1000.]
+            self.ready_regime=-1
 
     def step(self,b):
         t=(instant(b.close_time)-self.session.opens).total_seconds()/60
@@ -188,15 +195,29 @@ class AdaptiveIndicators:
         # Donchian uses the separately exposed signed prior resistance.
         vector.append(s*(b.close-resistance)/a)
         self.prev_fast=self.base.fast;self.rows.append(b)
-        ready=entry_rule(vector,self.e)
+        extra={};entry_params=self.e
+        if self.regime is not None:
+            from .regime import route_step,NAMES
+            router,entries,_=self.regime
+            active=route_step(vector,router,self.regime_state)
+            if active!=self.ready_regime:self.ready_count=0
+            self.ready_regime=active
+            entry_params=entries[active]
+            ready=entry_rule(vector,entry_params) and active!=4 and (active!=0 or router[7]>0)
+            extra={'regime_id':active,'regime':NAMES[active]}
+        else:
+            ready=entry_rule(vector,self.e)
         self.ready_count=(self.ready_count+1 if ready else 0) if not vector[25] else int(ready)
         return Frame(frame.symbol,self.strategy['sha256'],frame.bar_close,1,b.close,a,
-                     bool(ready and self.ready_count>=self.e[12]),frame.trend_against,
-                     ENTRY_MODES[int(self.e[0])],{'vector':vector,'atr_1m':a,'gap_before_bar':bool(vector[25]),
-                     'observed_bars':d['observed_bars'],'vwap':vw})
+                     bool(ready and self.ready_count>=entry_params[12]),frame.trend_against,
+                     (extra['regime']+':' if extra else '')+ENTRY_MODES[int(entry_params[0])],{'vector':vector,'atr_1m':a,'gap_before_bar':bool(vector[25]),
+                     'observed_bars':d['observed_bars'],'vwap':vw,**extra})
 
 
 def adaptive_exit(job,frame):
+    if job['strategy']['config']['case']['entry'].get('regime') is not None:
+        from .regime import regime_exit
+        return regime_exit(job,frame)
     x=[job['strategy']['config']['case']['exit']['adaptive'][k] for k in EXIT_KEYS]
     f=frame.diagnostics['vector'];s=1 if job['request']['direction']=='LONG' else -1
     opened=instant(job['opens']);entry_minute=(instant(job['entry_at'])-opened).total_seconds()/60

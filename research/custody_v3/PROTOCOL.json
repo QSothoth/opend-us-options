@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "base_main": "ff4c63976d06e24d5a4d72f227947e6af42287c1",
+  "goal": "Improve payoff and scenario-balanced timing value, preserving the original exact-option one-round-trip contract.",
+  "data": {
+    "train": "custody-train-dte4; 124 cases / 19 dates; pinned by existing DATA_PINS.json",
+    "validation": "custody-eval-2026-09-14; three cases; final frozen acceptance only, never candidate ranking",
+    "historical_exposure": "All 19 training dates and the three acceptance cases were reported before this study. Forward blocks here measure historical selection behaviour; they are not a newly unseen market sample.",
+    "live": "No OpenD connection, market fetch, broker dispatch or orders in this study"
+  },
+  "scenario_labels": {
+    "use": "Evaluation-only labels from the whole underlying session relative to the specified CALL/PUT direction; never sent to runtime router or entry/exit rules.",
+    "trend_favourable": "signed close-open >= 0.65 * session range, adverse excursion <= 0.20 * range, full-session efficiency >= 0.08",
+    "trend_adverse": "signed close-open <= -0.65 * session range, favourable excursion <= 0.20 * range, full-session efficiency >= 0.08",
+    "reversal_up": "interior low between minutes 15 and 360; initial drop >= 0.25 range and recovery to close >= 0.50 range",
+    "reversal_down": "interior high between minutes 15 and 360; initial rise >= 0.25 range and fall to close >= 0.50 range",
+    "priority": "trend first; if both reversals qualify choose the larger post-extreme move; all other cases are chop",
+    "weights": "Equal observed dates within each scenario, then equal scenarios. This is a coverage score, not a production-distribution estimate. Missing scenarios are explicitly missing.",
+    "sample_reporting": "Show cases and independent dates in every scenario; no invented evidence minimum or missing-group zero filling."
+  },
+  "costs": {"fee_per_side_usd": 0.65,"primary_bps_per_side":25,"stress_bps_per_side":[50,100,200],"fill_delays_minutes":[1,2,3],"basis":"actual option positive-volume OHLCV next-close simulation; no bid/ask historical fill claim"},
+  "controls": {
+    "frozen_versions": ["custody_trend_1m_v1","custody_payoff_1m_v2","custody_payoff_aggressive_1m_v2"],
+    "scheduled": "Entry intents at opening/10/20/30/45 minutes and predeclared 5/15/30/60/120/240-minute holding or scheduled 15:30 exit, all followed by the same quote availability and next-bar delay rules.",
+    "random": "256 seeded ex-ante planned schedules per case: entry 10..45 minutes, durations 5/15/30/60/120/240, exit decision capped at minute 360. Incomplete plans remain visible; no stale-price substitution.",
+    "percentile": "Within-case percentile against completed random controls, conditional on historical quote availability; diagnostic only, not a tradeable portfolio or significance test.",
+    "paired_interval_shuffle": "Post-freeze diagnostic reassigning the complete observed entry/exit clock pairs among cases with positive-volume observations at both points; report all-case and within-date variants.",
+    "router_ablation": "Freeze each expert for the whole session and compare to dynamic routing; also disable entries or exits separately."
+  },
+  "search": {
+    "seed": 2026091503,
+    "budget": "1536 prespecified joint candidates. Each selection scope (full train and each of three forward folds) may additionally evaluate at most 384 prespecified local perturbations of its own top 8 training candidates. Local candidates generated from full-train results are forbidden in forward-fold selection. All candidate definitions are written before their results.",
+    "feature_profiles": [1,4],
+    "families": ["balanced","trend_room","quick_failure","structure","recovery","range_reclaim"],
+    "entry_warmup_minutes":10,
+    "entry_deadline_choices":[30,45,60],
+    "forbidden": "No symbol/date/direction-specific tuning, no ML, no option-price timing feature, no after-the-fact direction choice, no dropped failed cases, no end-of-day entry gaming"
+  },
+  "selection": {
+    "reference":"custody_payoff_1m_v2",
+    "feasible":"All required cases completed; positive total net dollars and mean premium return; macro scenario percentile and nontrend macro percentile no lower than the reference; each available scenario percentile no worse than reference by more than 5 points.",
+    "rank":"Among feasible candidates maximize minimum dual payoff across 1m/25bps, 2m/25bps, 3m/25bps and 1m/100bps; then minimum macro scenario percentile across those stresses, then primary mean premium return, then canonical id. All four stresses must complete all cases with positive total dollars and mean premium return. Primary scenario gates apply before payoff ranking.",
+    "fallback":"If no new candidate passes, retain the reference as best deployable baseline and disclose exploratory candidates without automatic promotion.",
+    "right_tail":"Do not cap real returns or require profitability after deleting top winners; report best-day concentration, trend retention and nontrend incremental performance separately."
+  },
+  "forward_blocks": {"folds":[{"train_dates":6,"next_dates":4},{"train_dates":10,"next_dates":4},{"train_dates":14,"next_dates":5}],"unit":"whole date across all symbols/directions; selection sees preceding dates only; fold choices saved before outer metrics are computed","status":"historical internal forward-selection audit, not unbiased new out-of-sample evidence"},
+  "verification": ["point-in-time prefix invariance","Python/JIT decision equality","all-case service replay equality","restart equality","old v2 unchanged","training/validation identity enforcement","frozen three-case acceptance"]
+}
