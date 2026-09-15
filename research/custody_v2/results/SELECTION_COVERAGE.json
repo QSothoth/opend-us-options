@@ -1,0 +1,9 @@
+{
+  "all_candidates": 31295,
+  "primary_and_block_feasible": 11316,
+  "checked": 2949,
+  "pruned_by_upper_bound": 8367,
+  "selected": "024bcc3e791698ef",
+  "optimal_within_declared_searched_set": true,
+  "independent_oos": false
+}

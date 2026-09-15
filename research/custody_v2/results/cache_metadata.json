@@ -1,0 +1,2534 @@
+{
+  "cases": [
+    {
+      "symbol": "US.SPY",
+      "direction": "SHORT",
+      "contract": "US.SPY260821P776000",
+      "trade_date": "2026-08-17",
+      "expiry": "2026-08-21",
+      "right": "PUT",
+      "strike": 776.0,
+      "reference_price": 776.18,
+      "dte": 4,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "strong_down_trend"
+      ],
+      "scenario_labels": [
+        "strong_down_trend"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.QQQ",
+      "direction": "LONG",
+      "contract": "US.QQQ260821C733000",
+      "trade_date": "2026-08-17",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 733.0,
+      "reference_price": 732.95,
+      "dte": 4,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.IWM",
+      "direction": "LONG",
+      "contract": "US.IWM260821C304000",
+      "trade_date": "2026-08-17",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 304.0,
+      "reference_price": 303.96,
+      "dte": 4,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.AAPL",
+      "direction": "LONG",
+      "contract": "US.AAPL260821C305000",
+      "trade_date": "2026-08-17",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 305.0,
+      "reference_price": 306.21,
+      "dte": 4,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.NVDA",
+      "direction": "SHORT",
+      "contract": "US.NVDA260821P225000",
+      "trade_date": "2026-08-17",
+      "expiry": "2026-08-21",
+      "right": "PUT",
+      "strike": 225.0,
+      "reference_price": 225.72741786,
+      "dte": 4,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "v_reversal_down"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop",
+        "v_reversal_down"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.TSLA",
+      "direction": "LONG",
+      "contract": "US.TSLA260821C340000",
+      "trade_date": "2026-08-17",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 340.0,
+      "reference_price": 340.69,
+      "dte": 4,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "late_day_spike",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MU",
+      "direction": "LONG",
+      "contract": "US.MU260821C1000000",
+      "trade_date": "2026-08-17",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 1000.0,
+      "reference_price": 999.55,
+      "dte": 4,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.AMD",
+      "direction": "LONG",
+      "contract": "US.AMD260821C515000",
+      "trade_date": "2026-08-17",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 515.0,
+      "reference_price": 514.16,
+      "dte": 4,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.META",
+      "direction": "SHORT",
+      "contract": "US.META260821P590000",
+      "trade_date": "2026-08-17",
+      "expiry": "2026-08-21",
+      "right": "PUT",
+      "strike": 590.0,
+      "reference_price": 589.75,
+      "dte": 4,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_down_trend"
+      ],
+      "scenario_labels": [
+        "high_vol",
+        "strong_down_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MSFT",
+      "direction": "SHORT",
+      "contract": "US.MSFT260821P490000",
+      "trade_date": "2026-08-17",
+      "expiry": "2026-08-21",
+      "right": "PUT",
+      "strike": 490.0,
+      "reference_price": 489.219045565,
+      "dte": 4,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_down_trend"
+      ],
+      "scenario_labels": [
+        "strong_down_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.SPY",
+      "direction": "SHORT",
+      "contract": "US.SPY260821P769000",
+      "trade_date": "2026-08-18",
+      "expiry": "2026-08-21",
+      "right": "PUT",
+      "strike": 769.0,
+      "reference_price": 768.7,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "gap_down_open"
+      ],
+      "scenario_labels": [
+        "gap_down_open",
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.QQQ",
+      "direction": "SHORT",
+      "contract": "US.QQQ260821P720000",
+      "trade_date": "2026-08-18",
+      "expiry": "2026-08-21",
+      "right": "PUT",
+      "strike": 720.0,
+      "reference_price": 720.21,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "gap_down_open"
+      ],
+      "scenario_labels": [
+        "gap_down_open",
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.IWM",
+      "direction": "SHORT",
+      "contract": "US.IWM260821P302000",
+      "trade_date": "2026-08-18",
+      "expiry": "2026-08-21",
+      "right": "PUT",
+      "strike": 302.0,
+      "reference_price": 302.45,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "strong_down_trend"
+      ],
+      "scenario_labels": [
+        "strong_down_trend"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.AAPL",
+      "direction": "LONG",
+      "contract": "US.AAPL260821C307500",
+      "trade_date": "2026-08-18",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 307.5,
+      "reference_price": 307.58,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.NVDA",
+      "direction": "SHORT",
+      "contract": "US.NVDA260821P220000",
+      "trade_date": "2026-08-18",
+      "expiry": "2026-08-21",
+      "right": "PUT",
+      "strike": 220.0,
+      "reference_price": 220.203598846,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "gap_down_open"
+      ],
+      "scenario_labels": [
+        "gap_down_open",
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.TSLA",
+      "direction": "SHORT",
+      "contract": "US.TSLA260821P332500",
+      "trade_date": "2026-08-18",
+      "expiry": "2026-08-21",
+      "right": "PUT",
+      "strike": 332.5,
+      "reference_price": 333.22,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "gap_down_open"
+      ],
+      "scenario_labels": [
+        "gap_down_open"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MU",
+      "direction": "SHORT",
+      "contract": "US.MU260821P957500",
+      "trade_date": "2026-08-18",
+      "expiry": "2026-08-21",
+      "right": "PUT",
+      "strike": 957.5,
+      "reference_price": 957.1,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "gap_down_open"
+      ],
+      "scenario_labels": [
+        "gap_down_open"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.AMD",
+      "direction": "LONG",
+      "contract": "US.AMD260821C487500",
+      "trade_date": "2026-08-18",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 487.5,
+      "reference_price": 487.56,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.META",
+      "direction": "SHORT",
+      "contract": "US.META260821P555000",
+      "trade_date": "2026-08-18",
+      "expiry": "2026-08-21",
+      "right": "PUT",
+      "strike": 555.0,
+      "reference_price": 557.48,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_down_trend"
+      ],
+      "scenario_labels": [
+        "gap_down_open",
+        "strong_down_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MSFT",
+      "direction": "LONG",
+      "contract": "US.MSFT260821C480000",
+      "trade_date": "2026-08-18",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 480.0,
+      "reference_price": 480.635204638,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.SPY",
+      "direction": "LONG",
+      "contract": "US.SPY260821C770000",
+      "trade_date": "2026-08-19",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 770.0,
+      "reference_price": 770.36,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.QQQ",
+      "direction": "LONG",
+      "contract": "US.QQQ260821C720000",
+      "trade_date": "2026-08-19",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 720.0,
+      "reference_price": 720.39,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.IWM",
+      "direction": "LONG",
+      "contract": "US.IWM260821C303000",
+      "trade_date": "2026-08-19",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 303.0,
+      "reference_price": 302.88,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.AAPL",
+      "direction": "LONG",
+      "contract": "US.AAPL260821C310000",
+      "trade_date": "2026-08-19",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 310.0,
+      "reference_price": 310.14,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_up_trend"
+      ],
+      "scenario_labels": [
+        "high_vol",
+        "strong_up_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.NVDA",
+      "direction": "SHORT",
+      "contract": "US.NVDA260821P222500",
+      "trade_date": "2026-08-19",
+      "expiry": "2026-08-21",
+      "right": "PUT",
+      "strike": 222.5,
+      "reference_price": 221.422235229,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_down_trend"
+      ],
+      "scenario_labels": [
+        "late_day_spike",
+        "strong_down_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.TSLA",
+      "direction": "LONG",
+      "contract": "US.TSLA260821C340000",
+      "trade_date": "2026-08-19",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 340.0,
+      "reference_price": 338.89,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_up_trend"
+      ],
+      "scenario_labels": [
+        "strong_up_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MU",
+      "direction": "LONG",
+      "contract": "US.MU260821C960000",
+      "trade_date": "2026-08-19",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 960.0,
+      "reference_price": 959.355,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.AMD",
+      "direction": "SHORT",
+      "contract": "US.AMD260821P485000",
+      "trade_date": "2026-08-19",
+      "expiry": "2026-08-21",
+      "right": "PUT",
+      "strike": 485.0,
+      "reference_price": 486.08,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_down_trend"
+      ],
+      "scenario_labels": [
+        "strong_down_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.META",
+      "direction": "LONG",
+      "contract": "US.META260821C540000",
+      "trade_date": "2026-08-19",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 540.0,
+      "reference_price": 541.34,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MSFT",
+      "direction": "LONG",
+      "contract": "US.MSFT260821C480000",
+      "trade_date": "2026-08-19",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 480.0,
+      "reference_price": 479.162976107,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.SPY",
+      "direction": "SHORT",
+      "contract": "US.SPY260821P766000",
+      "trade_date": "2026-08-20",
+      "expiry": "2026-08-21",
+      "right": "PUT",
+      "strike": 766.0,
+      "reference_price": 765.96,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "strong_down_trend"
+      ],
+      "scenario_labels": [
+        "strong_down_trend",
+        "v_reversal_down"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.QQQ",
+      "direction": "LONG",
+      "contract": "US.QQQ260821C712000",
+      "trade_date": "2026-08-20",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 712.0,
+      "reference_price": 712.09,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.IWM",
+      "direction": "SHORT",
+      "contract": "US.IWM260821P299000",
+      "trade_date": "2026-08-20",
+      "expiry": "2026-08-21",
+      "right": "PUT",
+      "strike": 299.0,
+      "reference_price": 299.27,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "gap_down_open"
+      ],
+      "scenario_labels": [
+        "gap_down_open"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.AAPL",
+      "direction": "SHORT",
+      "contract": "US.AAPL260821P317500",
+      "trade_date": "2026-08-20",
+      "expiry": "2026-08-21",
+      "right": "PUT",
+      "strike": 317.5,
+      "reference_price": 317.455,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_down_trend"
+      ],
+      "scenario_labels": [
+        "high_vol",
+        "late_day_spike",
+        "strong_down_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.NVDA",
+      "direction": "LONG",
+      "contract": "US.NVDA260821C217500",
+      "trade_date": "2026-08-20",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 217.5,
+      "reference_price": 218.115934879,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.TSLA",
+      "direction": "LONG",
+      "contract": "US.TSLA260821C345000",
+      "trade_date": "2026-08-20",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 345.0,
+      "reference_price": 346.2,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MU",
+      "direction": "LONG",
+      "contract": "US.MU260821C935000",
+      "trade_date": "2026-08-20",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 935.0,
+      "reference_price": 935.01,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_up_trend"
+      ],
+      "scenario_labels": [
+        "strong_up_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.AMD",
+      "direction": "LONG",
+      "contract": "US.AMD260821C465000",
+      "trade_date": "2026-08-20",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 465.0,
+      "reference_price": 465.67,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "v_reversal_up"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop",
+        "v_reversal_up"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.META",
+      "direction": "LONG",
+      "contract": "US.META260821C547500",
+      "trade_date": "2026-08-20",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 547.5,
+      "reference_price": 546.95,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "late_day_spike",
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MSFT",
+      "direction": "SHORT",
+      "contract": "US.MSFT260821P482500",
+      "trade_date": "2026-08-20",
+      "expiry": "2026-08-21",
+      "right": "PUT",
+      "strike": 482.5,
+      "reference_price": 483.3,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "v_reversal_down"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop",
+        "v_reversal_down"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.SPY",
+      "direction": "LONG",
+      "contract": "US.SPY260821C766000",
+      "trade_date": "2026-08-21",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 766.0,
+      "reference_price": 766.05,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.QQQ",
+      "direction": "LONG",
+      "contract": "US.QQQ260821C715000",
+      "trade_date": "2026-08-21",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 715.0,
+      "reference_price": 715.23,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.IWM",
+      "direction": "LONG",
+      "contract": "US.IWM260821C300000",
+      "trade_date": "2026-08-21",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 300.0,
+      "reference_price": 299.85,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.AAPL",
+      "direction": "LONG",
+      "contract": "US.AAPL260821C312500",
+      "trade_date": "2026-08-21",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 312.5,
+      "reference_price": 312.05,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.NVDA",
+      "direction": "LONG",
+      "contract": "US.NVDA260821C217500",
+      "trade_date": "2026-08-21",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 217.5,
+      "reference_price": 218.175867816,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.TSLA",
+      "direction": "LONG",
+      "contract": "US.TSLA260821C350000",
+      "trade_date": "2026-08-21",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 350.0,
+      "reference_price": 349.88,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_up_trend"
+      ],
+      "scenario_labels": [
+        "gap_up_open",
+        "high_vol",
+        "late_day_spike",
+        "strong_up_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MU",
+      "direction": "LONG",
+      "contract": "US.MU260821C990000",
+      "trade_date": "2026-08-21",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 990.0,
+      "reference_price": 989.675,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.AMD",
+      "direction": "LONG",
+      "contract": "US.AMD260821C477500",
+      "trade_date": "2026-08-21",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 477.5,
+      "reference_price": 476.495,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.META",
+      "direction": "LONG",
+      "contract": "US.META260821C547500",
+      "trade_date": "2026-08-21",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 547.5,
+      "reference_price": 546.885,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MSFT",
+      "direction": "LONG",
+      "contract": "US.MSFT260821C480000",
+      "trade_date": "2026-08-21",
+      "expiry": "2026-08-21",
+      "right": "CALL",
+      "strike": 480.0,
+      "reference_price": 479.88,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.SPY",
+      "direction": "LONG",
+      "contract": "US.SPY260824C765000",
+      "trade_date": "2026-08-24",
+      "expiry": "2026-08-24",
+      "right": "CALL",
+      "strike": 765.0,
+      "reference_price": 764.78,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.QQQ",
+      "direction": "LONG",
+      "contract": "US.QQQ260828C710000",
+      "trade_date": "2026-08-24",
+      "expiry": "2026-08-28",
+      "right": "CALL",
+      "strike": 710.0,
+      "reference_price": 709.66,
+      "dte": 4,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.AAPL",
+      "direction": "SHORT",
+      "contract": "US.AAPL260828P312500",
+      "trade_date": "2026-08-24",
+      "expiry": "2026-08-28",
+      "right": "PUT",
+      "strike": 312.5,
+      "reference_price": 311.47,
+      "dte": 4,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "v_reversal_down"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop",
+        "v_reversal_down"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.META",
+      "direction": "LONG",
+      "contract": "US.META260828C550000",
+      "trade_date": "2026-08-24",
+      "expiry": "2026-08-28",
+      "right": "CALL",
+      "strike": 550.0,
+      "reference_price": 550.2,
+      "dte": 4,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_up_trend"
+      ],
+      "scenario_labels": [
+        "strong_up_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MSFT",
+      "direction": "LONG",
+      "contract": "US.MSFT260828C482500",
+      "trade_date": "2026-08-24",
+      "expiry": "2026-08-28",
+      "right": "CALL",
+      "strike": 482.5,
+      "reference_price": 483.205,
+      "dte": 4,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.SPY",
+      "direction": "LONG",
+      "contract": "US.SPY260825C766000",
+      "trade_date": "2026-08-25",
+      "expiry": "2026-08-25",
+      "right": "CALL",
+      "strike": 766.0,
+      "reference_price": 766.16,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.QQQ",
+      "direction": "LONG",
+      "contract": "US.QQQ260828C711000",
+      "trade_date": "2026-08-25",
+      "expiry": "2026-08-28",
+      "right": "CALL",
+      "strike": 711.0,
+      "reference_price": 711.22,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.AAPL",
+      "direction": "LONG",
+      "contract": "US.AAPL260828C310000",
+      "trade_date": "2026-08-25",
+      "expiry": "2026-08-28",
+      "right": "CALL",
+      "strike": 310.0,
+      "reference_price": 310.79,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.META",
+      "direction": "LONG",
+      "contract": "US.META260828C565000",
+      "trade_date": "2026-08-25",
+      "expiry": "2026-08-28",
+      "right": "CALL",
+      "strike": 565.0,
+      "reference_price": 563.88,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MSFT",
+      "direction": "LONG",
+      "contract": "US.MSFT260828C485000",
+      "trade_date": "2026-08-25",
+      "expiry": "2026-08-28",
+      "right": "CALL",
+      "strike": 485.0,
+      "reference_price": 485.44,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.SPY",
+      "direction": "LONG",
+      "contract": "US.SPY260826C765000",
+      "trade_date": "2026-08-26",
+      "expiry": "2026-08-26",
+      "right": "CALL",
+      "strike": 765.0,
+      "reference_price": 764.73,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "v_reversal_up"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop",
+        "v_reversal_up"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.QQQ",
+      "direction": "LONG",
+      "contract": "US.QQQ260828C708000",
+      "trade_date": "2026-08-26",
+      "expiry": "2026-08-28",
+      "right": "CALL",
+      "strike": 708.0,
+      "reference_price": 708.41,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "v_reversal_up"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "v_reversal_up"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.AAPL",
+      "direction": "LONG",
+      "contract": "US.AAPL260828C310000",
+      "trade_date": "2026-08-26",
+      "expiry": "2026-08-28",
+      "right": "CALL",
+      "strike": 310.0,
+      "reference_price": 310.3,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.META",
+      "direction": "SHORT",
+      "contract": "US.META260828P590000",
+      "trade_date": "2026-08-26",
+      "expiry": "2026-08-28",
+      "right": "PUT",
+      "strike": 590.0,
+      "reference_price": 590.31,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_down_trend"
+      ],
+      "scenario_labels": [
+        "gap_up_open",
+        "high_vol",
+        "strong_down_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MSFT",
+      "direction": "LONG",
+      "contract": "US.MSFT260828C487500",
+      "trade_date": "2026-08-26",
+      "expiry": "2026-08-28",
+      "right": "CALL",
+      "strike": 487.5,
+      "reference_price": 487.85,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_up_trend"
+      ],
+      "scenario_labels": [
+        "strong_up_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.SPY",
+      "direction": "LONG",
+      "contract": "US.SPY260827C768000",
+      "trade_date": "2026-08-27",
+      "expiry": "2026-08-27",
+      "right": "CALL",
+      "strike": 768.0,
+      "reference_price": 768.5,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.QQQ",
+      "direction": "LONG",
+      "contract": "US.QQQ260828C717000",
+      "trade_date": "2026-08-27",
+      "expiry": "2026-08-28",
+      "right": "CALL",
+      "strike": 717.0,
+      "reference_price": 716.93,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.AAPL",
+      "direction": "SHORT",
+      "contract": "US.AAPL260828P310000",
+      "trade_date": "2026-08-27",
+      "expiry": "2026-08-28",
+      "right": "PUT",
+      "strike": 310.0,
+      "reference_price": 310.545,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "gap_down_open"
+      ],
+      "scenario_labels": [
+        "gap_down_open"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.META",
+      "direction": "LONG",
+      "contract": "US.META260828C577500",
+      "trade_date": "2026-08-27",
+      "expiry": "2026-08-28",
+      "right": "CALL",
+      "strike": 577.5,
+      "reference_price": 576.48,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MSFT",
+      "direction": "LONG",
+      "contract": "US.MSFT260828C495000",
+      "trade_date": "2026-08-27",
+      "expiry": "2026-08-28",
+      "right": "CALL",
+      "strike": 495.0,
+      "reference_price": 494.88,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_up_trend"
+      ],
+      "scenario_labels": [
+        "strong_up_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.SPY",
+      "direction": "LONG",
+      "contract": "US.SPY260828C772000",
+      "trade_date": "2026-08-28",
+      "expiry": "2026-08-28",
+      "right": "CALL",
+      "strike": 772.0,
+      "reference_price": 771.76,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.QQQ",
+      "direction": "LONG",
+      "contract": "US.QQQ260828C720000",
+      "trade_date": "2026-08-28",
+      "expiry": "2026-08-28",
+      "right": "CALL",
+      "strike": 720.0,
+      "reference_price": 719.74,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.AAPL",
+      "direction": "LONG",
+      "contract": "US.AAPL260828C317500",
+      "trade_date": "2026-08-28",
+      "expiry": "2026-08-28",
+      "right": "CALL",
+      "strike": 317.5,
+      "reference_price": 316.845,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.META",
+      "direction": "LONG",
+      "contract": "US.META260828C572500",
+      "trade_date": "2026-08-28",
+      "expiry": "2026-08-28",
+      "right": "CALL",
+      "strike": 572.5,
+      "reference_price": 571.55,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_up_trend"
+      ],
+      "scenario_labels": [
+        "strong_up_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MSFT",
+      "direction": "LONG",
+      "contract": "US.MSFT260828C505000",
+      "trade_date": "2026-08-28",
+      "expiry": "2026-08-28",
+      "right": "CALL",
+      "strike": 505.0,
+      "reference_price": 505.33,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_up_trend"
+      ],
+      "scenario_labels": [
+        "strong_up_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.SPY",
+      "direction": "LONG",
+      "contract": "US.SPY260831C767000",
+      "trade_date": "2026-08-31",
+      "expiry": "2026-08-31",
+      "right": "CALL",
+      "strike": 767.0,
+      "reference_price": 767.33,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.QQQ",
+      "direction": "LONG",
+      "contract": "US.QQQ260904C715000",
+      "trade_date": "2026-08-31",
+      "expiry": "2026-09-04",
+      "right": "CALL",
+      "strike": 715.0,
+      "reference_price": 715.17,
+      "dte": 4,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "v_reversal_up"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop",
+        "v_reversal_up"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.AAPL",
+      "direction": "LONG",
+      "contract": "US.AAPL260904C320000",
+      "trade_date": "2026-08-31",
+      "expiry": "2026-09-04",
+      "right": "CALL",
+      "strike": 320.0,
+      "reference_price": 319.6,
+      "dte": 4,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.META",
+      "direction": "LONG",
+      "contract": "US.META260904C577500",
+      "trade_date": "2026-08-31",
+      "expiry": "2026-09-04",
+      "right": "CALL",
+      "strike": 577.5,
+      "reference_price": 577.63,
+      "dte": 4,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MSFT",
+      "direction": "SHORT",
+      "contract": "US.MSFT260904P510000",
+      "trade_date": "2026-08-31",
+      "expiry": "2026-09-04",
+      "right": "PUT",
+      "strike": 510.0,
+      "reference_price": 510.38,
+      "dte": 4,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "v_reversal_down"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "v_reversal_down"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.SPY",
+      "direction": "SHORT",
+      "contract": "US.SPY260901P762000",
+      "trade_date": "2026-09-01",
+      "expiry": "2026-09-01",
+      "right": "PUT",
+      "strike": 762.0,
+      "reference_price": 762.01,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "gap_down_open"
+      ],
+      "scenario_labels": [
+        "gap_down_open",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.QQQ",
+      "direction": "SHORT",
+      "contract": "US.QQQ260904P707000",
+      "trade_date": "2026-09-01",
+      "expiry": "2026-09-04",
+      "right": "PUT",
+      "strike": 707.0,
+      "reference_price": 707.39,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "gap_down_open"
+      ],
+      "scenario_labels": [
+        "gap_down_open",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.AAPL",
+      "direction": "LONG",
+      "contract": "US.AAPL260904C317500",
+      "trade_date": "2026-09-01",
+      "expiry": "2026-09-04",
+      "right": "CALL",
+      "strike": 317.5,
+      "reference_price": 316.98,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_up_trend"
+      ],
+      "scenario_labels": [
+        "high_vol",
+        "strong_up_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.META",
+      "direction": "LONG",
+      "contract": "US.META260904C560000",
+      "trade_date": "2026-09-01",
+      "expiry": "2026-09-04",
+      "right": "CALL",
+      "strike": 560.0,
+      "reference_price": 558.345,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_up_trend"
+      ],
+      "scenario_labels": [
+        "gap_down_open",
+        "high_vol",
+        "strong_up_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MSFT",
+      "direction": "SHORT",
+      "contract": "US.MSFT260904P497500",
+      "trade_date": "2026-09-01",
+      "expiry": "2026-09-04",
+      "right": "PUT",
+      "strike": 497.5,
+      "reference_price": 497.52,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "gap_down_open"
+      ],
+      "scenario_labels": [
+        "gap_down_open"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.SPY",
+      "direction": "LONG",
+      "contract": "US.SPY260902C762000",
+      "trade_date": "2026-09-02",
+      "expiry": "2026-09-02",
+      "right": "CALL",
+      "strike": 762.0,
+      "reference_price": 762.45,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.QQQ",
+      "direction": "LONG",
+      "contract": "US.QQQ260904C707000",
+      "trade_date": "2026-09-02",
+      "expiry": "2026-09-04",
+      "right": "CALL",
+      "strike": 707.0,
+      "reference_price": 707.1,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.AAPL",
+      "direction": "LONG",
+      "contract": "US.AAPL260904C327500",
+      "trade_date": "2026-09-02",
+      "expiry": "2026-09-04",
+      "right": "CALL",
+      "strike": 327.5,
+      "reference_price": 326.865,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.META",
+      "direction": "LONG",
+      "contract": "US.META260904C580000",
+      "trade_date": "2026-09-02",
+      "expiry": "2026-09-04",
+      "right": "CALL",
+      "strike": 580.0,
+      "reference_price": 578.785,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_up_trend"
+      ],
+      "scenario_labels": [
+        "high_vol",
+        "strong_up_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MSFT",
+      "direction": "LONG",
+      "contract": "US.MSFT260904C500000",
+      "trade_date": "2026-09-02",
+      "expiry": "2026-09-04",
+      "right": "CALL",
+      "strike": 500.0,
+      "reference_price": 499.85,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.SPY",
+      "direction": "LONG",
+      "contract": "US.SPY260903C768000",
+      "trade_date": "2026-09-03",
+      "expiry": "2026-09-03",
+      "right": "CALL",
+      "strike": 768.0,
+      "reference_price": 767.9,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "strong_up_trend"
+      ],
+      "scenario_labels": [
+        "strong_up_trend"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.QQQ",
+      "direction": "LONG",
+      "contract": "US.QQQ260904C711000",
+      "trade_date": "2026-09-03",
+      "expiry": "2026-09-04",
+      "right": "CALL",
+      "strike": 711.0,
+      "reference_price": 710.85,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "strong_up_trend"
+      ],
+      "scenario_labels": [
+        "strong_up_trend"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.AAPL",
+      "direction": "LONG",
+      "contract": "US.AAPL260904C325000",
+      "trade_date": "2026-09-03",
+      "expiry": "2026-09-04",
+      "right": "CALL",
+      "strike": 325.0,
+      "reference_price": 324.87,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.META",
+      "direction": "LONG",
+      "contract": "US.META260904C605000",
+      "trade_date": "2026-09-03",
+      "expiry": "2026-09-04",
+      "right": "CALL",
+      "strike": 605.0,
+      "reference_price": 604.49,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "gap_up_open"
+      ],
+      "scenario_labels": [
+        "gap_up_open"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MSFT",
+      "direction": "LONG",
+      "contract": "US.MSFT260904C502500",
+      "trade_date": "2026-09-03",
+      "expiry": "2026-09-04",
+      "right": "CALL",
+      "strike": 502.5,
+      "reference_price": 501.66,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.SPY",
+      "direction": "LONG",
+      "contract": "US.SPY260904C772000",
+      "trade_date": "2026-09-04",
+      "expiry": "2026-09-04",
+      "right": "CALL",
+      "strike": 772.0,
+      "reference_price": 772.01,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.QQQ",
+      "direction": "LONG",
+      "contract": "US.QQQ260904C719000",
+      "trade_date": "2026-09-04",
+      "expiry": "2026-09-04",
+      "right": "CALL",
+      "strike": 719.0,
+      "reference_price": 719.345,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.AAPL",
+      "direction": "SHORT",
+      "contract": "US.AAPL260904P327500",
+      "trade_date": "2026-09-04",
+      "expiry": "2026-09-04",
+      "right": "PUT",
+      "strike": 327.5,
+      "reference_price": 328.305,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_down_trend"
+      ],
+      "scenario_labels": [
+        "high_vol",
+        "strong_down_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.META",
+      "direction": "LONG",
+      "contract": "US.META260904C612500",
+      "trade_date": "2026-09-04",
+      "expiry": "2026-09-04",
+      "right": "CALL",
+      "strike": 612.5,
+      "reference_price": 612.35,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "v_reversal_up"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "v_reversal_up"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MSFT",
+      "direction": "SHORT",
+      "contract": "US.MSFT260904P510000",
+      "trade_date": "2026-09-04",
+      "expiry": "2026-09-04",
+      "right": "PUT",
+      "strike": 510.0,
+      "reference_price": 510.0,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_down_trend"
+      ],
+      "scenario_labels": [
+        "strong_down_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.SPY",
+      "direction": "SHORT",
+      "contract": "US.SPY260908P769000",
+      "trade_date": "2026-09-08",
+      "expiry": "2026-09-08",
+      "right": "PUT",
+      "strike": 769.0,
+      "reference_price": 769.07,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "strong_down_trend"
+      ],
+      "scenario_labels": [
+        "strong_down_trend"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.QQQ",
+      "direction": "LONG",
+      "contract": "US.QQQ260911C721000",
+      "trade_date": "2026-09-08",
+      "expiry": "2026-09-11",
+      "right": "CALL",
+      "strike": 721.0,
+      "reference_price": 720.909,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.IWM",
+      "direction": "SHORT",
+      "contract": "US.IWM260911P295000",
+      "trade_date": "2026-09-08",
+      "expiry": "2026-09-11",
+      "right": "PUT",
+      "strike": 295.0,
+      "reference_price": 295.34,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "v_reversal_down"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop",
+        "v_reversal_down"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.AAPL",
+      "direction": "LONG",
+      "contract": "US.AAPL260911C317500",
+      "trade_date": "2026-09-08",
+      "expiry": "2026-09-11",
+      "right": "CALL",
+      "strike": 317.5,
+      "reference_price": 317.1,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.META",
+      "direction": "SHORT",
+      "contract": "US.META260911P615000",
+      "trade_date": "2026-09-08",
+      "expiry": "2026-09-11",
+      "right": "PUT",
+      "strike": 615.0,
+      "reference_price": 616.205,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "v_reversal_down"
+      ],
+      "scenario_labels": [
+        "late_day_spike",
+        "range_chop",
+        "v_reversal_down"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MSFT",
+      "direction": "SHORT",
+      "contract": "US.MSFT260911P492500",
+      "trade_date": "2026-09-08",
+      "expiry": "2026-09-11",
+      "right": "PUT",
+      "strike": 492.5,
+      "reference_price": 493.01,
+      "dte": 3,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "gap_down_open"
+      ],
+      "scenario_labels": [
+        "gap_down_open",
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.SPY",
+      "direction": "LONG",
+      "contract": "US.SPY260909C764000",
+      "trade_date": "2026-09-09",
+      "expiry": "2026-09-09",
+      "right": "CALL",
+      "strike": 764.0,
+      "reference_price": 764.08,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.QQQ",
+      "direction": "LONG",
+      "contract": "US.QQQ260911C716000",
+      "trade_date": "2026-09-09",
+      "expiry": "2026-09-11",
+      "right": "CALL",
+      "strike": 716.0,
+      "reference_price": 716.4,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.IWM",
+      "direction": "SHORT",
+      "contract": "US.IWM260911P293000",
+      "trade_date": "2026-09-09",
+      "expiry": "2026-09-11",
+      "right": "PUT",
+      "strike": 293.0,
+      "reference_price": 293.46,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "strong_down_trend"
+      ],
+      "scenario_labels": [
+        "strong_down_trend"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.AAPL",
+      "direction": "LONG",
+      "contract": "US.AAPL260911C315000",
+      "trade_date": "2026-09-09",
+      "expiry": "2026-09-11",
+      "right": "CALL",
+      "strike": 315.0,
+      "reference_price": 315.485,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.META",
+      "direction": "LONG",
+      "contract": "US.META260911C647500",
+      "trade_date": "2026-09-09",
+      "expiry": "2026-09-11",
+      "right": "CALL",
+      "strike": 647.5,
+      "reference_price": 648.64,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "gap_up_open"
+      ],
+      "scenario_labels": [
+        "gap_up_open",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MSFT",
+      "direction": "LONG",
+      "contract": "US.MSFT260911C492500",
+      "trade_date": "2026-09-09",
+      "expiry": "2026-09-11",
+      "right": "CALL",
+      "strike": 492.5,
+      "reference_price": 493.07,
+      "dte": 2,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.SPY",
+      "direction": "SHORT",
+      "contract": "US.SPY260911P758000",
+      "trade_date": "2026-09-10",
+      "expiry": "2026-09-11",
+      "right": "PUT",
+      "strike": 758.0,
+      "reference_price": 758.03,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "gap_down_open"
+      ],
+      "scenario_labels": [
+        "gap_down_open",
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.QQQ",
+      "direction": "LONG",
+      "contract": "US.QQQ260911C708000",
+      "trade_date": "2026-09-10",
+      "expiry": "2026-09-11",
+      "right": "CALL",
+      "strike": 708.0,
+      "reference_price": 707.55,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.IWM",
+      "direction": "SHORT",
+      "contract": "US.IWM260911P288000",
+      "trade_date": "2026-09-10",
+      "expiry": "2026-09-11",
+      "right": "PUT",
+      "strike": 288.0,
+      "reference_price": 288.48,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "gap_down_open"
+      ],
+      "scenario_labels": [
+        "gap_down_open",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.AAPL",
+      "direction": "LONG",
+      "contract": "US.AAPL260911C317500",
+      "trade_date": "2026-09-10",
+      "expiry": "2026-09-11",
+      "right": "CALL",
+      "strike": 317.5,
+      "reference_price": 316.67,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_up_trend"
+      ],
+      "scenario_labels": [
+        "high_vol",
+        "strong_up_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.META",
+      "direction": "LONG",
+      "contract": "US.META260911C652500",
+      "trade_date": "2026-09-10",
+      "expiry": "2026-09-11",
+      "right": "CALL",
+      "strike": 652.5,
+      "reference_price": 653.705,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MSFT",
+      "direction": "LONG",
+      "contract": "US.MSFT260911C487500",
+      "trade_date": "2026-09-10",
+      "expiry": "2026-09-11",
+      "right": "CALL",
+      "strike": 487.5,
+      "reference_price": 488.32,
+      "dte": 1,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.SPY",
+      "direction": "LONG",
+      "contract": "US.SPY260911C765000",
+      "trade_date": "2026-09-11",
+      "expiry": "2026-09-11",
+      "right": "CALL",
+      "strike": 765.0,
+      "reference_price": 764.72,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "gap_up_open"
+      ],
+      "scenario_labels": [
+        "gap_up_open",
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.QQQ",
+      "direction": "LONG",
+      "contract": "US.QQQ260911C716000",
+      "trade_date": "2026-09-11",
+      "expiry": "2026-09-11",
+      "right": "CALL",
+      "strike": 716.0,
+      "reference_price": 715.68,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.IWM",
+      "direction": "LONG",
+      "contract": "US.IWM260911C291000",
+      "trade_date": "2026-09-11",
+      "expiry": "2026-09-11",
+      "right": "CALL",
+      "strike": 291.0,
+      "reference_price": 290.71,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 405,
+      "direction_basis": [
+        "gap_up_open"
+      ],
+      "scenario_labels": [
+        "gap_up_open"
+      ],
+      "option_bar_count_on_trade_date": 405
+    },
+    {
+      "symbol": "US.AAPL",
+      "direction": "LONG",
+      "contract": "US.AAPL260911C327500",
+      "trade_date": "2026-09-11",
+      "expiry": "2026-09-11",
+      "right": "CALL",
+      "strike": 327.5,
+      "reference_price": 327.45,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "strong_up_trend"
+      ],
+      "scenario_labels": [
+        "strong_up_trend"
+      ],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.META",
+      "direction": "LONG",
+      "contract": "US.META260911C652500",
+      "trade_date": "2026-09-11",
+      "expiry": "2026-09-11",
+      "right": "CALL",
+      "strike": 652.5,
+      "reference_price": 653.51,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [],
+      "option_bar_count_on_trade_date": 390
+    },
+    {
+      "symbol": "US.MSFT",
+      "direction": "LONG",
+      "contract": "US.MSFT260911C495000",
+      "trade_date": "2026-09-11",
+      "expiry": "2026-09-11",
+      "right": "CALL",
+      "strike": 495.0,
+      "reference_price": 495.65,
+      "dte": 0,
+      "underlying_bar_count": 390,
+      "option_bar_count": 390,
+      "direction_basis": [
+        "default_long"
+      ],
+      "scenario_labels": [
+        "low_vol",
+        "range_chop"
+      ],
+      "option_bar_count_on_trade_date": 390
+    }
+  ],
+  "dates": [
+    "2026-08-17",
+    "2026-08-18",
+    "2026-08-19",
+    "2026-08-20",
+    "2026-08-21",
+    "2026-08-24",
+    "2026-08-25",
+    "2026-08-26",
+    "2026-08-27",
+    "2026-08-28",
+    "2026-08-31",
+    "2026-09-01",
+    "2026-09-02",
+    "2026-09-03",
+    "2026-09-04",
+    "2026-09-08",
+    "2026-09-09",
+    "2026-09-10",
+    "2026-09-11"
+  ],
+  "source": "custody-train-dte4",
+  "checksums_verified": 250
+}

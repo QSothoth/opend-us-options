@@ -17,7 +17,7 @@ class SignalProvider:
         """
         item=self.registry.get(strategy_id);as_of=instant(as_of);underlying=symbol(underlying)
         if direction not in ('LONG','SHORT'):raise ValueError('invalid direction')
-        if item.get('timing_model') == 'intraday_v1':
+        if item.get('timing_model') in ('intraday_v1','intraday_v2'):
             from datetime import datetime, time
             from .models import ET, Session
             from .marketdata import Bar
@@ -25,7 +25,11 @@ class SignalProvider:
             day = as_of.astimezone(ET).date()
             session = Session(day.isoformat(), datetime.combine(day,time(9,30),tzinfo=ET),
                               instant(session_closes[day.isoformat()]))
-            engine = IntradayIndicators(item, underlying, direction, session)
+            if item.get('timing_model') == 'intraday_v2':
+                from .adaptive import AdaptiveIndicators
+                engine = AdaptiveIndicators(item, underlying, direction, session)
+            else:
+                engine = IntradayIndicators(item, underlying, direction, session)
             result = None
             for row in bars:
                 t = instant(row['close_time'])

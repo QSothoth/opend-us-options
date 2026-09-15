@@ -153,7 +153,7 @@ class NextBarFills:
                                 now if order['side'] == 'BUY_OPEN' else None)
             self.service.apply_update(event, now)
             self.fills.append({'side':order['side'],'at':now.isoformat(),'price':option_bar.close,
-                               'signal_at':order['created_at'],'qty':order['quantity'],
+                               'signal_at':order['created_at'],'decision_at':order.get('decision_at',order['created_at']),'qty':order['quantity'],
                                'basis':'next_option_bar_close_simulated_reprice','reason':order['reason']})
             self.pending.remove(order)
 
@@ -167,11 +167,17 @@ class NextBarFills:
                                                   instant(order['created_at'])), instant(order['created_at']))
 
 
-def replay_case(case, underlying, option, session, variant='baseline', delay_minutes=1):
+def replay_case(case, underlying, option, session, variant='baseline', delay_minutes=1, strategy_override=None):
     if variant not in VARIANTS: raise ValueError('unknown variant')
-    registry = VariantRegistry(variant)
-    strategy = registry.get(registry.item['strategy_id'])
-    indicators = IntradayIndicators(strategy, case['symbol'], case['direction'], session)
+    if strategy_override is not None:
+        from .adaptive import CandidateRegistry, AdaptiveIndicators
+        registry = CandidateRegistry(strategy_override)
+        strategy = registry.get(registry.item['strategy_id'])
+        indicators = AdaptiveIndicators(strategy,case['symbol'],case['direction'],session)
+    else:
+        registry = VariantRegistry(variant)
+        strategy = registry.get(registry.item['strategy_id'])
+        indicators = IntradayIndicators(strategy, case['symbol'], case['direction'], session)
     ub = {b.close_time:b for b in underlying if session.opens < b.close_time < session.closes}
     ob = {b.close_time:b for b in option if session.opens < b.close_time < session.closes}
     # Some options continue trading to 16:15; this product exits before stock close.

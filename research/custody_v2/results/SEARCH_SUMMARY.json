@@ -1,0 +1,49 @@
+{
+  "configurations": 31295,
+  "unique_ids": 31295,
+  "unique_timing_and_exit_reason_paths": 23918,
+  "full_coverage": 29665,
+  "positive_net_dollar_and_mean_return": 20612,
+  "families": {
+    "corrected_reference": 1,
+    "exit_one_factor": 64,
+    "exit_grid": 288,
+    "entry_grid": 792,
+    "broad_joint": 12000,
+    "local_neighbor": 1276,
+    "guided_refinement": 16874
+  },
+  "feature_profiles": 6,
+  "entry_families": 11,
+  "trade_archives": [
+    {
+      "file": "all_trades_indices.npy.xz",
+      "shape": [
+        14421,
+        124,
+        6
+      ],
+      "bytes": 2015776
+    },
+    {
+      "file": "refinement_trades_indices.npy.xz",
+      "shape": [
+        16874,
+        124,
+        6
+      ],
+      "bytes": 760716
+    }
+  ],
+  "trade_index_columns": [
+    "entry_intent",
+    "entry_fill",
+    "exit_decision",
+    "exit_intent",
+    "exit_fill",
+    "exit_reason"
+  ],
+  "index_unit": "minutes after 09:30 ET; -1 incomplete",
+  "price_reconstruction": "Read option close at entry_fill/exit_fill from exact Release case, ordered by cache_metadata.cases. Multiply price difference by 100 for quantity 1. Primary cost formula: 100*(exit*.9975-entry*1.0025)-1.30.",
+  "incomplete_metric_warning": "Raw search pnl/mean for completed<124 describe the completed subset only; such configs are never eligible. Do not present these as full-cohort results."
+}

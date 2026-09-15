@@ -1,0 +1,33 @@
+{
+  "original_v1_124_trades_unchanged": true,
+  "two_cold_service_runs_identical": true,
+  "fast_service_parity": [
+    {
+      "run": "v2",
+      "cases": 124,
+      "exact_timestamp_and_price_matches": 124
+    },
+    {
+      "run": "v2_cold_restart",
+      "cases": 124,
+      "exact_timestamp_and_price_matches": 124
+    },
+    {
+      "run": "v2_delay2",
+      "cases": 124,
+      "exact_timestamp_and_price_matches": 124
+    },
+    {
+      "run": "v2_delay3",
+      "cases": 124,
+      "exact_timestamp_and_price_matches": 124
+    }
+  ],
+  "no_broker_orders": true,
+  "validation_used": false,
+  "final_registered_cli_124_exact_matches": true,
+  "tests": {
+    "command": "python3 -m unittest custody.tests.test_adaptive custody.tests.test_baseline custody.tests.test_runtime custody.tests.test_dryrun -q",
+    "passed": 73
+  }
+}

@@ -95,3 +95,7 @@ The [5m follow-up](research/aggressive_payoff/five_minute_followup/REPORT.md) te
 
 ## License
 Code: MIT. Release market data is a small personal research extract for reproducible offline tests.
+
+## 托管期权择时 v2（训练候选，仅 dryrun）
+
+31,295 组参数搜索的两个候选、124 个训练 case 的期权收益、成本/延迟压力测试及复现命令见 [研究报告](research/custody_v2/README.md)。进取型与稳健型分别注册为 `custody_payoff_aggressive_1m_v2`、`custody_payoff_1m_v2`；不改变既有默认策略，不代表样本外验证通过。

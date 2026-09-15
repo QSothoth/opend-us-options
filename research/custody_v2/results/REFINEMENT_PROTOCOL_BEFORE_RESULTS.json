@@ -1,0 +1,69 @@
+{
+  "scope": "all124 train only",
+  "reason": "refine diverse stress-tested leaders around early-failure/trend-capture tradeoff",
+  "seed": 20260916,
+  "draws": 20000,
+  "selection": "identical to PROTOCOL.json; no holdout accessed",
+  "leaders": [
+    "1aa4e1a5d47b9812",
+    "c5242abcd7c54b6b",
+    "f99710ef8251541e",
+    "d9c30aa3c3eada74",
+    "abc1054ae827a691",
+    "6824ac32589f51de",
+    "19adfd08d4182c5a",
+    "afa39a82db0ed661",
+    "d16c14ffeef73163",
+    "a6e2ff6e1c07e979"
+  ],
+  "entry_mutations": "0..2 active/declared fields",
+  "exit_mutations": "1..5 fields",
+  "new_exit_values": {
+    "soft": [
+      0,
+      0.25,
+      0.5,
+      0.75,
+      1,
+      1.5,
+      2
+    ],
+    "grace": [
+      0,
+      2,
+      3,
+      5,
+      8,
+      10
+    ],
+    "fail": [
+      0,
+      3,
+      5,
+      8,
+      10,
+      15,
+      20,
+      30
+    ],
+    "activation": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      6
+    ],
+    "trail": [
+      0,
+      0.5,
+      1,
+      1.5,
+      2,
+      3,
+      4,
+      6,
+      8
+    ]
+  }
+}

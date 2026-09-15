@@ -71,7 +71,7 @@ class CustodyService:
 
     @staticmethod
     def _baseline(job):
-        return job['strategy'].get('timing_model') == 'intraday_v1'
+        return job['strategy'].get('timing_model') in ('intraday_v1','intraday_v2')
 
     @contextmanager
     def _tx(self):
@@ -92,7 +92,7 @@ class CustodyService:
 
     def create_job(self,payload,now):
         now=instant(now);req=JobRequest.parse(payload,now);strategy=self.registry.get(req.strategy_id)
-        baseline = strategy.get('timing_model') == 'intraday_v1'
+        baseline = strategy.get('timing_model') in ('intraday_v1','intraday_v2')
         if baseline and self.mode != 'dryrun':
             raise ValueError('custody baseline is dryrun-only')
         scope, scope_value = ('contract', req.contract) if baseline else ('symbol', req.symbol)
@@ -164,41 +164,50 @@ class CustodyService:
 
     def _new(self,db,j,kind,side,qty,now,quote=None,target=None):
         existing=self._orders(db,j);suffix='BUY' if side=='BUY_OPEN' else ('CANCEL_'+target if kind=='CANCEL' else 'SELL_'+str(sum(o['side']=='SELL_CLOSE' for o in existing)+1))
+        if side=='BUY_OPEN' and j['strategy'].get('timing_model')=='intraday_v2':
+            suffix='BUY_'+str(sum(o['side']=='BUY_OPEN' for o in existing)+1)
         key=j['id']+':'+suffix
         if any(o['client_order_id']==key for o in existing): return
         o={'client_order_id':key,'job_id':j['id'],'account':self.account,'mode':self.mode,'kind':kind,'side':side,'contract':j['request']['contract'],'quantity':qty,'limit_price':(quote.ask if side=='BUY_OPEN' else quote.bid) if quote else None,'signal_bar_close':j['last_bar'],'reason':j['exit_reason'] or ('entry' if side=='BUY_OPEN' else 'cancel'),'quote_as_of':quote.as_of.isoformat() if quote else None,'target':target,'position_effect':'OPEN' if side=='BUY_OPEN' else 'CLOSE' if side=='SELL_CLOSE' else None,'reduce_only':side=='SELL_CLOSE','status':'CREATED','cumulative_qty':0,'sequence':-1,'last_update':None,'created_at':now.isoformat()}
         if self._baseline(j):
             o['timing_atr'] = j['atr']
+            o['decision_at'] = j.get('exit_decision_at') if side == 'SELL_CLOSE' else j['last_bar']
             if side == 'BUY_OPEN': o['reason'] = j.get('entry_reason') or 'entry'
         db.execute('INSERT INTO orders VALUES (?,?,?)',(key,j['id'],encode(o)))
 
     def _exit(self,db,j,now,quote):
         orders=self._orders(db,j);buys=[o for o in orders if o['side']=='BUY_OPEN']
+        if j['strategy'].get('timing_model')=='intraday_v2':buys=buys[-1:]
         if buys and buys[0]['status']=='CREATED':
             buys[0]['status']='CANCELED';self._store_order(db,buys[0])
         if buys and buys[0]['status'] not in TERMINAL:
             self._new(db,j,'CANCEL','CANCEL',0,now,target=buys[0]['client_order_id']);j['attention']='WAITING_ENTRY_CANCEL_CONFIRMATION';return
         if j['position_qty']==0:
-            j['state']='DONE';j['attention']=None;return
+            j['state']='DONE';j['attention']=None
+            if j['strategy'].get('timing_model')=='intraday_v2' and not j['entry_at'] and j.get('exit_reason')!='operator_stop':j['attention']='ENTRY_NOT_FILLED'
+            return
         if any(o['side']=='SELL_CLOSE' and o['status'] in ACTIVE for o in orders): return
         if not self._quote(j,quote,now,allow_wide=True): j['attention']='EXIT_WAITING_VALID_QUOTE';return
         self._new(db,j,'LIMIT','SELL_CLOSE',j['position_qty'],now,quote);j['attention']=None
 
     def _request_exit(self,db,j,reason,now,quote):
-        j['exit_requested']=True;j['exit_reason']=j['exit_reason'] or reason;j['state']='EXIT';self._exit(db,j,now,quote)
+        j.setdefault('exit_decision_at',now.isoformat());j['exit_requested']=True;j['exit_reason']=j['exit_reason'] or reason;j['state']='EXIT';self._exit(db,j,now,quote)
 
     def _clock(self,db,j,now,quote):
         if j['state']=='DONE': return
         orders=self._orders(db,j);buys=[o for o in orders if o['side']=='BUY_OPEN']
+        if j['strategy'].get('timing_model')=='intraday_v2':buys=buys[-1:]
         if now>=instant(j['flatten_at']): self._request_exit(db,j,'scheduled_flatten',now,quote);return
         if j['entry_at'] and now>=instant(j['entry_at'])+timedelta(minutes=j['strategy']['config']['case']['exit']['hold']): self._request_exit(db,j,'max_hold',now,quote);return
         if j['exit_requested']: self._exit(db,j,now,quote);return
         if buys and buys[0]['status'] not in TERMINAL and (now-instant(buys[0]['created_at'])).total_seconds()>=self.policy.entry_timeout_seconds:
             if buys[0]['status']=='CREATED':
                 buys[0]['status']='CANCELED';self._store_order(db,buys[0]);j['state']='DONE'
+                if j['strategy'].get('timing_model')=='intraday_v2' and not j['entry_at']:
+                    j['state']='WATCH';j['attention']='ENTRY_RETRY_PENDING'
             else:
                 self._new(db,j,'CANCEL','CANCEL',0,now,target=buys[0]['client_order_id']);j['attention']='ENTRY_TIMEOUT_CANCEL_PENDING'
-        if not buys and now>instant(j['deadline']):
+        if (not buys or (j['strategy'].get('timing_model')=='intraday_v2' and not j['entry_at'] and buys[-1]['status'] in TERMINAL)) and now>instant(j['deadline']):
             j['state']='DONE'
             if self._baseline(j): j['attention']='ENTRY_NOT_FILLED'
 
@@ -253,7 +262,11 @@ class CustodyService:
         if type(frame.trend_against) is not bool:
             raise ValueError('invalid trend flag')
         if j['position_qty'] and not j['exit_requested']:
-            reason = baseline_exit(j, frame)
+            if j['strategy'].get('timing_model') == 'intraday_v2':
+                from .adaptive import adaptive_exit
+                reason = adaptive_exit(j, frame)
+            else:
+                reason = baseline_exit(j, frame)
             if reason: self._request_exit(db,j,reason,now,quote)
         elif j['state'] == 'WATCH' and now <= instant(j['deadline']):
             fallback = now >= instant(j['fallback_at'])
@@ -310,6 +323,9 @@ class CustodyService:
             elif o['side']=='BUY_OPEN':
                 j['state']='IN' if event.status in TERMINAL and j['position_qty'] else 'DONE' if event.status in TERMINAL else 'ENTRY'
                 if event.status in TERMINAL:j['attention']=None
+                if j['strategy'].get('timing_model')=='intraday_v2' and event.status in ('CANCELED','REJECTED') and not j['entry_at']:
+                    j['state']='WATCH' if now<=instant(j['deadline']) else 'DONE'
+                    j['attention']='ENTRY_RETRY_PENDING' if j['state']=='WATCH' else 'ENTRY_NOT_FILLED'
             self._clock(db,j,now,None);self._save(db,j)
         return self.get_job(j['id'])
 

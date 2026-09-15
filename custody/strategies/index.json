@@ -36,6 +36,28 @@
       "timing_model": "intraday_v1",
       "true_option_pnl": false,
       "pnl_basis": "observed_option_ohlcv_simulation"
+    },
+    "custody_payoff_1m_v2": {
+      "sha256": "338ec7be31eb8b6563988ec8b4e3e0bbfea2bb87e97221ba69c4a16ddf37b41b",
+      "case_id": "78e63fddb7dc",
+      "timing_model": "intraday_v2",
+      "signal_minutes": 1,
+      "status": "trained_candidate_dryrun",
+      "true_option_pnl": false,
+      "pnl_basis": "observed_option_ohlcv_simulation",
+      "file": "custody_payoff_1m_v2.json",
+      "description": "Train-only payoff-first search winner; frozen before service confirmation"
+    },
+    "custody_payoff_aggressive_1m_v2": {
+      "sha256": "1db0ae0a237947f8f6da4bd53f8f8789e40077d91e86c6e61d5c971277887d26",
+      "case_id": "5bee2cc148ed",
+      "timing_model": "intraday_v2",
+      "signal_minutes": 1,
+      "status": "trained_candidate_dryrun",
+      "true_option_pnl": false,
+      "pnl_basis": "observed_option_ohlcv_simulation",
+      "file": "custody_payoff_aggressive_1m_v2.json",
+      "description": "Highest primary net dual-payoff in searched space; more latency-sensitive"
     }
   }
 }

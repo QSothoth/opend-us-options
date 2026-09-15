@@ -1,0 +1,17 @@
+results/cache.npz
+results/all_trades.npz
+results/refinement_trades.npz
+results/CANDIDATES_BEFORE_RESULTS.json
+results/LOCAL_CANDIDATES_BEFORE_RESULTS.json
+results/REFINEMENT_CANDIDATES_BEFORE_RESULTS.json
+results/aggressive_service_reports.json
+results/all_results.json
+results/global_pressure_results.json
+results/pressure2_results.json
+results/pressure_results.json
+results/refinement_results.json
+results/v1_service_report.json
+results/v2_cold_restart_service_report.json
+results/v2_delay2_service_report.json
+results/v2_delay3_service_report.json
+results/v2_service_report.json

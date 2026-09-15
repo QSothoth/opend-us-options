@@ -207,10 +207,16 @@ class SameDayHistorySource:
     def collect(self, boundary):
         day = instant(boundary).astimezone(ET).date().isoformat()
         bars = self.market.current_bars(self.symbol, 600, 'K_1M', boundary=boundary)
-        if not bars:
-            bars = self.market.history_bars(self.symbol,'K_1M',day,day,boundary=boundary)
         session = self.calendar.session(day)
         bars = [b for b in bars if session.opens < b.close_time <= boundary]
+        expected = int((boundary-session.opens).total_seconds()//60)
+        if len({b.close_time for b in bars}) < expected:
+            extra = self.market.history_bars(self.symbol,'K_1M',day,day,boundary=boundary)
+            merged = {b.close_time:b for b in extra if session.opens < b.close_time <= boundary}
+            merged.update({b.close_time:b for b in bars})
+            bars = [merged[t] for t in sorted(merged)]
+        if len(bars) != expected:
+            raise ValueError('incomplete same-day underlying history')
         return [b.to_record() for b in bars], [], {day:session.closes.isoformat()}
 
 
@@ -342,7 +348,7 @@ def main(argv=None):
         frame_source = None
         if not args.no_frames:
             history = (SameDayHistorySource(market,calendar,symbol)
-                       if job['strategy'].get('timing_model') == 'intraday_v1'
+                       if job['strategy'].get('timing_model') in ('intraday_v1','intraday_v2')
                        else OpenDHistorySource(market,calendar,symbol,
                                                warmup_days=args.warmup_days,daily_days=args.daily_days))
             frame_source = SignalFrameSource(SignalProvider(service.registry),

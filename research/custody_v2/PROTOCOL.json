@@ -1,0 +1,44 @@
+{
+  "created_at_utc": "2026-09-15T07:57:55.640574+00:00",
+  "task": "must-trade option timing, payoff-first broad search",
+  "train_release": "custody-train-dte4",
+  "train_sha256": "d72e190e6467f780782f809302a51f9dc8d6f72a00885c2dfb1aa96bf65c51f0",
+  "case_count": 124,
+  "validation": "custody-eval-2026-09-14 is excluded from ALL loading, ranking and diagnostics; no new held-out claims",
+  "source_baseline": "0f5a1a47b5cca596a19d1b099c8590a8a811309c",
+  "quantity": 1,
+  "signal_input": "only exact underlying current-session completed 1m OHLCV; static DTE permitted for timing clock; option prices execution/PnL only",
+  "primary_fill": "next positive-volume option close at least one minute after intent; original v1 execution semantics, no backfill",
+  "costs": {
+    "fee_per_contract_per_side": 0.65,
+    "slippage_bps_per_side": [
+      0,
+      25,
+      50,
+      100
+    ],
+    "total_delay_minutes": [
+      1,
+      2,
+      3
+    ]
+  },
+  "seed": 20260915,
+  "search_stages": [
+    "fixed-entry exit family grid",
+    "entry family grid with fixed exits",
+    "12000 deterministic broad combinations from declared domains",
+    "up to 2000 prespecified local perturbations of 12 diverse leaders",
+    "shortlist up to 160 including payoff and expectancy leaders; joint cost/delay pressure",
+    "select with declared robust payoff criterion; full-service parity and component ablations"
+  ],
+  "selection": {
+    "base_eligibility": "124 complete; positive USD and equal-case premium mean after 0.65 per side plus 25 bps per side; positive winning and losing sample counts",
+    "nominal_champion": "largest min(dollar_payoff, premium_return_payoff) at primary cost",
+    "robust_preferred": "full coverage and positive dollar/return mean in all five execution scenarios (delay1/2/3 at25bps; delay1 at50/100bps), and positive mean premium returns in each descriptive chronological block (first6/middle6/last7 dates); maximize minimum dual payoff across scenarios",
+    "fallback_if_none": "report absence; among base eligible choose most passing conditions, then worst-scenario dual payoff; do not claim all tests passed",
+    "ties": "higher primary equal-case net mean then canonical config id"
+  },
+  "anti_overfit": "all train dates previously observed; chronological/leave-symbol/neighbor evidence internal only; publish all attempts; no stock/direction/day-specific parameters; no winner deletion; no no_entry; no fixed profit target",
+  "execution_safety": "dryrun only; never connect OpenD or dispatch broker; frozen original v1 preserved in its worktree"
+}
