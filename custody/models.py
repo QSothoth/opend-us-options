@@ -119,6 +119,9 @@ class Frame:
     close: float
     daily_atr: float
     entry_ready: bool
+    trend_against: bool = False
+    entry_reason: str = 'entry'
+    diagnostics: dict | None = None
 
 
 @dataclass(frozen=True)

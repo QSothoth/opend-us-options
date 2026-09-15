@@ -32,7 +32,7 @@ class RuntimeTests(unittest.TestCase):
         j=self.job();self.service.on_frame(j['id'],self.frame(),T,self.quote());a=Adapter();self.service.dispatch_next(a,T);return j,a,a.calls[0]['client_order_id']
     def fill(self,key,qty=2,status='FILLED',seq=1,when=T):return self.service.apply_update(OrderUpdate(key,seq,status,qty,when,100,1.05,T),when)
     def test_registry_exact_versions_and_copy(self):
-        r=Registry();self.assertEqual(len(r.list()),2);x=r.get(SID);self.assertEqual(x['case_id'],'536f0789fb0d');x['config']['case']['entry']['cap_daily_atr']=999;self.assertEqual(r.get(SID)['config']['case']['entry']['cap_daily_atr'],.1);self.assertEqual(r.get('retest_rvol_adx_5m_v1')['case_id'],'2c0ecc056bd3')
+        r=Registry();self.assertIn('custody_trend_1m_v1',{s['strategy_id'] for s in r.list()});x=r.get(SID);self.assertEqual(x['case_id'],'536f0789fb0d');x['config']['case']['entry']['cap_daily_atr']=999;self.assertEqual(r.get(SID)['config']['case']['entry']['cap_daily_atr'],.1);self.assertEqual(r.get('retest_rvol_adx_5m_v1')['case_id'],'2c0ecc056bd3')
     def test_minimal_input_and_strict_types(self):
         p={k:v for k,v in self.request.items() if k not in ('max_qty','trade_date')};r=JobRequest.parse(p,T);self.assertEqual(r.max_qty,1);self.assertEqual(r.trade_date,DAY)
         for bad in [dict(p,dry_run=False),dict(p,max_qty=True),dict(p,max_qty=1.5),dict(p,direction='SELL')]:

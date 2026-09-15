@@ -1,5 +1,29 @@
 # Custody API v1
 
+## Must-trade OHLCV baseline v1
+
+`custody_trend_1m_v1` is the first fixed custody baseline. It is dryrun-only,
+accepts the caller's exact DTE 0–4 contract, consumes only today's underlying
+1m bars, and has a 10:30 ET fallback. No fixed take-profit is imposed. The
+version, protocol, training cases and held-out results are documented in
+[`baselines/v1/README.md`](baselines/v1/README.md).
+
+```bash
+python3 -m custody baseline --slice /path/to/custody-train-dte4 \
+  --out /tmp/train.json --variants baseline
+python3 -m custody baseline --slice /path/to/custody-eval-2026-09-14 \
+  --out /tmp/validation.json --variants baseline fixed_time \
+  --freeze custody/baselines/v1/FROZEN.json
+```
+
+The replay passes every case through `CustodyService(mode='dryrun')` and
+injects simulated fills at a subsequent positive-volume option bar close.
+No broker is connected. Resident `custody dryrun` supports the same baseline
+indicators but remains an **intent-only** live-quote observer; it does not invent
+broker fills. `eval-session` below is retained as a legacy plumbing placeholder,
+not the v1 performance command. The original two strategies remain immutable
+research versions, not must-trade custody baselines.
+
 调用方只需给出 **策略版本、标的、多空方向、具体期权合约**；数量默认1张、日期默认美东当天。1m与5m配置独立保存，可继续增加版本。模拟/实盘模式属于服务端配置，不能在单次请求中切换。当前已实现可运行的接口、持久化状态机和离线闭环；另有一个只读 OpenD `dryrun` 行情路径（`OpenQuoteContext`，绝不下单），真实券商下单连接仍需在部署环境接入并联调。
 
 A small broker-neutral control API and durable order state machine for the retained1m/5m research strategies. This prepares the execution boundary for deployment while keeping every verification in this repository offline. No live broker connector is bundled or activated; a read-only OpenD market-data adapter (`custody/opend.py`) and dryrun runner (`custody/dryrun.py`) can observe quotes and advance a job without any order API.

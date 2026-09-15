@@ -27,6 +27,12 @@ Coarse baseline still available: [eval-data-v1](https://github.com/QSothoth/open
 
 ## Custody product contract (input=option, signals=underlying, PnL=option)
 
+The first fixed must-trade baseline is **`custody_trend_1m_v1`**. See
+[`custody/baselines/v1/README.md`](custody/baselines/v1/README.md) for the pinned
+paired Releases, full-case option OHLCV replay, empirical payoff ratios,
+ablations and frozen validation. Run it with `python3 -m custody baseline`.
+It is dryrun-only and does not place broker orders.
+
 The custody bot separates three layers:
 
 - **input** — an **exact option contract** (nearest heavy-theta expiry, near-ATM / not deep OTM; need not be strict 0DTE);

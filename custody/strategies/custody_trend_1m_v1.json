@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "case": {
+    "entry": {
+      "signal_minutes": 1,
+      "opening_minutes": 15,
+      "warmup_minutes": 15,
+      "entry_deadline": 630,
+      "relax_at": 600,
+      "score_early": 4,
+      "score_late": 3,
+      "ema_fast": 9,
+      "ema_slow": 21,
+      "atr_period": 14,
+      "rsi_period": 14,
+      "rsi_distance": 5,
+      "adx_period": 14,
+      "adx_min": 18,
+      "volume_window": 20,
+      "volume_ratio_min": 1.1
+    },
+    "exit": {
+      "style": "none",
+      "structure_minutes": 0,
+      "expanded": 0,
+      "stall": 0,
+      "late_trail": 0,
+      "hold": 390,
+      "flatten": 945,
+      "safety": 6,
+      "hard_stop_atr": 6,
+      "failure_minutes": 20,
+      "failure_confirmations": 3,
+      "trail_activation_atr": 6,
+      "trail_atr": 8
+    },
+    "id": "5a1c8c5877d9"
+  },
+  "description": "First fixed must-trade baseline: same-day 1m score, 10:30 fallback, wide trailing, no fixed take-profit. ATR is 1m intraday, frozen at entry intent. No parameter search.",
+  "data_tag": "custody-train-dte4",
+  "evaluation_metric": "option_ohlcv_simulated_pnl",
+  "same_day_only": true
+}

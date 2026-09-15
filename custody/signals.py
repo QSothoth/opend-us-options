@@ -17,6 +17,27 @@ class SignalProvider:
         """
         item=self.registry.get(strategy_id);as_of=instant(as_of);underlying=symbol(underlying)
         if direction not in ('LONG','SHORT'):raise ValueError('invalid direction')
+        if item.get('timing_model') == 'intraday_v1':
+            from datetime import datetime, time
+            from .models import ET, Session
+            from .marketdata import Bar
+            from .timing import IntradayIndicators
+            day = as_of.astimezone(ET).date()
+            session = Session(day.isoformat(), datetime.combine(day,time(9,30),tzinfo=ET),
+                              instant(session_closes[day.isoformat()]))
+            engine = IntradayIndicators(item, underlying, direction, session)
+            result = None
+            for row in bars:
+                t = instant(row['close_time'])
+                if t > as_of: raise ValueError('future bar')
+                if t.astimezone(ET).date() != day:
+                    raise ValueError('baseline only accepts current-session bars')
+                if t <= session.opens: continue
+                bar = Bar('US.'+underlying,t,**{k:row[k] for k in ['open','high','low','close','volume']})
+                result = engine.step(bar)
+            if result is None or result.bar_close != as_of:
+                raise ValueError('latest completed 1m bar missing')
+            return result
         payload={'case':item['config']['case'],'symbol':underlying,'direction':direction,'as_of':as_of.isoformat(),'bars':bars,'daily':daily,'session_closes':session_closes}
         worker=Path(__file__).resolve().parents[1]/'research/aggressive_payoff/code/feature_worker.py'
         result=subprocess.run([sys.executable,str(worker)],input=json.dumps(payload,allow_nan=False),text=True,capture_output=True,timeout=60)

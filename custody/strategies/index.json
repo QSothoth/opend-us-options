@@ -25,6 +25,17 @@
       "signal_minutes": 5,
       "status": "retained_research",
       "true_option_pnl": false
+    },
+    "custody_trend_1m_v1": {
+      "file": "custody_trend_1m_v1.json",
+      "sha256": "bb3c5a39b1560b49b4f816a32cee05d97e3f90325b5c13bdc60aa372baf276e7",
+      "case_id": "5a1c8c5877d9",
+      "description": "1m must-trade custody baseline; option OHLCV simulated fills",
+      "signal_minutes": 1,
+      "status": "baseline_dryrun",
+      "timing_model": "intraday_v1",
+      "true_option_pnl": false,
+      "pnl_basis": "observed_option_ohlcv_simulation"
     }
   }
 }

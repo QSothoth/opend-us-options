@@ -31,6 +31,7 @@ class CustodyService:
         if str(db_path) == ':memory:': raise ValueError('durable file database required')
         self.path=str(db_path);self.account=account;self.contracts=contracts;self.calendar=calendar
         self.registry=registry or Registry();self.policy=policy or ExecutionPolicy();self.mode=mode
+        self._migrate_contract_scope()
         with self._tx() as db:
             db.execute('CREATE TABLE IF NOT EXISTS service_modes (account TEXT PRIMARY KEY, mode TEXT NOT NULL)')
             bound=db.execute('SELECT mode FROM service_modes WHERE account=?',(account,)).fetchone()
@@ -41,9 +42,36 @@ class CustodyService:
                 prior=db.execute('SELECT sha FROM strategy_versions WHERE id=?',(item['strategy_id'],)).fetchone()
                 if prior and prior[0]!=item['sha256']:raise ValueError('immutable strategy version changed')
                 db.execute('INSERT OR IGNORE INTO strategy_versions VALUES (?,?)',(item['strategy_id'],item['sha256']))
-            db.execute('CREATE TABLE IF NOT EXISTS jobs (id TEXT PRIMARY KEY, account TEXT NOT NULL, symbol TEXT NOT NULL, day TEXT NOT NULL, fingerprint TEXT NOT NULL, body TEXT NOT NULL, UNIQUE(account,symbol,day))')
+            db.execute('CREATE TABLE IF NOT EXISTS jobs (id TEXT PRIMARY KEY, account TEXT NOT NULL, symbol TEXT NOT NULL, contract TEXT NOT NULL, day TEXT NOT NULL, fingerprint TEXT NOT NULL, body TEXT NOT NULL, UNIQUE(account,contract,day))')
             db.execute('CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, job_id TEXT NOT NULL REFERENCES jobs(id), body TEXT NOT NULL)')
             db.execute('CREATE TABLE IF NOT EXISTS order_events (order_id TEXT NOT NULL, sequence INTEGER NOT NULL, job_id TEXT NOT NULL, body TEXT NOT NULL, PRIMARY KEY(order_id,sequence))')
+
+    def _migrate_contract_scope(self):
+        """Preserve existing job IDs/order FKs when adding contract-level scope."""
+        db = sqlite3.connect(self.path, timeout=15)
+        try:
+            cols = {r[1] for r in db.execute('PRAGMA table_info(jobs)')}
+            if not cols or 'contract' in cols:
+                return
+            bound = db.execute('SELECT mode FROM service_modes WHERE account=?', (self.account,)).fetchone()
+            if bound and bound[0] != self.mode:
+                raise ValueError('database account already bound to another mode')
+            db.execute('PRAGMA foreign_keys=OFF'); db.execute('BEGIN IMMEDIATE')
+            db.execute('CREATE TABLE jobs_new (id TEXT PRIMARY KEY, account TEXT NOT NULL, symbol TEXT NOT NULL, contract TEXT NOT NULL, day TEXT NOT NULL, fingerprint TEXT NOT NULL, body TEXT NOT NULL, UNIQUE(account,contract,day))')
+            for row in db.execute('SELECT id,account,symbol,day,fingerprint,body FROM jobs').fetchall():
+                db.execute('INSERT INTO jobs_new VALUES (?,?,?,?,?,?,?)', (*row[:3], json.loads(row[5])['request']['contract'], *row[3:]))
+            db.execute('DROP TABLE jobs'); db.execute('ALTER TABLE jobs_new RENAME TO jobs')
+            if db.execute('PRAGMA foreign_key_check').fetchall():
+                raise ValueError('job migration foreign-key check failed')
+            db.commit()
+        except BaseException:
+            db.rollback(); raise
+        finally:
+            db.close()
+
+    @staticmethod
+    def _baseline(job):
+        return job['strategy'].get('timing_model') == 'intraday_v1'
 
     @contextmanager
     def _tx(self):
@@ -64,17 +92,25 @@ class CustodyService:
 
     def create_job(self,payload,now):
         now=instant(now);req=JobRequest.parse(payload,now);strategy=self.registry.get(req.strategy_id)
+        baseline = strategy.get('timing_model') == 'intraday_v1'
+        if baseline and self.mode != 'dryrun':
+            raise ValueError('custody baseline is dryrun-only')
+        scope, scope_value = ('contract', req.contract) if baseline else ('symbol', req.symbol)
         fingerprint=hashlib.sha256(encode(asdict(req)).encode()).hexdigest()
         # Existing idempotent jobs remain readable after the date/entry deadline.
         with self._tx() as db:
-            for prior in db.execute('SELECT body FROM jobs WHERE account=? AND symbol=? AND day!=?',(self.account,req.symbol,req.trade_date)):
+            for prior in db.execute(f'SELECT body FROM jobs WHERE account=? AND {scope}=? AND day!=?',(self.account,scope_value,req.trade_date)):
                 if json.loads(prior[0])['state']!='DONE':raise ValueError('previous session job unresolved')
-            old=db.execute('SELECT id,fingerprint FROM jobs WHERE account=? AND symbol=? AND day=?',(self.account,req.symbol,req.trade_date)).fetchone()
+            old=db.execute(f'SELECT id,fingerprint FROM jobs WHERE account=? AND {scope}=? AND day=?',(self.account,scope_value,req.trade_date)).fetchone()
             if old:
                 if old['fingerprint']!=fingerprint: raise ValueError('one_job_per_symbol_day: existing request differs')
                 return self._load(db,old['id'])
         if now.astimezone(ET).date().isoformat()!=req.trade_date: raise ValueError('active Job date must be today in ET; use replay for historical dates')
         contract=self.contracts.resolve(req.contract);contract.validate(req,same_day_only=self.mode!='dryrun')
+        if baseline:
+            from datetime import date
+            if (date.fromisoformat(contract.expiry) - date.fromisoformat(req.trade_date)).days > 4:
+                raise ValueError('baseline contract must have DTE <= 4')
         session=self.calendar.session(req.trade_date)
         if session.day!=req.trade_date: raise ValueError('calendar date mismatch')
         e,x=strategy['config']['case']['entry'],strategy['config']['case']['exit']
@@ -83,17 +119,23 @@ class CustodyService:
         midnight=session.opens.astimezone(ET).replace(hour=0,minute=0,second=0,microsecond=0)
         flatten=min(midnight+timedelta(minutes=x['flatten']),session.closes-timedelta(minutes=15))
         deadline=min(midnight+timedelta(minutes=e['entry_deadline']),flatten-timedelta(microseconds=1))
+        fallback = deadline
+        if baseline:
+            deadline = flatten - timedelta(minutes=1)
+            fallback = min(midnight + timedelta(minutes=e['entry_deadline']), deadline)
         if now>deadline: raise ValueError('entry window closed')
-        job_id=hashlib.sha256(encode([self.account,req.symbol,req.trade_date]).encode()).hexdigest()[:32]
+        job_id=hashlib.sha256(encode([self.account,scope_value,req.trade_date]).encode()).hexdigest()[:32]
         j={'id':job_id,'request':asdict(req),'strategy':strategy,'contract':asdict(contract),'mode':self.mode,'state':'IDLE','position_qty':0,'entry_underlying':None,'entry_at':None,'best':None,'atr':None,'last_bar':None,'exit_requested':False,'exit_reason':None,'attention':None,'opens':session.opens.isoformat(),'flatten_at':flatten.isoformat(),'deadline':deadline.isoformat(),'created_at':now.isoformat()}
+        if baseline:
+            j.update(fallback_at=fallback.isoformat(), entry_reason=None, entry_atr=None, against_count=0)
         with self._tx() as db:
-            for prior in db.execute('SELECT body FROM jobs WHERE account=? AND symbol=? AND day!=?',(self.account,req.symbol,req.trade_date)):
+            for prior in db.execute(f'SELECT body FROM jobs WHERE account=? AND {scope}=? AND day!=?',(self.account,scope_value,req.trade_date)):
                 if json.loads(prior[0])['state']!='DONE':raise ValueError('previous session job unresolved')
-            old=db.execute('SELECT id,fingerprint FROM jobs WHERE account=? AND symbol=? AND day=?',(self.account,req.symbol,req.trade_date)).fetchone()
+            old=db.execute(f'SELECT id,fingerprint FROM jobs WHERE account=? AND {scope}=? AND day=?',(self.account,scope_value,req.trade_date)).fetchone()
             if old:
                 if old['fingerprint']!=fingerprint: raise ValueError('one_job_per_symbol_day: existing request differs')
                 return self._load(db,old['id'])
-            db.execute('INSERT INTO jobs VALUES (?,?,?,?,?,?)',(job_id,self.account,req.symbol,req.trade_date,fingerprint,encode(j)))
+            db.execute('INSERT INTO jobs VALUES (?,?,?,?,?,?,?)',(job_id,self.account,req.symbol,req.contract,req.trade_date,fingerprint,encode(j)))
         return j
 
     def flag_attention(self,job_id,reason):
@@ -112,12 +154,12 @@ class CustodyService:
         with self._tx() as db:
             j=self._load(db,job_id);return {**j,'orders':self._orders(db,j)}
 
-    def _quote(self,j,quote,now):
+    def _quote(self,j,quote,now,allow_wide=False):
         try:
             if not isinstance(quote,Quote) or quote.contract!=j['request']['contract']: return False
             bid=positive(quote.bid,'bid');ask=positive(quote.ask,'ask')
             age=(now-instant(quote.as_of)).total_seconds()
-            return 0<=age<=self.policy.quote_max_age_seconds and ask>=bid and (ask-bid)/ask<=self.policy.max_spread_fraction
+            return 0<=age<=self.policy.quote_max_age_seconds and ask>=bid and (allow_wide or (ask-bid)/ask<=self.policy.max_spread_fraction)
         except (ValueError,TypeError): return False
 
     def _new(self,db,j,kind,side,qty,now,quote=None,target=None):
@@ -125,6 +167,9 @@ class CustodyService:
         key=j['id']+':'+suffix
         if any(o['client_order_id']==key for o in existing): return
         o={'client_order_id':key,'job_id':j['id'],'account':self.account,'mode':self.mode,'kind':kind,'side':side,'contract':j['request']['contract'],'quantity':qty,'limit_price':(quote.ask if side=='BUY_OPEN' else quote.bid) if quote else None,'signal_bar_close':j['last_bar'],'reason':j['exit_reason'] or ('entry' if side=='BUY_OPEN' else 'cancel'),'quote_as_of':quote.as_of.isoformat() if quote else None,'target':target,'position_effect':'OPEN' if side=='BUY_OPEN' else 'CLOSE' if side=='SELL_CLOSE' else None,'reduce_only':side=='SELL_CLOSE','status':'CREATED','cumulative_qty':0,'sequence':-1,'last_update':None,'created_at':now.isoformat()}
+        if self._baseline(j):
+            o['timing_atr'] = j['atr']
+            if side == 'BUY_OPEN': o['reason'] = j.get('entry_reason') or 'entry'
         db.execute('INSERT INTO orders VALUES (?,?,?)',(key,j['id'],encode(o)))
 
     def _exit(self,db,j,now,quote):
@@ -136,7 +181,7 @@ class CustodyService:
         if j['position_qty']==0:
             j['state']='DONE';j['attention']=None;return
         if any(o['side']=='SELL_CLOSE' and o['status'] in ACTIVE for o in orders): return
-        if not self._quote(j,quote,now): j['attention']='EXIT_WAITING_VALID_QUOTE';return
+        if not self._quote(j,quote,now,allow_wide=True): j['attention']='EXIT_WAITING_VALID_QUOTE';return
         self._new(db,j,'LIMIT','SELL_CLOSE',j['position_qty'],now,quote);j['attention']=None
 
     def _request_exit(self,db,j,reason,now,quote):
@@ -153,13 +198,15 @@ class CustodyService:
                 buys[0]['status']='CANCELED';self._store_order(db,buys[0]);j['state']='DONE'
             else:
                 self._new(db,j,'CANCEL','CANCEL',0,now,target=buys[0]['client_order_id']);j['attention']='ENTRY_TIMEOUT_CANCEL_PENDING'
-        if not buys and now>instant(j['deadline']): j['state']='DONE'
+        if not buys and now>instant(j['deadline']):
+            j['state']='DONE'
+            if self._baseline(j): j['attention']='ENTRY_NOT_FILLED'
 
     def heartbeat(self,job_id,now,quote=None,underlying_mark=None,mark_as_of=None):
         now=instant(now)
         with self._tx() as db:
             j=self._load(db,job_id);self._clock(db,j,now,quote)
-            if j['position_qty'] and underlying_mark is not None and mark_as_of is not None:
+            if not self._baseline(j) and j['position_qty'] and underlying_mark is not None and mark_as_of is not None:
                 age=(now-instant(mark_as_of)).total_seconds();mark=positive(underlying_mark,'underlying_mark')
                 sign=1 if j['request']['direction']=='LONG' else -1
                 if 0<=age<=self.policy.quote_max_age_seconds and sign*(mark-j['entry_underlying'])<=-j['strategy']['config']['case']['exit']['safety']*j['atr']:
@@ -177,14 +224,16 @@ class CustodyService:
             if elapsed<=0 or elapsed%(60*frame.minutes) or t.astimezone(ET).date().isoformat()!=j['request']['trade_date']: raise ValueError('not a native completed-bar boundary')
             if not 0<=(now-t).total_seconds()<=self.policy.frame_max_age_seconds: raise ValueError('future or stale bar')
             close=positive(frame.close,'close');atr=positive(frame.daily_atr,'daily_atr')
-            if j['atr'] is not None and abs(j['atr']-atr)>1e-10: raise ValueError('prior daily ATR changed within session')
+            if not self._baseline(j) and j['atr'] is not None and abs(j['atr']-atr)>1e-10: raise ValueError('prior daily ATR changed within session')
             if j['last_bar'] and t<instant(j['last_bar']): raise ValueError('out-of-order bar')
             self._clock(db,j,now,quote)
             if j['state']=='DONE' or (j['last_bar'] and t==instant(j['last_bar'])):
                 self._save(db,j);return j
             j['last_bar']=t.isoformat();j['atr']=atr
             if j['state']=='IDLE': j['state']='WATCH'
-            if j['position_qty'] and not j['exit_requested']:
+            if self._baseline(j):
+                self._on_baseline_frame(db,j,frame,now,quote)
+            elif j['position_qty'] and not j['exit_requested']:
                 sign=1 if j['request']['direction']=='LONG' else -1;j['best']=max(j['best'],sign*close)
                 gain=j['best']-sign*j['entry_underlying'];profit=sign*(close-j['entry_underlying']);held=(t-instant(j['entry_at'])).total_seconds()/60;reason=None
                 if x['soft'] and held>=x['soft_grace'] and gain<x['soft_escape']*atr and profit<=-x['soft']*atr: reason='soft_failure_loss'
@@ -198,6 +247,24 @@ class CustodyService:
                     else: j['attention']='ENTRY_WAITING_VALID_QUOTE'
             self._save(db,j)
         return self.get_job(job_id)
+
+    def _on_baseline_frame(self,db,j,frame,now,quote):
+        from .timing import baseline_exit
+        if type(frame.trend_against) is not bool:
+            raise ValueError('invalid trend flag')
+        if j['position_qty'] and not j['exit_requested']:
+            reason = baseline_exit(j, frame)
+            if reason: self._request_exit(db,j,reason,now,quote)
+        elif j['state'] == 'WATCH' and now <= instant(j['deadline']):
+            fallback = now >= instant(j['fallback_at'])
+            if frame.entry_ready or fallback:
+                if self._quote(j,quote,now,allow_wide=fallback):
+                    j['entry_reason'] = 'deadline_fallback' if fallback else frame.entry_reason
+                    j['entry_diagnostics'] = frame.diagnostics
+                    self._new(db,j,'LIMIT','BUY_OPEN',j['request']['max_qty'],now,quote)
+                    j['state']='ENTRY'; j['attention']=None
+                else:
+                    j['attention']='ENTRY_WAITING_VALID_QUOTE'
 
     def apply_update(self,event,now):
         now=instant(now);at=instant(event.as_of)
@@ -231,6 +298,7 @@ class CustodyService:
                         first=instant(event.first_fill_at)
                         if not instant(o['created_at'])<=first<=at:raise ValueError('invalid first fill timestamp')
                         j['entry_underlying']=positive(event.underlying_mark,'underlying fill mark');j['entry_at']=first.isoformat();j['best']=(1 if j['request']['direction']=='LONG' else -1)*j['entry_underlying']
+                        if self._baseline(j): j['entry_atr']=positive(o['timing_atr'],'entry_atr')
                     j['position_qty']+=delta
                 else:
                     if delta>j['position_qty']: raise ValueError('sell fill exceeds owned quantity')

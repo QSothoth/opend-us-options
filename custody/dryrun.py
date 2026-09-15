@@ -199,6 +199,21 @@ class SignalFrameSource:
         return frame
 
 
+class SameDayHistorySource:
+    """Baseline input: only today's 1m bars. Never request K_DAY or prior days."""
+    def __init__(self, market, calendar, symbol):
+        self.market, self.calendar, self.symbol = market, calendar, symbol
+
+    def collect(self, boundary):
+        day = instant(boundary).astimezone(ET).date().isoformat()
+        bars = self.market.current_bars(self.symbol, 600, 'K_1M', boundary=boundary)
+        if not bars:
+            bars = self.market.history_bars(self.symbol,'K_1M',day,day,boundary=boundary)
+        session = self.calendar.session(day)
+        bars = [b for b in bars if session.opens < b.close_time <= boundary]
+        return [b.to_record() for b in bars], [], {day:session.closes.isoformat()}
+
+
 class DryRunRunner:
     """Resident loop: poll market data, advance the controller, log intents."""
 
@@ -326,10 +341,12 @@ def main(argv=None):
                 _json_logger('subscribe_error', error=repr(exc))
         frame_source = None
         if not args.no_frames:
+            history = (SameDayHistorySource(market,calendar,symbol)
+                       if job['strategy'].get('timing_model') == 'intraday_v1'
+                       else OpenDHistorySource(market,calendar,symbol,
+                                               warmup_days=args.warmup_days,daily_days=args.daily_days))
             frame_source = SignalFrameSource(SignalProvider(service.registry),
-                                             OpenDHistorySource(market, calendar, symbol,
-                                                                warmup_days=args.warmup_days,
-                                                                daily_days=args.daily_days),
+                                             history,
                                              args.strategy, args.direction)
         runner = DryRunRunner(service, market, job['id'], frame_source=frame_source, interval=args.interval,
                               wxpusher_spt=args.wxpusher_spt)

@@ -24,6 +24,8 @@ def main(argv=None):
                    help='fetch the small real paired custody train starter from read-only OpenD (plumbing only)')
     sub.add_parser('eval-session', add_help=False,
                    help='replay a paired custody slice (validation/eval or train) with option-only PnL')
+    sub.add_parser('baseline', add_help=False,
+                   help='run must-trade custody v1 on a paired Release with next-bar option OHLCV fills')
     args, rest = parser.parse_known_args(argv)
     if args.command == 'strategies':
         print(json.dumps(Registry().list(), indent=2))
@@ -43,6 +45,9 @@ def main(argv=None):
     if args.command == 'eval-session':
         from .eval_session import main as session_main
         return session_main(rest)
+    if args.command == 'baseline':
+        from .baseline import main as baseline_main
+        return baseline_main(rest)
     from .dryrun import main as dryrun_main
     return dryrun_main(rest)
 

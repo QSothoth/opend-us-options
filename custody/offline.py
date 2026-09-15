@@ -104,7 +104,7 @@ def _bound(value, fallback):
 class OfflineMarket:
     """Read-only provider over a frozen custody eval slice directory."""
 
-    def __init__(self, root, quote_model='none'):
+    def __init__(self, root, quote_model='none', prefer_csv=False):
         self.root = Path(root)
         self.quote_model = quote_model
         self.manifest = load_manifest(self.root)
@@ -115,7 +115,8 @@ class OfflineMarket:
             code = str(item.get('code', '')).strip().upper()
             if not code:
                 continue
-            candidate = item.get('parquet') or item.get('csv')
+            candidate = ((item.get('csv') or item.get('parquet')) if prefer_csv
+                         else (item.get('parquet') or item.get('csv')))
             if candidate:
                 self._files[code] = (self.root / candidate)
                 self._kinds[code] = str(item.get('kind') or '').strip().lower()
