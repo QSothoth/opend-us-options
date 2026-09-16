@@ -7,7 +7,7 @@ def create_app(service, token, clock=None):
     if not isinstance(token,str) or len(token)<20: raise ValueError('server bearer token must be at least20 characters')
     clock=clock or (lambda:datetime.now(timezone.utc))
     def view(j):
-        return {'job_id':j['id'],'state':j['state'],'mode':j['mode'],**j['request'],'strategy_hash':j['strategy']['sha256'],'case_id':j['strategy']['case_id'],'position_qty':j['position_qty'],'attention':j['attention'],'flatten_at':j['flatten_at']}
+        return {'job_id':j['id'],'state':j['state'],'mode':j['mode'],**j['request'],'strategy_hash':j['strategy']['sha256'],'strategy_status':j['strategy']['status'],'position_qty':j['position_qty'],'attention':j['attention'],'entry_reason':j['entry_reason'],'exit_reason':j['exit_reason'],'must_enter_at':j['must_enter_at'],'flatten_at':j['flatten_at']}
     def app(environ,start_response):
         def respond(status,data):
             body=json.dumps(data,allow_nan=False).encode();start_response(status,[('Content-Type','application/json'),('Content-Length',str(len(body))),('Cache-Control','no-store')]);return [body]

@@ -1,17 +1,16 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "CustodyJobRequest v1",
-  "description": "Public custody input. Layers: input = exact option contract to trade; signals = same-day underlying 1m K-line for entry/exit timing; success metric = option path/fills only (option PnL). Underlying-proxy payoff is forbidden.",
-  "$comment": "The underlying 'symbol' supplies timing bars only and is never the traded/measured asset. 'contract' is the exact broker option code resolved and checked against underlying/right/expiry. Custody success must be measured on the option contract (custody/pnl.py); an underlying return x multiplier is not custody PnL.",
+  "title": "CustodyJobRequest v2",
+  "description": "One round trip per 0DTE option contract per ET trading day. The upstream selector chooses symbol, direction and the exact same-day contract; custody only times one entry and one exit from same-day underlying 1m bars. Success is measured on the option fills (docs/STANDARD.md).",
   "type": "object",
   "additionalProperties": false,
   "required": ["strategy_id", "symbol", "direction", "contract"],
   "properties": {
-    "strategy_id": {"type":"string","minLength":1,"description":"Exact immutable registry ID; no automatic best/latest alias."},
-    "symbol": {"type":"string","minLength":1,"description":"Human-selected underlying used ONLY for same-day 1m entry/exit timing signals. US. prefix accepted; uppercase normalized. Not the traded or measured asset."},
-    "direction": {"type":"string","enum":["LONG","SHORT"],"description":"LONG buys CALL; SHORT buys PUT. Both are long the option and close by selling owned options; the product never writes/shorts an option."},
-    "contract": {"type":"string","minLength":1,"description":"Exact broker option instrument code that is traded and measured. Resolved and checked against underlying/right/expiry; near-ATM and near expiry are expected."},
-    "max_qty": {"type":"integer","minimum":1,"default":1},
-    "trade_date": {"type":"string","format":"date","description":"Optional; defaults to current America/New_York date. Active jobs must match today; use separate offline replay for history."}
+    "strategy_id": {"type": "string", "minLength": 1, "description": "Registered immutable strategy id (python3 -m custody strategies). Live mode requires status accepted."},
+    "symbol": {"type": "string", "minLength": 1, "description": "Underlying, e.g. SPY or US.SPY. Supplies timing bars only. The same underlying may have several jobs (e.g. a CALL and a PUT)."},
+    "direction": {"type": "string", "enum": ["LONG", "SHORT"], "description": "LONG buys the CALL, SHORT buys the PUT. The product never writes options."},
+    "contract": {"type": "string", "minLength": 1, "description": "Exact broker option code expiring on trade_date (0DTE), matching symbol and direction. One job per contract per day."},
+    "max_qty": {"type": "integer", "minimum": 1, "default": 1},
+    "trade_date": {"type": "string", "format": "date", "description": "Defaults to today in America/New_York and must equal it."}
   }
 }

@@ -8,11 +8,6 @@ venv/
 *.pem
 *.key
 .DS_Store
-cache/klines/
-cache/*.parquet
-cache/*.csv
-cache/*.fetched.json
-cache/*.tmp
 *.duckdb
 *.duckdb-wal
 *.sqlite
@@ -21,11 +16,6 @@ cache/*.tmp
 .idea/
 .vscode/
 
-# Offline research: keep Release data and regenerated search logs out of git.
-research/**/opend_us_options_eval_*.zip
-research/**/*.parquet
-research/**/*.pkl
-research/**/stageA_*
-research/**/stageB_*
-research/**/stageC_*
-research/**/stageD_*
+# Datasets live in GitHub Releases, never in git (AGENTS.md section 3).
+data/
+*.zip

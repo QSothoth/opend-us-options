@@ -1,4 +1,4 @@
-"""Read-only OpenD adapters for the custody dryrun live path.
+"""Read-only OpenD adapters for the dryrun runner and the daily data freeze.
 
 Hard guarantee
 --------------
@@ -15,21 +15,17 @@ from __future__ import annotations
 
 from datetime import date, datetime, time as dtime, timedelta
 import os
-import re
 
+from .dataset import parse_option_code
 from .marketdata import Bar, _day, _et, _num, normalize_bar_rows
 from .models import Contract, Quote, Session, ET, instant
 
 __all__ = ['DEFAULT_HOST', 'DEFAULT_PORT', 'OpenDMarket', 'OpenDContractResolver',
-           'OpenDTradingCalendar', 'parse_option_code', 'Bar', '_num', '_et', '_day',
-           'normalize_bar_rows', 'FORBIDDEN_TRADE_NAMES']
+           'OpenDTradingCalendar', 'FORBIDDEN_TRADE_NAMES']
 
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 11111
-
-# Futu US option code: US.<underlying><YYMMDD><C|P><strike in thousandths>.
-_OPTION_CODE = re.compile(r'^US\.([A-Z][A-Z0-9.\-]*?)(\d{6})([CP])(\d{3,})$')
 
 FORBIDDEN_TRADE_NAMES = (
     'OpenSecTradeContext',
@@ -58,18 +54,6 @@ def _records(frame):
         except TypeError:  # pragma: no cover - defensive
             return list(frame.to_dict('records'))
     return list(frame)
-
-
-def parse_option_code(code):
-    """Return (underlying, expiry ISODate, right) for a Futu US option code."""
-    if not isinstance(code, str):
-        raise ValueError('option contract code required')
-    match = _OPTION_CODE.match(code.strip().upper())
-    if not match:
-        raise ValueError('not a US option contract code: ' + str(code))
-    underlying, yymmdd, cp = match.group(1), match.group(2), match.group(3)
-    expiry = date(2000 + int(yymmdd[:2]), int(yymmdd[2:4]), int(yymmdd[4:6])).isoformat()
-    return underlying, expiry, ('CALL' if cp == 'C' else 'PUT')
 
 
 class OpenDMarket:
@@ -160,8 +144,8 @@ class OpenDMarket:
     def option_chain(self, code, expiry, right=None):
         """List real option contracts for one underlying+expiry (read-only).
 
-        Used by the paired train builder to pick a near-ATM contract instead of
-        guessing strikes from text. Returns plain row dicts.
+        Used by the daily freeze to pick the near-ATM contract instead of guessing
+        strikes from text. Returns plain row dicts.
         """
         futu = _futu()
         if right == 'CALL':
@@ -203,9 +187,7 @@ class OpenDMarket:
             raise RuntimeError('get_cur_kline failed for %s %s: %s' % (code, ktype, data))
         return _records(data)
 
-    # --- Shared MarketDataProvider surface ---------------------------------
-    # These are the methods the custody eval/replay and dryrun history source
-    # use, so an OfflineMarket can be swapped in without touching callers.
+    # --- MarketDataProvider surface -------------------------------------------
     def history_bars(self, code, ktype, start, end, boundary=None):
         """Normalized completed :class:`Bar`s from OpenD history (read-only)."""
         interval = '1m' if str(ktype).upper() in ('K_1M', 'K1M') else str(ktype).lower()
@@ -226,7 +208,7 @@ class OpenDContractResolver:
         self.market = market
 
     def resolve(self, code):
-        underlying, expiry, right_from_code = parse_option_code(code)
+        underlying, expiry, right_from_code, strike_from_code = parse_option_code(code)
         code = str(code).strip().upper()
         row = self.market.snapshot([code]).get(code)
         if row is None:
@@ -236,7 +218,7 @@ class OpenDContractResolver:
         expiry = _day(row.get('strike_time')) or expiry
         strike = _num(row.get('option_strike_price'))
         if strike is None:
-            strike = int(_OPTION_CODE.match(code).group(4)) / 1000.0
+            strike = strike_from_code
         multiplier = int(_num(row.get('option_contract_multiplier')) or 100)
         status = str(row.get('sec_status', 'NORMAL')).strip().upper()
         tradable = bool(row.get('option_valid')) and status in ('', 'NORMAL')

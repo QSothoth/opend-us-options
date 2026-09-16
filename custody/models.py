@@ -31,13 +31,11 @@ def symbol(value):
 
 @dataclass(frozen=True)
 class JobRequest:
-    """Public custody input (three distinct layers).
+    """Public custody input chosen upstream: strategy, underlying, direction, exact 0DTE contract.
 
-    * **input**: ``contract`` names the exact option to trade and measure;
-    * **signals**: ``symbol`` only supplies same-day underlying 1m bars used for
-      entry/exit *timing*;
-    * **PnL**: success is measured on the option contract path/fills only
-      (:mod:`custody.pnl`). Underlying-proxy payoff is forbidden.
+    * ``contract`` is the option that is bought once and sold once today;
+    * ``symbol`` supplies the same-day underlying 1m bars used only for timing;
+    * success is measured on the option fills, never on an underlying proxy.
     """
 
     strategy_id: str
@@ -74,13 +72,10 @@ class Contract:
     currency: str = 'USD'
     tradable: bool = True
 
-    def validate(self, request, same_day_only=True):
+    def validate(self, request):
         if self.code != request.contract or symbol(self.underlying) != request.symbol:
             raise ValueError('resolved contract does not match request')
-        if same_day_only:
-            if self.expiry != request.trade_date: raise ValueError('contract must expire on trade_date')
-        elif self.expiry < request.trade_date:
-            raise ValueError('contract expiry must not precede trade_date')
+        if self.expiry != request.trade_date: raise ValueError('contract must expire on trade_date (0DTE only)')
         if self.right != ('CALL' if request.direction == 'LONG' else 'PUT'): raise ValueError('contract right/direction mismatch')
         positive(self.strike, 'strike')
         if self.currency != 'USD' or self.tradable is not True: raise ValueError('contract not tradable USD option')
@@ -111,16 +106,13 @@ class Quote:
 
 @dataclass(frozen=True)
 class Frame:
-    """Trusted indicator-provider output, never a public HTTP input."""
+    """One strategy decision on a completed underlying 1m bar (trusted, never HTTP input)."""
     symbol: str
     strategy_hash: str
     bar_close: datetime
-    minutes: int
     close: float
-    daily_atr: float
-    entry_ready: bool
-    trend_against: bool = False
-    entry_reason: str = 'entry'
+    action: str
+    reason: str | None = None
     diagnostics: dict | None = None
 
 

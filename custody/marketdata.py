@@ -1,34 +1,24 @@
-"""Shared market-data boundary for the custody offline eval and live OpenD paths.
+"""Shared market-data types for the dataset, the daily freeze and the live dryrun path.
 
-Both the frozen-slice provider (:mod:`custody.offline`) and the live read-only
-OpenD adapter (:class:`custody.opend.OpenDMarket`) return the same :class:`Bar`
-records and :class:`~custody.models.Quote` objects. The custody controller and
-eval harness are therefore provider-agnostic: moving from a frozen slice to
-OpenD is a **provider swap**, not a controller rewrite.
+* :class:`Bar` - a normalized 1m (or daily) trade bar with an aware close time;
+* :func:`normalize_bar_rows` / :func:`normalize_daily_rows` - OpenD rows to bars;
+* :class:`MarketDataProvider` - the read-only surface the live adapter
+  (:class:`custody.opend.OpenDMarket`) implements.
 
-Honest live/offline split
--------------------------
-* 1-minute history is trade OHLCV (``open/high/low/close/volume``) for both the
-  underlying and the option, offline and live.
-* Option **bid/ask** only exists live (OpenD snapshot/quote). The frozen slice
-  does not contain NBBO, so :class:`~custody.offline.OfflineMarket` never
-  fabricates a spread: ``quote`` returns ``None`` unless the caller explicitly
-  opts into the clearly-labelled ``option_bar_close`` mapping used by the
-  must-trade plumbing stub. Live uses real quotes.
-
-This module intentionally has no network client and no order API.
+Honesty rule: 1m history is trade OHLCV for both the underlying and the option.
+Option bid/ask exists only live; nothing here fabricates a spread. This module has
+no network client and no order API.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import datetime
 import math
 from typing import Protocol, runtime_checkable
 
-from .models import Quote, ET, instant
+from .models import ET, Quote, instant
 
-__all__ = ['Bar', 'MarketDataProvider', 'MissingCustodyPairError', 'normalize_bar_rows',
-           'normalize_daily_rows', 'day_range', 'day_bars', 'require_paired_bars']
+__all__ = ['Bar', 'MarketDataProvider', 'normalize_bar_rows', 'normalize_daily_rows']
 
 
 def _num(value):
@@ -96,19 +86,12 @@ class Bar:
         if self.low > min(self.open, self.close) or self.high < max(self.open, self.close):
             raise ValueError('invalid bar OHLC range')
 
-    def to_record(self):
-        """Feature-worker / :class:`custody.signals.SignalProvider` record shape."""
-        return {'close_time': self.close_time.isoformat(), 'open': self.open, 'high': self.high,
-                'low': self.low, 'close': self.close, 'volume': self.volume}
-
 
 def normalize_bar_rows(rows, code, interval='1m', boundary=None, source='opend_kline'):
-    """Normalize raw OpenD ``request_history_kline`` rows into deduped ``Bar``s.
+    """Normalize raw OpenD kline rows into deduped, ordered :class:`Bar` objects.
 
     Rows with missing/non-finite values, a malformed timestamp or an impossible
-    OHLC range are dropped. ``boundary`` (an aware datetime or ISO string)
-    filters out anything after the requested bar close. Output is ordered by
-    close time and de-duplicated by close time.
+    OHLC range are dropped; ``boundary`` drops anything after that bar close.
     """
     code = str(code).upper()
     limit = instant(boundary) if boundary is not None else None
@@ -150,62 +133,16 @@ def normalize_daily_rows(rows):
     return [dedup[key] for key in sorted(dedup)]
 
 
-def day_range(day):
-    """Return ``(start, end)`` OpenD history strings covering one ET calendar day."""
-    if isinstance(day, date):
-        day = day.isoformat()
-    else:
-        day = date.fromisoformat(str(day)).isoformat()
-    return day + ' 00:00:00', day + ' 23:59:59'
-
-
-def day_bars(provider, code, day, ktype='K_1M', boundary=None):
-    """Provider-agnostic single-session fetch used by fetch and eval paths."""
-    start, end = day_range(day)
-    return provider.history_bars(code, ktype, start, end, boundary=boundary)
-
-
-class MissingCustodyPairError(ValueError):
-    """A custody case needs both the same-day underlying and option series."""
-
-
-def require_paired_bars(provider, symbol, contract, day, ktype='K_1M', boundary=None):
-    """Load a custody case's paired same-day underlying + option bars or fail.
-
-    Custody timing watches the underlying 1m, but the traded and measured asset
-    is the option. A case that silently lacks one side (for example an
-    underlying-only research slice) must never be evaluated as custody.
-    """
-    try:
-        underlying = day_bars(provider, symbol, day, ktype=ktype, boundary=boundary)
-    except KeyError:
-        underlying = []
-    try:
-        option = day_bars(provider, contract, day, ktype=ktype, boundary=boundary)
-    except KeyError:
-        option = []
-    missing = []
-    if not underlying:
-        missing.append('underlying ' + str(symbol))
-    if not option:
-        missing.append('option ' + str(contract))
-    if missing:
-        raise MissingCustodyPairError(
-            'custody case %s/%s on %s requires paired underlying + option bars; missing %s'
-            % (symbol, contract, day, ', '.join(missing)))
-    return underlying, option
-
-
 @runtime_checkable
 class MarketDataProvider(Protocol):
-    """The single boundary shared by the frozen-slice and live OpenD providers."""
+    """Read-only market surface used by the dryrun runner and the daily freeze."""
 
     def quote(self, contract: str, now=None) -> Quote | None:
         """Fresh option bid/ask, or ``None`` when no honest quote is available."""
         ...
 
     def underlying_mark(self, symbol: str, now=None) -> float | None:
-        """Fresh underlying mark, or ``None`` when unavailable."""
+        """Fresh underlying last price, or ``None`` when unavailable."""
         ...
 
     def history_bars(self, code: str, ktype: str, start, end, boundary=None) -> list[Bar]:
@@ -213,5 +150,5 @@ class MarketDataProvider(Protocol):
         ...
 
     def current_bars(self, code: str, count: int, ktype: str, boundary=None) -> list[Bar]:
-        """Most recent ``count`` bars (subscribed stream or frozen tail)."""
+        """Most recent ``count`` bars from the subscribed stream."""
         ...

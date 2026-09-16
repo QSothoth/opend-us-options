@@ -1,0 +1,114 @@
+import json
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from helpers import DAY, option_bars, path_bars, piecewise, write_dataset  # noqa: E402
+
+from custody.dataset import Dataset, DatasetError, parse_option_code, write_bars, write_checksums  # noqa: E402
+
+CALL, PUT = 'US.SPY260914C100000', 'US.SPY260914P100000'
+
+
+def spy_cases(**overrides):
+    closes = piecewise([(1, 100.0), (390, 101.0)])
+    base = [{'symbol': 'US.SPY', 'contract': CALL, 'trade_date': DAY, 'underlying': closes,
+             'option': option_bars(closes, 100, 'CALL', CALL)},
+            {'symbol': 'US.SPY', 'contract': PUT, 'trade_date': DAY, 'underlying': closes,
+             'option': option_bars(closes, 100, 'PUT', PUT)}]
+    base[0].update(overrides)
+    return base
+
+
+class DatasetTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name) / 'ds'
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_parse_option_code(self):
+        self.assertEqual(parse_option_code('US.SPY260914C776500'), ('SPY', '2026-09-14', 'CALL', 776.5))
+        self.assertEqual(parse_option_code('us.brk.b260918p400000'), ('BRK.B', '2026-09-18', 'PUT', 400.0))
+        with self.assertRaises(DatasetError):
+            parse_option_code('SPY260914C776500')
+
+    def test_valid_dataset_loads_cases_and_complete_tapes(self):
+        write_dataset(self.root, spy_cases(prev_close=99.5, selection='both_sides_atm_at_open'))
+        ds = Dataset(self.root)
+        self.assertEqual(ds.name, 'test-dataset')
+        self.assertGreater(ds.checksums_verified, 0)
+        self.assertEqual([c.direction for c in ds.cases], ['LONG', 'SHORT'])
+        self.assertEqual((ds.cases[0].prev_close, ds.cases[0].selection), (99.5, 'both_sides_atm_at_open'))
+        data = ds.load(ds.cases[0])
+        self.assertEqual(len(data.underlying), 390)
+        self.assertTrue(all(b.volume > 0 for b in data.option))
+        self.assertEqual(ds.sessions(), [DAY])
+
+    def test_checksums_are_mandatory_and_enforced(self):
+        write_dataset(self.root, spy_cases())
+        with (self.root / 'option' / (CALL + '.csv')).open('a') as fh:
+            fh.write('US.SPY260914C100000,2026-09-14T15:59:00-04:00,1m,1,1,1,1,1\n')
+        with self.assertRaisesRegex(DatasetError, 'checksum mismatch'):
+            Dataset(self.root)
+        (self.root / 'CHECKSUMS.sha256').unlink()
+        with self.assertRaisesRegex(DatasetError, 'CHECKSUMS'):
+            Dataset(self.root)
+
+    def test_only_true_0dte_matching_contracts_are_cases(self):
+        for bad, message in ((dict(contract='US.SPY260918C100000'), 'not 0DTE'),
+                             (dict(contract='US.QQQ260914C100000'), 'does not belong'),
+                             (dict(direction='SHORT'), 'disagrees')):
+            with self.subTest(message):
+                root = Path(self.tmp.name) / message.replace(' ', '_')
+                cases = spy_cases(**bad)
+                write_dataset(root, cases)
+                with self.assertRaisesRegex(DatasetError, message):
+                    Dataset(root)
+
+    def test_incomplete_underlying_or_untraded_option_is_refused(self):
+        write_dataset(self.root, spy_cases())
+        tape = self.root / 'underlying' / 'US.SPY.csv'
+        lines = tape.read_text().splitlines()
+        tape.write_text('\n'.join(lines[:100] + lines[101:]) + '\n')
+        write_checksums(self.root)
+        ds = Dataset(self.root)
+        with self.assertRaisesRegex(DatasetError, 'not a complete 1m session'):
+            ds.load(ds.cases[0])
+        root2 = Path(self.tmp.name) / 'untraded'
+        cases = spy_cases()
+        cases[0]['option'] = [b.__class__(**{**b.__dict__, 'volume': 0.0}) for b in cases[0]['option']]
+        write_dataset(root2, cases)
+        ds2 = Dataset(root2)
+        with self.assertRaisesRegex(DatasetError, 'no traded option bars'):
+            ds2.load(ds2.cases[0])
+
+    def test_duplicate_cases_are_refused(self):
+        cases = spy_cases()
+        write_dataset(self.root, [cases[0], dict(cases[0])])
+        with self.assertRaisesRegex(DatasetError, 'duplicate'):
+            Dataset(self.root)
+
+    def test_write_bars_merges_and_dedupes(self):
+        bars = path_bars([100.0, 101.0, 102.0])
+        target = self.root / 'underlying' / 'US.SPY.csv'
+        write_bars(target, bars[:2])
+        write_bars(target, bars[1:])
+        rows = target.read_text().splitlines()
+        self.assertEqual(len(rows), 4)  # header + 3 unique minutes
+        self.assertTrue(rows[0].startswith('code,close_time'))
+
+    def test_release_layout_extra_fields_are_tolerated(self):
+        write_dataset(self.root, spy_cases())
+        doc = json.loads((self.root / 'cases.json').read_text())
+        doc['cases'][0].update(call_volume=1.0, chosen_volume=2.0, expiry=DAY, right='CALL', strike=100.0)
+        (self.root / 'cases.json').write_text(json.dumps(doc))
+        write_checksums(self.root)
+        self.assertEqual(len(Dataset(self.root).cases), 2)
+
+
+if __name__ == '__main__':
+    unittest.main()

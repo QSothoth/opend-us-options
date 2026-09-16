@@ -1,63 +1,10 @@
 {
-  "schema_version": 1,
-  "metric_contract": {
-    "input": "exact option contract (nearest heavy-theta expiry; near-ATM; need not be strict 0DTE)",
-    "signals": "same-day underlying 1m K-line for entry/exit timing only",
-    "execution": "trade the option contract, never the stock",
-    "success_metric": "option path/fills only (option PnL)",
-    "forbidden": "underlying-proxy payoff / underlying return x multiplier"
-  },
+  "schema_version": 2,
+  "default": "zero_dte_timing_v1",
   "strategies": {
-    "orb_rvol_rsi_1m_v1": {
-      "file": "orb_rvol_rsi_1m_v1.json",
-      "sha256": "5e9ff55d3cbdc119401dacbe01b87beb58429e302ef4aca4f407291db01741cc",
-      "case_id": "536f0789fb0d",
-      "description": "1m OR15 + RVOL + RSI",
-      "signal_minutes": 1,
-      "status": "retained_research",
-      "true_option_pnl": false
-    },
-    "retest_rvol_adx_5m_v1": {
-      "file": "retest_rvol_adx_5m_v1.json",
-      "sha256": "e36b77f7b54a2bc215172b586fc2035b6089a74f9cb4d8f33d42e42611e141b9",
-      "case_id": "2c0ecc056bd3",
-      "description": "5m OR15 retest + RVOL + ADX",
-      "signal_minutes": 5,
-      "status": "retained_research",
-      "true_option_pnl": false
-    },
-    "custody_trend_1m_v1": {
-      "file": "custody_trend_1m_v1.json",
-      "sha256": "bb3c5a39b1560b49b4f816a32cee05d97e3f90325b5c13bdc60aa372baf276e7",
-      "case_id": "5a1c8c5877d9",
-      "description": "1m must-trade custody baseline; option OHLCV simulated fills",
-      "signal_minutes": 1,
-      "status": "baseline_dryrun",
-      "timing_model": "intraday_v1",
-      "true_option_pnl": false,
-      "pnl_basis": "observed_option_ohlcv_simulation"
-    },
-    "custody_payoff_1m_v2": {
-      "sha256": "338ec7be31eb8b6563988ec8b4e3e0bbfea2bb87e97221ba69c4a16ddf37b41b",
-      "case_id": "78e63fddb7dc",
-      "timing_model": "intraday_v2",
-      "signal_minutes": 1,
-      "status": "trained_candidate_dryrun",
-      "true_option_pnl": false,
-      "pnl_basis": "observed_option_ohlcv_simulation",
-      "file": "custody_payoff_1m_v2.json",
-      "description": "Train-only payoff-first search winner; frozen before service confirmation"
-    },
-    "custody_payoff_aggressive_1m_v2": {
-      "sha256": "1db0ae0a237947f8f6da4bd53f8f8789e40077d91e86c6e61d5c971277887d26",
-      "case_id": "5bee2cc148ed",
-      "timing_model": "intraday_v2",
-      "signal_minutes": 1,
-      "status": "trained_candidate_dryrun",
-      "true_option_pnl": false,
-      "pnl_basis": "observed_option_ohlcv_simulation",
-      "file": "custody_payoff_aggressive_1m_v2.json",
-      "description": "Highest primary net dual-payoff in searched space; more latency-sensitive"
+    "zero_dte_timing_v1": {
+      "file": "zero_dte_timing_v1.json",
+      "sha256": "d6cc5718c3eb896251ea9347df45cc9f807c9f6efeb175f0b0df77bb6bb22fdf"
     }
   }
 }

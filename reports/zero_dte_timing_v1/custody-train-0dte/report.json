@@ -1,0 +1,1581 @@
+{
+  "standard": "docs/STANDARD.md",
+  "strategy": {
+    "strategy_id": "zero_dte_timing_v1",
+    "sha256": "d6cc5718c3eb896251ea9347df45cc9f807c9f6efeb175f0b0df77bb6bb22fdf",
+    "engine": "zero_dte_timing",
+    "status": "candidate"
+  },
+  "strategy_params": {
+    "ema_fast": 9,
+    "ema_slow": 21,
+    "atr_period": 14,
+    "opening_minutes": 15,
+    "momentum_lookback": 5,
+    "vwap_buffer_atr": 0.25,
+    "trend_buffer_atr": 0.0,
+    "relax_after_minutes": 120,
+    "must_enter_before_close_minutes": 180,
+    "stop_lookback": 10,
+    "stop_min_atr": 1.0,
+    "stop_max_atr": 2.0,
+    "fail_minutes": 20,
+    "fail_progress_atr": 1.0,
+    "breakeven_at_atr": 2.0,
+    "trail_activate_atr": 3.0,
+    "trail_atr": 2.5,
+    "flatten_before_close_minutes": 15
+  },
+  "developed_on": {
+    "release": "custody-train-0dte",
+    "generation": "V4",
+    "sessions_through": "2026-09-14"
+  },
+  "dataset": {
+    "name": "custody-train-0dte",
+    "checksums_sha256": "deb7432fb8417fa05c88535248a3af816cd1227f1ef374c4f430ffb363e926db",
+    "checksums_verified": 94,
+    "cases": 36,
+    "sessions": 14,
+    "window": [
+      "2026-08-17",
+      "2026-09-14"
+    ],
+    "selections": {
+      "unspecified": 36
+    }
+  },
+  "fill_model": {
+    "delay_minutes": 1,
+    "slippage_fraction": 0.25,
+    "fee_per_contract": 0.65,
+    "multiplier": 100
+  },
+  "summary": {
+    "cases": 36,
+    "completed": 36,
+    "completion_rate": 1.0,
+    "failures": {},
+    "balanced": {
+      "n": 36,
+      "expectancy": -0.223316,
+      "win_rate": 0.171601,
+      "average_win": 0.533444,
+      "average_loss": 0.380076,
+      "payoff_ratio": 1.403517,
+      "profit_factor": 0.290735
+    },
+    "balanced_dollars": {
+      "n": 36,
+      "expectancy": -55.782091,
+      "win_rate": 0.171601,
+      "average_win": 44.586182,
+      "average_loss": 76.573136,
+      "payoff_ratio": 0.582269,
+      "profit_factor": 0.120616
+    },
+    "raw": {
+      "n": 36,
+      "expectancy": -0.301493,
+      "win_rate": 0.111111,
+      "average_win": 0.81785,
+      "average_loss": 0.441411,
+      "payoff_ratio": 1.852808,
+      "profit_factor": 0.231601
+    },
+    "coverage_gaps": [],
+    "by_scenario": {
+      "trend_with": {
+        "n": 2,
+        "expectancy": -0.261344,
+        "win_rate": 0.0,
+        "average_win": null,
+        "average_loss": 0.261344,
+        "payoff_ratio": null,
+        "profit_factor": 0.0,
+        "label_zh": "顺势单边",
+        "median": -0.261344,
+        "upside_capture": 0.0
+      },
+      "reversal_with": {
+        "n": 8,
+        "expectancy": 0.125332,
+        "win_rate": 0.25,
+        "average_win": 1.403799,
+        "average_loss": 0.300824,
+        "payoff_ratio": 4.666522,
+        "profit_factor": 1.555507,
+        "label_zh": "先逆后顺",
+        "median": -0.290713,
+        "upside_capture": 0.131411
+      },
+      "chop": {
+        "n": 6,
+        "expectancy": -0.393303,
+        "win_rate": 0.0,
+        "average_win": null,
+        "average_loss": 0.393303,
+        "payoff_ratio": null,
+        "profit_factor": 0.0,
+        "label_zh": "震荡",
+        "median": -0.455903,
+        "upside_capture": 0.0
+      },
+      "reversal_against": {
+        "n": 1,
+        "expectancy": 0.369825,
+        "win_rate": 1.0,
+        "average_win": 0.369825,
+        "average_loss": null,
+        "payoff_ratio": null,
+        "profit_factor": null,
+        "label_zh": "先顺后逆",
+        "median": 0.369825,
+        "upside_capture": 0.422614
+      },
+      "trend_against": {
+        "n": 19,
+        "expectancy": -0.491775,
+        "win_rate": 0.052632,
+        "average_win": 0.093976,
+        "average_loss": 0.524317,
+        "payoff_ratio": 0.179235,
+        "profit_factor": 0.009957,
+        "label_zh": "逆势单边",
+        "median": -0.40687,
+        "upside_capture": 0.012695
+      }
+    },
+    "with_direction": {
+      "n": 10,
+      "expectancy": 0.047997,
+      "win_rate": 0.2,
+      "average_win": 1.403799,
+      "average_loss": 0.290954,
+      "payoff_ratio": 4.824823,
+      "profit_factor": 1.206206
+    },
+    "hold_minutes_median": 18.0,
+    "entry_reasons": {
+      "trend_breakout": 20,
+      "reversal_reclaim": 7,
+      "late_confirmation": 9
+    },
+    "exit_reasons": {
+      "invalidation_stop": 16,
+      "no_progress": 4,
+      "trailing_stop": 10,
+      "breakeven_stop": 5,
+      "scheduled_flatten": 1
+    }
+  },
+  "benchmark_open_hold": {
+    "cases": 36,
+    "completed": 35,
+    "completion_rate": 0.972222,
+    "failures": {
+      "EXIT_NOT_FILLED": 1
+    },
+    "balanced": {
+      "n": 35,
+      "expectancy": -0.369651,
+      "win_rate": 0.163976,
+      "average_win": 1.875804,
+      "average_loss": 0.810069,
+      "payoff_ratio": 2.315612,
+      "profit_factor": 0.454178
+    },
+    "balanced_dollars": {
+      "n": 35,
+      "expectancy": -120.224833,
+      "win_rate": 0.163976,
+      "average_win": 184.925806,
+      "average_loss": 180.076224,
+      "payoff_ratio": 1.026931,
+      "profit_factor": 0.201419
+    },
+    "raw": {
+      "n": 35,
+      "expectancy": -0.773591,
+      "win_rate": 0.057143,
+      "average_win": 1.112844,
+      "average_loss": 0.887921,
+      "payoff_ratio": 1.253315,
+      "profit_factor": 0.075958
+    },
+    "coverage_gaps": [],
+    "by_scenario": {
+      "trend_with": {
+        "n": 2,
+        "expectancy": 0.821688,
+        "win_rate": 0.5,
+        "average_win": 2.058915,
+        "average_loss": 0.415538,
+        "payoff_ratio": 4.954811,
+        "profit_factor": 4.954811,
+        "label_zh": "顺势单边",
+        "median": 0.821688,
+        "upside_capture": 0.378779
+      },
+      "reversal_with": {
+        "n": 8,
+        "expectancy": -0.648452,
+        "win_rate": 0.125,
+        "average_win": 0.166774,
+        "average_loss": 0.764913,
+        "payoff_ratio": 0.21803,
+        "profit_factor": 0.031147,
+        "label_zh": "先逆后顺",
+        "median": -0.721215,
+        "upside_capture": 0.064244
+      },
+      "chop": {
+        "n": 6,
+        "expectancy": -0.814943,
+        "win_rate": 0.0,
+        "average_win": null,
+        "average_loss": 0.814943,
+        "payoff_ratio": null,
+        "profit_factor": 0.0,
+        "label_zh": "震荡",
+        "median": -0.968787,
+        "upside_capture": 0.0
+      },
+      "reversal_against": {
+        "n": 1,
+        "expectancy": -0.917358,
+        "win_rate": 0.0,
+        "average_win": null,
+        "average_loss": 0.917358,
+        "payoff_ratio": null,
+        "profit_factor": 0.0,
+        "label_zh": "先顺后逆",
+        "median": -0.917358,
+        "upside_capture": 0.0
+      },
+      "trend_against": {
+        "n": 18,
+        "expectancy": -0.984691,
+        "win_rate": 0.0,
+        "average_win": null,
+        "average_loss": 0.984691,
+        "payoff_ratio": null,
+        "profit_factor": 0.0,
+        "label_zh": "逆势单边",
+        "median": -1.001201,
+        "upside_capture": 0.0
+      }
+    },
+    "with_direction": {
+      "n": 10,
+      "expectancy": -0.354424,
+      "win_rate": 0.2,
+      "average_win": 1.112844,
+      "average_loss": 0.721241,
+      "payoff_ratio": 1.542958,
+      "profit_factor": 0.385739
+    },
+    "hold_minutes_median": 370,
+    "entry_reasons": {
+      "benchmark_open": 36
+    },
+    "exit_reasons": {
+      "scheduled_flatten": 35
+    }
+  },
+  "direction_skill_0.6": {
+    "strategy": {
+      "n": 36,
+      "expectancy": -0.215986,
+      "win_rate": 0.149781,
+      "average_win": 0.60608,
+      "average_loss": 0.360807,
+      "payoff_ratio": 1.679789,
+      "profit_factor": 0.295924
+    },
+    "benchmark": {
+      "n": 35,
+      "expectancy": -0.258075,
+      "win_rate": 0.196159,
+      "average_win": 1.875804,
+      "average_loss": 0.778799,
+      "payoff_ratio": 2.408587,
+      "profit_factor": 0.58776
+    }
+  },
+  "stress": {
+    "slippage_0": {
+      "fill_model": {
+        "delay_minutes": 1,
+        "slippage_fraction": 0.0,
+        "fee_per_contract": 0.65,
+        "multiplier": 100
+      },
+      "strategy": {
+        "n": 36,
+        "expectancy": -0.16702,
+        "win_rate": 0.187226,
+        "average_win": 0.571469,
+        "average_loss": 0.337134,
+        "payoff_ratio": 1.695077,
+        "profit_factor": 0.390468
+      },
+      "benchmark": {
+        "n": 35,
+        "expectancy": -0.305167,
+        "win_rate": 0.163976,
+        "average_win": 2.199592,
+        "average_loss": 0.796443,
+        "payoff_ratio": 2.761768,
+        "profit_factor": 0.541685
+      }
+    },
+    "slippage_0.5": {
+      "fill_model": {
+        "delay_minutes": 1,
+        "slippage_fraction": 0.5,
+        "fee_per_contract": 0.65,
+        "multiplier": 100
+      },
+      "strategy": {
+        "n": 36,
+        "expectancy": -0.266612,
+        "win_rate": 0.171601,
+        "average_win": 0.462903,
+        "average_loss": 0.41773,
+        "payoff_ratio": 1.10814,
+        "profit_factor": 0.229549
+      },
+      "benchmark": {
+        "n": 35,
+        "expectancy": -0.422204,
+        "win_rate": 0.163976,
+        "average_win": 1.603915,
+        "average_loss": 0.819601,
+        "payoff_ratio": 1.956946,
+        "profit_factor": 0.38383
+      }
+    },
+    "delay_2m": {
+      "fill_model": {
+        "delay_minutes": 2,
+        "slippage_fraction": 0.25,
+        "fee_per_contract": 0.65,
+        "multiplier": 100
+      },
+      "strategy": {
+        "n": 36,
+        "expectancy": -0.202499,
+        "win_rate": 0.317434,
+        "average_win": 0.306914,
+        "average_loss": 0.439406,
+        "payoff_ratio": 0.698474,
+        "profit_factor": 0.324833
+      },
+      "benchmark": {
+        "n": 35,
+        "expectancy": -0.307102,
+        "win_rate": 0.163976,
+        "average_win": 2.251677,
+        "average_loss": 0.808974,
+        "payoff_ratio": 2.783375,
+        "profit_factor": 0.545923
+      }
+    }
+  },
+  "shuffle_null": {
+    "draws": 1000,
+    "p_expectancy": 0.817183,
+    "p_payoff_ratio": 0.272727
+  },
+  "prefix_consistency": {
+    "passed": true,
+    "mismatches": []
+  },
+  "market_shapes": {
+    "unknown_prev_close|LONG": {
+      "n": 24,
+      "strategy_mean": -0.235788,
+      "benchmark_mean": -0.848518
+    },
+    "unknown_prev_close|SHORT": {
+      "n": 12,
+      "strategy_mean": -0.432903,
+      "benchmark_mean": -0.629982
+    }
+  },
+  "cases": [
+    {
+      "symbol": "US.SPY",
+      "contract": "US.SPY260817C776000",
+      "trade_date": "2026-08-17",
+      "direction": "LONG",
+      "entry": {
+        "minute": 106,
+        "reason": "trend_breakout",
+        "fill_minute": 107,
+        "price": 0.46,
+        "bar_close": 0.45
+      },
+      "exit": {
+        "minute": 124,
+        "reason": "invalidation_stop",
+        "fill_minute": 125,
+        "price": 0.28,
+        "bar_close": 0.29
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.419565,
+      "net_pnl": -19.3,
+      "hold_minutes": 18,
+      "best_net_return": 0.075,
+      "benchmark_net_return": -1.003125,
+      "scenario": "trend_against",
+      "first_hour_move": -0.178,
+      "rest_move": -0.613,
+      "day_range_pct": 0.521,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.SPY",
+      "contract": "US.SPY260818C769000",
+      "trade_date": "2026-08-18",
+      "direction": "LONG",
+      "entry": {
+        "minute": 57,
+        "reason": "trend_breakout",
+        "fill_minute": 58,
+        "price": 1.1125,
+        "bar_close": 1.07
+      },
+      "exit": {
+        "minute": 78,
+        "reason": "no_progress",
+        "fill_minute": 79,
+        "price": 0.82,
+        "bar_close": 0.85
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.274607,
+      "net_pnl": -30.55,
+      "hold_minutes": 21,
+      "best_net_return": 0.010787,
+      "benchmark_net_return": -0.965769,
+      "scenario": "trend_against",
+      "first_hour_move": -0.018,
+      "rest_move": -0.353,
+      "day_range_pct": 0.282,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.SPY",
+      "contract": "US.SPY260819P770000",
+      "trade_date": "2026-08-19",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 19,
+        "reason": "trend_breakout",
+        "fill_minute": 20,
+        "price": 2.34,
+        "bar_close": 2.24
+      },
+      "exit": {
+        "minute": 25,
+        "reason": "invalidation_stop",
+        "fill_minute": 26,
+        "price": 1.22,
+        "bar_close": 1.29
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.484188,
+      "net_pnl": -113.3,
+      "hold_minutes": 6,
+      "best_net_return": -0.056838,
+      "benchmark_net_return": -0.096327,
+      "scenario": "chop",
+      "first_hour_move": 0.076,
+      "rest_move": 0.236,
+      "day_range_pct": 0.567,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.SPY",
+      "contract": "US.SPY260820P766000",
+      "trade_date": "2026-08-20",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 24,
+        "reason": "trend_breakout",
+        "fill_minute": 25,
+        "price": 1.025,
+        "bar_close": 0.97
+      },
+      "exit": {
+        "minute": 54,
+        "reason": "trailing_stop",
+        "fill_minute": 55,
+        "price": 0.945,
+        "bar_close": 0.97
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.090732,
+      "net_pnl": -9.3,
+      "hold_minutes": 30,
+      "best_net_return": 2.509268,
+      "benchmark_net_return": 2.058915,
+      "scenario": "trend_with",
+      "first_hour_move": -0.05,
+      "rest_move": 0.602,
+      "day_range_pct": 0.676,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.AAPL",
+      "contract": "US.AAPL260821C312500",
+      "trade_date": "2026-08-21",
+      "direction": "LONG",
+      "entry": {
+        "minute": 88,
+        "reason": "reversal_reclaim",
+        "fill_minute": 89,
+        "price": 0.145,
+        "bar_close": 0.14
+      },
+      "exit": {
+        "minute": 164,
+        "reason": "trailing_stop",
+        "fill_minute": 165,
+        "price": 0.27,
+        "bar_close": 0.28
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": 0.772414,
+      "net_pnl": 11.2,
+      "hold_minutes": 76,
+      "best_net_return": 2.531034,
+      "benchmark_net_return": -1.008759,
+      "scenario": "reversal_with",
+      "first_hour_move": -0.792,
+      "rest_move": 0.326,
+      "day_range_pct": 1.721,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.AMD",
+      "contract": "US.AMD260821C477500",
+      "trade_date": "2026-08-21",
+      "direction": "LONG",
+      "entry": {
+        "minute": 121,
+        "reason": "late_confirmation",
+        "fill_minute": 122,
+        "price": 0.285,
+        "bar_close": 0.28
+      },
+      "exit": {
+        "minute": 149,
+        "reason": "trailing_stop",
+        "fill_minute": 150,
+        "price": 0.22,
+        "bar_close": 0.22
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.273684,
+      "net_pnl": -7.8,
+      "hold_minutes": 28,
+      "best_net_return": 0.7,
+      "benchmark_net_return": -0.998093,
+      "scenario": "reversal_with",
+      "first_hour_move": -0.658,
+      "rest_move": 0.265,
+      "day_range_pct": 3.2,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.IWM",
+      "contract": "US.IWM260821C300000",
+      "trade_date": "2026-08-21",
+      "direction": "LONG",
+      "entry": {
+        "minute": 21,
+        "reason": "trend_breakout",
+        "fill_minute": 22,
+        "price": 0.535,
+        "bar_close": 0.5
+      },
+      "exit": {
+        "minute": 38,
+        "reason": "invalidation_stop",
+        "fill_minute": 39,
+        "price": 0.25,
+        "bar_close": 0.26
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.557009,
+      "net_pnl": -29.8,
+      "hold_minutes": 17,
+      "best_net_return": -0.183178,
+      "benchmark_net_return": -0.652093,
+      "scenario": "reversal_with",
+      "first_hour_move": -0.472,
+      "rest_move": 0.611,
+      "day_range_pct": 0.685,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.META",
+      "contract": "US.META260821P547500",
+      "trade_date": "2026-08-21",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 130,
+        "reason": "late_confirmation",
+        "fill_minute": 131,
+        "price": 1.22,
+        "bar_close": 1.19
+      },
+      "exit": {
+        "minute": 143,
+        "reason": "breakeven_stop",
+        "fill_minute": 144,
+        "price": 0.8925,
+        "bar_close": 0.91
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.279098,
+      "net_pnl": -34.05,
+      "hold_minutes": 13,
+      "best_net_return": 0.270082,
+      "benchmark_net_return": -0.969211,
+      "scenario": "chop",
+      "first_hour_move": -0.227,
+      "rest_move": -0.124,
+      "day_range_pct": 1.946,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.MSFT",
+      "contract": "US.MSFT260821P480000",
+      "trade_date": "2026-08-21",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 68,
+        "reason": "trend_breakout",
+        "fill_minute": 69,
+        "price": 1.0075,
+        "bar_close": 0.92
+      },
+      "exit": {
+        "minute": 74,
+        "reason": "invalidation_stop",
+        "fill_minute": 75,
+        "price": 0.41,
+        "bar_close": 0.41
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.605955,
+      "net_pnl": -61.05,
+      "hold_minutes": 6,
+      "best_net_return": -0.159305,
+      "benchmark_net_return": -0.987407,
+      "scenario": "trend_against",
+      "first_hour_move": -0.439,
+      "rest_move": -0.089,
+      "day_range_pct": 1.632,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.MU",
+      "contract": "US.MU260821C990000",
+      "trade_date": "2026-08-21",
+      "direction": "LONG",
+      "entry": {
+        "minute": 121,
+        "reason": "late_confirmation",
+        "fill_minute": 122,
+        "price": 0.46,
+        "bar_close": 0.44
+      },
+      "exit": {
+        "minute": 148,
+        "reason": "trailing_stop",
+        "fill_minute": 149,
+        "price": 0.4025,
+        "bar_close": 0.41
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.153261,
+      "net_pnl": -7.05,
+      "hold_minutes": 27,
+      "best_net_return": 0.613043,
+      "benchmark_net_return": -1.000368,
+      "scenario": "trend_against",
+      "first_hour_move": -0.756,
+      "rest_move": -0.134,
+      "day_range_pct": 3.203,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.NVDA",
+      "contract": "US.NVDA260821C217500",
+      "trade_date": "2026-08-21",
+      "direction": "LONG",
+      "entry": {
+        "minute": 122,
+        "reason": "late_confirmation",
+        "fill_minute": 123,
+        "price": 0.2075,
+        "bar_close": 0.2
+      },
+      "exit": {
+        "minute": 136,
+        "reason": "trailing_stop",
+        "fill_minute": 137,
+        "price": 0.24,
+        "bar_close": 0.25
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": 0.093976,
+      "net_pnl": 1.95,
+      "hold_minutes": 14,
+      "best_net_return": 0.925301,
+      "benchmark_net_return": -1.00226,
+      "scenario": "trend_against",
+      "first_hour_move": -0.888,
+      "rest_move": 0.154,
+      "day_range_pct": 1.941,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.QQQ",
+      "contract": "US.QQQ260821C715000",
+      "trade_date": "2026-08-21",
+      "direction": "LONG",
+      "entry": {
+        "minute": 87,
+        "reason": "reversal_reclaim",
+        "fill_minute": 88,
+        "price": 0.27,
+        "bar_close": 0.26
+      },
+      "exit": {
+        "minute": 151,
+        "reason": "trailing_stop",
+        "fill_minute": 152,
+        "price": 0.8325,
+        "bar_close": 0.86
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": 2.035185,
+      "net_pnl": 54.95,
+      "hold_minutes": 64,
+      "best_net_return": 4.211111,
+      "benchmark_net_return": -0.978696,
+      "scenario": "reversal_with",
+      "first_hour_move": -0.717,
+      "rest_move": 0.496,
+      "day_range_pct": 0.905,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.SPY",
+      "contract": "US.SPY260821C766000",
+      "trade_date": "2026-08-21",
+      "direction": "LONG",
+      "entry": {
+        "minute": 36,
+        "reason": "reversal_reclaim",
+        "fill_minute": 37,
+        "price": 0.8225,
+        "bar_close": 0.79
+      },
+      "exit": {
+        "minute": 45,
+        "reason": "invalidation_stop",
+        "fill_minute": 46,
+        "price": 0.56,
+        "bar_close": 0.58
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.334954,
+      "net_pnl": -27.55,
+      "hold_minutes": 9,
+      "best_net_return": 1.443161,
+      "benchmark_net_return": -0.368235,
+      "scenario": "reversal_with",
+      "first_hour_move": -0.38,
+      "rest_move": 0.495,
+      "day_range_pct": 0.48,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.TSLA",
+      "contract": "US.TSLA260821P350000",
+      "trade_date": "2026-08-21",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 155,
+        "reason": "late_confirmation",
+        "fill_minute": 156,
+        "price": 0.065,
+        "bar_close": 0.06
+      },
+      "exit": {
+        "minute": 175,
+        "reason": "invalidation_stop",
+        "fill_minute": 176,
+        "price": 0.02,
+        "bar_close": 0.02
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.892308,
+      "net_pnl": -5.8,
+      "hold_minutes": 20,
+      "best_net_return": -0.315385,
+      "benchmark_net_return": -1.000833,
+      "scenario": "trend_against",
+      "first_hour_move": -0.506,
+      "rest_move": -0.262,
+      "day_range_pct": 5.602,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.SPY",
+      "contract": "US.SPY260824C765000",
+      "trade_date": "2026-08-24",
+      "direction": "LONG",
+      "entry": {
+        "minute": 32,
+        "reason": "reversal_reclaim",
+        "fill_minute": 33,
+        "price": 0.39,
+        "bar_close": 0.35
+      },
+      "exit": {
+        "minute": 96,
+        "reason": "breakeven_stop",
+        "fill_minute": 97,
+        "price": 0.175,
+        "bar_close": 0.18
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.584615,
+      "net_pnl": -22.8,
+      "hold_minutes": 64,
+      "best_net_return": 0.941026,
+      "benchmark_net_return": -0.961569,
+      "scenario": "trend_against",
+      "first_hour_move": -0.592,
+      "rest_move": 0.236,
+      "day_range_pct": 0.411,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.SPY",
+      "contract": "US.SPY260825C766000",
+      "trade_date": "2026-08-25",
+      "direction": "LONG",
+      "entry": {
+        "minute": 19,
+        "reason": "trend_breakout",
+        "fill_minute": 20,
+        "price": 1.31,
+        "bar_close": 1.27
+      },
+      "exit": {
+        "minute": 28,
+        "reason": "invalidation_stop",
+        "fill_minute": 29,
+        "price": 0.79,
+        "bar_close": 0.81
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.40687,
+      "net_pnl": -53.3,
+      "hold_minutes": 9,
+      "best_net_return": -0.147328,
+      "benchmark_net_return": -0.951228,
+      "scenario": "trend_against",
+      "first_hour_move": -0.391,
+      "rest_move": 0.18,
+      "day_range_pct": 0.487,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.AAPL",
+      "contract": "US.AAPL260828P317500",
+      "trade_date": "2026-08-28",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 17,
+        "reason": "trend_breakout",
+        "fill_minute": 18,
+        "price": 2.3825,
+        "bar_close": 2.33
+      },
+      "exit": {
+        "minute": 38,
+        "reason": "no_progress",
+        "fill_minute": 39,
+        "price": 1.61,
+        "bar_close": 1.63
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.329696,
+      "net_pnl": -78.55,
+      "hold_minutes": 21,
+      "best_net_return": 0.01553,
+      "benchmark_net_return": -1.002013,
+      "scenario": "trend_against",
+      "first_hour_move": 0.017,
+      "rest_move": -0.449,
+      "day_range_pct": 2.184,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.META",
+      "contract": "US.META260828P572500",
+      "trade_date": "2026-08-28",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 39,
+        "reason": "trend_breakout",
+        "fill_minute": 40,
+        "price": 0.9075,
+        "bar_close": 0.84
+      },
+      "exit": {
+        "minute": 73,
+        "reason": "trailing_stop",
+        "fill_minute": 74,
+        "price": 0.625,
+        "bar_close": 0.67
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.32562,
+      "net_pnl": -29.55,
+      "hold_minutes": 34,
+      "best_net_return": 1.095868,
+      "benchmark_net_return": -0.884211,
+      "scenario": "trend_against",
+      "first_hour_move": -0.3,
+      "rest_move": 0.042,
+      "day_range_pct": 3.183,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.MSFT",
+      "contract": "US.MSFT260828P505000",
+      "trade_date": "2026-08-28",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 41,
+        "reason": "reversal_reclaim",
+        "fill_minute": 42,
+        "price": 0.845,
+        "bar_close": 0.8
+      },
+      "exit": {
+        "minute": 51,
+        "reason": "invalidation_stop",
+        "fill_minute": 52,
+        "price": 0.2925,
+        "bar_close": 0.31
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.669231,
+      "net_pnl": -56.55,
+      "hold_minutes": 10,
+      "best_net_return": 0.005325,
+      "benchmark_net_return": -1.001948,
+      "scenario": "trend_against",
+      "first_hour_move": -0.417,
+      "rest_move": -0.251,
+      "day_range_pct": 2.555,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.QQQ",
+      "contract": "US.QQQ260828C720000",
+      "trade_date": "2026-08-28",
+      "direction": "LONG",
+      "entry": {
+        "minute": 31,
+        "reason": "trend_breakout",
+        "fill_minute": 32,
+        "price": 2.275,
+        "bar_close": 2.13
+      },
+      "exit": {
+        "minute": 38,
+        "reason": "invalidation_stop",
+        "fill_minute": 39,
+        "price": 1.52,
+        "bar_close": 1.61
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.337582,
+      "net_pnl": -76.8,
+      "hold_minutes": 7,
+      "best_net_return": 0.844835,
+      "benchmark_net_return": -1.001606,
+      "scenario": "trend_against",
+      "first_hour_move": 0.062,
+      "rest_move": -0.405,
+      "day_range_pct": 1.256,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.SPY",
+      "contract": "US.SPY260828C772000",
+      "trade_date": "2026-08-28",
+      "direction": "LONG",
+      "entry": {
+        "minute": 19,
+        "reason": "trend_breakout",
+        "fill_minute": 20,
+        "price": 1.8675,
+        "bar_close": 1.77
+      },
+      "exit": {
+        "minute": 32,
+        "reason": "breakeven_stop",
+        "fill_minute": 33,
+        "price": 1.545,
+        "bar_close": 1.63
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.179652,
+      "net_pnl": -33.55,
+      "hold_minutes": 13,
+      "best_net_return": 0.78822,
+      "benchmark_net_return": -0.99593,
+      "scenario": "chop",
+      "first_hour_move": -0.066,
+      "rest_move": -0.24,
+      "day_range_pct": 0.906,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.SPY",
+      "contract": "US.SPY260831C767000",
+      "trade_date": "2026-08-31",
+      "direction": "LONG",
+      "entry": {
+        "minute": 88,
+        "reason": "reversal_reclaim",
+        "fill_minute": 89,
+        "price": 0.6375,
+        "bar_close": 0.61
+      },
+      "exit": {
+        "minute": 102,
+        "reason": "invalidation_stop",
+        "fill_minute": 103,
+        "price": 0.4525,
+        "bar_close": 0.47
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.310588,
+      "net_pnl": -19.8,
+      "hold_minutes": 14,
+      "best_net_return": -0.071373,
+      "benchmark_net_return": -0.558177,
+      "scenario": "reversal_with",
+      "first_hour_move": -0.826,
+      "rest_move": 0.716,
+      "day_range_pct": 0.379,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.SPY",
+      "contract": "US.SPY260901C762000",
+      "trade_date": "2026-09-01",
+      "direction": "LONG",
+      "entry": {
+        "minute": 20,
+        "reason": "trend_breakout",
+        "fill_minute": 21,
+        "price": 1.425,
+        "bar_close": 1.38
+      },
+      "exit": {
+        "minute": 86,
+        "reason": "trailing_stop",
+        "fill_minute": 87,
+        "price": 1.965,
+        "bar_close": 1.99
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": 0.369825,
+      "net_pnl": 52.7,
+      "hold_minutes": 66,
+      "best_net_return": 0.875088,
+      "benchmark_net_return": -0.917358,
+      "scenario": "reversal_against",
+      "first_hour_move": 0.339,
+      "rest_move": -0.524,
+      "day_range_pct": 0.681,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.AAPL",
+      "contract": "US.AAPL260904C327500",
+      "trade_date": "2026-09-04",
+      "direction": "LONG",
+      "entry": {
+        "minute": 120,
+        "reason": "late_confirmation",
+        "fill_minute": 121,
+        "price": 0.01,
+        "bar_close": 0.01
+      },
+      "exit": {
+        "minute": 179,
+        "reason": "trailing_stop",
+        "fill_minute": 180,
+        "price": 0.01,
+        "bar_close": 0.01
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -1.3,
+      "net_pnl": -1.3,
+      "hold_minutes": 59,
+      "best_net_return": 0.95,
+      "benchmark_net_return": null,
+      "scenario": "trend_against",
+      "first_hour_move": -0.686,
+      "rest_move": -0.004,
+      "day_range_pct": 3.372,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.META",
+      "contract": "US.META260904C612500",
+      "trade_date": "2026-09-04",
+      "direction": "LONG",
+      "entry": {
+        "minute": 31,
+        "reason": "trend_breakout",
+        "fill_minute": 32,
+        "price": 2.2925,
+        "bar_close": 2.22
+      },
+      "exit": {
+        "minute": 49,
+        "reason": "breakeven_stop",
+        "fill_minute": 50,
+        "price": 1.6,
+        "bar_close": 1.6
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.307743,
+      "net_pnl": -70.55,
+      "hold_minutes": 18,
+      "best_net_return": 1.054308,
+      "benchmark_net_return": 0.166774,
+      "scenario": "reversal_with",
+      "first_hour_move": -0.254,
+      "rest_move": 0.602,
+      "day_range_pct": 1.958,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.MSFT",
+      "contract": "US.MSFT260904C510000",
+      "trade_date": "2026-09-04",
+      "direction": "LONG",
+      "entry": {
+        "minute": 163,
+        "reason": "late_confirmation",
+        "fill_minute": 164,
+        "price": 0.0225,
+        "bar_close": 0.02
+      },
+      "exit": {
+        "minute": 169,
+        "reason": "invalidation_stop",
+        "fill_minute": 170,
+        "price": 0.0275,
+        "bar_close": 0.03
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.355556,
+      "net_pnl": -0.8,
+      "hold_minutes": 6,
+      "best_net_return": 0.2,
+      "benchmark_net_return": -1.00381,
+      "scenario": "trend_against",
+      "first_hour_move": -0.718,
+      "rest_move": -0.16,
+      "day_range_pct": 2.271,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.QQQ",
+      "contract": "US.QQQ260904C719000",
+      "trade_date": "2026-09-04",
+      "direction": "LONG",
+      "entry": {
+        "minute": 24,
+        "reason": "trend_breakout",
+        "fill_minute": 25,
+        "price": 2.9625,
+        "bar_close": 2.9
+      },
+      "exit": {
+        "minute": 50,
+        "reason": "invalidation_stop",
+        "fill_minute": 51,
+        "price": 1.645,
+        "bar_close": 1.73
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.449114,
+      "net_pnl": -133.05,
+      "hold_minutes": 26,
+      "best_net_return": 0.144979,
+      "benchmark_net_return": -0.968364,
+      "scenario": "chop",
+      "first_hour_move": 0.048,
+      "rest_move": -0.243,
+      "day_range_pct": 0.737,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.SPY",
+      "contract": "US.SPY260909C764000",
+      "trade_date": "2026-09-09",
+      "direction": "LONG",
+      "entry": {
+        "minute": 26,
+        "reason": "trend_breakout",
+        "fill_minute": 27,
+        "price": 1.0575,
+        "bar_close": 1.03
+      },
+      "exit": {
+        "minute": 47,
+        "reason": "no_progress",
+        "fill_minute": 48,
+        "price": 0.745,
+        "bar_close": 0.76
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.307801,
+      "net_pnl": -32.55,
+      "hold_minutes": 21,
+      "best_net_return": 0.049173,
+      "benchmark_net_return": -0.975,
+      "scenario": "trend_against",
+      "first_hour_move": -0.028,
+      "rest_move": -0.334,
+      "day_range_pct": 0.462,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.AAPL",
+      "contract": "US.AAPL260911P327500",
+      "trade_date": "2026-09-11",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 126,
+        "reason": "late_confirmation",
+        "fill_minute": 127,
+        "price": 0.04,
+        "bar_close": 0.04
+      },
+      "exit": {
+        "minute": 164,
+        "reason": "trailing_stop",
+        "fill_minute": 165,
+        "price": 0.0275,
+        "bar_close": 0.03
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.6375,
+      "net_pnl": -2.55,
+      "hold_minutes": 38,
+      "best_net_return": 0.175,
+      "benchmark_net_return": -1.006522,
+      "scenario": "trend_against",
+      "first_hour_move": -0.669,
+      "rest_move": 0.145,
+      "day_range_pct": 3.029,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.IWM",
+      "contract": "US.IWM260911C291000",
+      "trade_date": "2026-09-11",
+      "direction": "LONG",
+      "entry": {
+        "minute": 135,
+        "reason": "late_confirmation",
+        "fill_minute": 136,
+        "price": 0.05,
+        "bar_close": 0.05
+      },
+      "exit": {
+        "minute": 158,
+        "reason": "no_progress",
+        "fill_minute": 159,
+        "price": 0.04,
+        "bar_close": 0.04
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.46,
+      "net_pnl": -2.3,
+      "hold_minutes": 23,
+      "best_net_return": -0.11,
+      "benchmark_net_return": -1.002733,
+      "scenario": "trend_against",
+      "first_hour_move": -0.502,
+      "rest_move": -0.069,
+      "day_range_pct": 0.918,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.META",
+      "contract": "US.META260911C652500",
+      "trade_date": "2026-09-11",
+      "direction": "LONG",
+      "entry": {
+        "minute": 16,
+        "reason": "trend_breakout",
+        "fill_minute": 17,
+        "price": 11.1875,
+        "bar_close": 10.75
+      },
+      "exit": {
+        "minute": 19,
+        "reason": "invalidation_stop",
+        "fill_minute": 20,
+        "price": 5.55,
+        "bar_close": 5.85
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.505073,
+      "net_pnl": -565.05,
+      "hold_minutes": 3,
+      "best_net_return": -0.280715,
+      "benchmark_net_return": -0.981512,
+      "scenario": "chop",
+      "first_hour_move": -0.096,
+      "rest_move": -0.202,
+      "day_range_pct": 2.577,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.MSFT",
+      "contract": "US.MSFT260911C495000",
+      "trade_date": "2026-09-11",
+      "direction": "LONG",
+      "entry": {
+        "minute": 27,
+        "reason": "trend_breakout",
+        "fill_minute": 28,
+        "price": 3.63,
+        "bar_close": 3.57
+      },
+      "exit": {
+        "minute": 45,
+        "reason": "invalidation_stop",
+        "fill_minute": 46,
+        "price": 2.075,
+        "bar_close": 2.14
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.431956,
+      "net_pnl": -156.8,
+      "hold_minutes": 18,
+      "best_net_return": 0.076309,
+      "benchmark_net_return": -0.415538,
+      "scenario": "trend_with",
+      "first_hour_move": -0.088,
+      "rest_move": 0.274,
+      "day_range_pct": 1.289,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.QQQ",
+      "contract": "US.QQQ260911P716000",
+      "trade_date": "2026-09-11",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 37,
+        "reason": "trend_breakout",
+        "fill_minute": 38,
+        "price": 2.4325,
+        "bar_close": 2.37
+      },
+      "exit": {
+        "minute": 50,
+        "reason": "invalidation_stop",
+        "fill_minute": 51,
+        "price": 1.32,
+        "bar_close": 1.36
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.462693,
+      "net_pnl": -112.55,
+      "hold_minutes": 13,
+      "best_net_return": 0.083042,
+      "benchmark_net_return": -0.878317,
+      "scenario": "chop",
+      "first_hour_move": -0.195,
+      "rest_move": 0.165,
+      "day_range_pct": 0.559,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.SPY",
+      "contract": "US.SPY260911P765000",
+      "trade_date": "2026-09-11",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 65,
+        "reason": "trend_breakout",
+        "fill_minute": 66,
+        "price": 1.455,
+        "bar_close": 1.42
+      },
+      "exit": {
+        "minute": 80,
+        "reason": "breakeven_stop",
+        "fill_minute": 81,
+        "price": 1.4375,
+        "bar_close": 1.49
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.020962,
+      "net_pnl": -3.05,
+      "hold_minutes": 15,
+      "best_net_return": 0.267698,
+      "benchmark_net_return": -0.790336,
+      "scenario": "reversal_with",
+      "first_hour_move": -0.363,
+      "rest_move": 0.259,
+      "day_range_pct": 0.364,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.AAPL",
+      "contract": "US.AAPL260914C335000",
+      "trade_date": "2026-09-14",
+      "direction": "LONG",
+      "entry": {
+        "minute": 22,
+        "reason": "trend_breakout",
+        "fill_minute": 23,
+        "price": 0.88,
+        "bar_close": 0.82
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 376,
+        "price": 0.03,
+        "bar_close": 0.03
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.980682,
+      "net_pnl": -86.3,
+      "hold_minutes": 353,
+      "best_net_return": 0.439773,
+      "benchmark_net_return": -0.97247,
+      "scenario": "trend_against",
+      "first_hour_move": -0.383,
+      "rest_move": 0.177,
+      "day_range_pct": 1.243,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.QQQ",
+      "contract": "US.QQQ260914P703000",
+      "trade_date": "2026-09-14",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 67,
+        "reason": "reversal_reclaim",
+        "fill_minute": 68,
+        "price": 0.795,
+        "bar_close": 0.77
+      },
+      "exit": {
+        "minute": 76,
+        "reason": "invalidation_stop",
+        "fill_minute": 77,
+        "price": 0.4925,
+        "bar_close": 0.51
+      },
+      "decisions": null,
+      "failure": null,
+      "net_return": -0.396855,
+      "net_pnl": -31.55,
+      "hold_minutes": 9,
+      "best_net_return": 0.002516,
+      "benchmark_net_return": -1.001569,
+      "scenario": "trend_against",
+      "first_hour_move": -0.24,
+      "rest_move": -0.489,
+      "day_range_pct": 1.452,
+      "market_shape": "unknown_prev_close"
+    }
+  ],
+  "coverage": {
+    "cases_per_scenario": {
+      "trend_with": 2,
+      "reversal_with": 8,
+      "chop": 6,
+      "reversal_against": 1,
+      "trend_against": 19
+    },
+    "minimum": 5,
+    "ok": false
+  },
+  "gates_in_sample": {
+    "G1_completion_100pct": true,
+    "G3_expectancy_beats_benchmark": true,
+    "G4_payoff_ratio_at_least_2": false,
+    "G5_trend_against_loss_smaller_than_benchmark": true,
+    "G6_with_direction_expectancy_positive": true
+  },
+  "out_of_sample": null,
+  "verdict": "REJECT"
+}
