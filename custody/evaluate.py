@@ -44,6 +44,7 @@ MIN_PAYOFF_RATIO = 2.0
 MIN_CASES_PER_SCENARIO = 5
 MIN_OOS_SESSIONS = 20
 NULL_DRAWS = 1000
+NEIGHBOR_SCALE = 0.25          # parameter neighbours: each numeric parameter x0.75 and x1.25
 CAPTURE_MIN_BEST = 0.20      # upside capture counts cases whose best reachable exit was >= +20%
 
 
@@ -139,10 +140,17 @@ def simulate(data: CaseData, engine, params, fill=PRIMARY_FILL, until_minute=Non
     if entry is None:
         trade['failure'] = 'ENTRY_NOT_FILLED'
     elif exit_ is None:
-        trade['failure'] = 'EXIT_NOT_FILLED'
-    else:
+        # The option never traded again after the exit decision: nothing could be sold, so
+        # the 0DTE contract is settled at its intrinsic value at the close (usually zero).
+        close = data.underlying[-1].close
+        intrinsic = max(0.0, close - case.strike) if case.direction == 'LONG' else max(0.0, case.strike - close)
+        exit_ = dict(pending_exit or {'minute': last_minute, 'reason': 'platform_flatten'},
+                     fill_minute=last_minute, price=intrinsic, bar_close=None, settled_at_expiry=True)
+        trade['exit'] = exit_
+    if trade['failure'] is None and exit_ is not None:
         paid = entry['price'] * fill.multiplier
-        pnl = (exit_['price'] - entry['price']) * fill.multiplier - 2 * fill.fee_per_contract
+        sides = 1 if exit_.get('settled_at_expiry') else 2
+        pnl = (exit_['price'] - entry['price']) * fill.multiplier - sides * fill.fee_per_contract
         trade.update(net_pnl=round(pnl, 4), net_return=pnl / paid,
                      hold_minutes=exit_['fill_minute'] - entry['fill_minute'])
         later = [fill.sell(b) for m, b in options.items()
@@ -341,7 +349,7 @@ def prefix_consistency(datas, trades, item, fill=PRIMARY_FILL):
 
 
 # ------------------------------------------------------------------ verdict
-def gates(summary, benchmark):
+def gates(summary, benchmark, robust):
     s, b = summary, benchmark
     against, bench_against = s['by_scenario']['trend_against'], b['by_scenario']['trend_against']
     checks = {
@@ -350,8 +358,82 @@ def gates(summary, benchmark):
         'G4_payoff_ratio_at_least_%g' % MIN_PAYOFF_RATIO: _ge(s['balanced']['payoff_ratio'], MIN_PAYOFF_RATIO),
         'G5_trend_against_loss_smaller_than_benchmark': _gt(against['expectancy'], bench_against['expectancy']),
         'G6_with_direction_expectancy_positive': _gt(s['with_direction']['expectancy'], 0.0),
+        'G7_payoff_ratio_beats_benchmark': _gt(s['balanced']['payoff_ratio'], b['balanced']['payoff_ratio']),
+        'G8_both_halves_beat_benchmark': robust['halves']['passed'],
+        'G9_leave_one_day_out_stable': robust['leave_one_day_out']['passed'],
+        'G10_parameter_neighbors_beat_benchmark': robust['neighbors']['passed'],
     }
     return checks
+
+
+def _beats(strategy_balanced, benchmark_balanced):
+    return (_gt(strategy_balanced['expectancy'], benchmark_balanced['expectancy'])
+            and _gt(strategy_balanced['payoff_ratio'], benchmark_balanced['payoff_ratio']))
+
+
+def neighbor_params(params, engine_validate, scale=NEIGHBOR_SCALE):
+    """Each numeric parameter moved down and up by ``scale`` (integers by at least 1)."""
+    out = []
+    for name, value in sorted(params.items()):
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value == 0:
+            continue
+        for sign in (-1, 1):
+            moved = value * (1 + sign * scale)
+            if isinstance(value, int):
+                moved = int(round(moved))
+                if moved == value:
+                    moved = value + sign
+            else:
+                moved = round(moved, 6)
+            candidate = dict(params, **{name: moved})
+            try:
+                engine_validate(candidate)
+            except ValueError:
+                continue
+            out.append((name, value, moved, candidate))
+    return out
+
+
+def robustness(datas, labels, trades, bench, item, fill=PRIMARY_FILL):
+    """Anti-overfitting checks: time halves, leave-one-day-out, parameter neighbours."""
+    from .engines import ENGINES
+    dates = sorted({d.case.trade_date for d in datas})
+    halves = {}
+    for name, days in (('first_half', dates[:len(dates) // 2]), ('second_half', dates[len(dates) // 2:])):
+        pairs = [(t['net_return'], b['net_return']) for d, t, b in zip(datas, trades, bench)
+                 if d.case.trade_date in days and b['net_return'] is not None]
+        strategy = _mean(x for x, _ in pairs) if pairs and all(x is not None for x, _ in pairs) else None
+        halves[name] = {'days': [days[0], days[-1]] if days else None, 'cases': len(pairs),
+                        'strategy_mean': strategy, 'benchmark_mean': _mean(y for _, y in pairs)}
+    halves['passed'] = all(_gt(h['strategy_mean'], h['benchmark_mean']) for h in halves.values() if isinstance(h, dict))
+    lodo = []
+    for day in dates:
+        keep = [i for i, d in enumerate(datas) if d.case.trade_date != day]
+        sub_labels = [labels[i] for i in keep]
+        s_bal = summarize([trades[i] for i in keep], sub_labels)['balanced']
+        b_bal = summarize([bench[i] for i in keep], sub_labels)['balanced']
+        lodo.append({'dropped': day, 'passed': _beats(s_bal, b_bal),
+                     'strategy_expectancy': s_bal['expectancy'], 'strategy_payoff_ratio': s_bal['payoff_ratio'],
+                     'benchmark_expectancy': b_bal['expectancy'], 'benchmark_payoff_ratio': b_bal['payoff_ratio']})
+    bench_balanced = summarize(bench, labels)['balanced']
+    neighbors = []
+    engine = ENGINES[item['config']['engine']]
+    for name, value, moved, params in neighbor_params(item['config']['params'], engine.validate):
+        variant = json.loads(json.dumps(item))
+        variant['config']['params'] = params
+        try:
+            bal = summarize([run_strategy(d, variant, fill) for d in datas], labels)['balanced']
+        except ValueError:
+            continue  # e.g. deadlines that do not fit the session
+        neighbors.append({'param': name, 'from': value, 'to': moved, 'passed': _beats(bal, bench_balanced),
+                          'expectancy': bal['expectancy'], 'payoff_ratio': bal['payoff_ratio']})
+    return {
+        'halves': halves,
+        'leave_one_day_out': {'passed': all(r['passed'] for r in lodo), 'failed_days': [r['dropped'] for r in lodo if not r['passed']],
+                              'runs': lodo},
+        'neighbors': {'passed': all(r['passed'] for r in neighbors), 'count': len(neighbors),
+                      'failed': [r for r in neighbors if not r['passed']], 'runs': neighbors},
+    }
 
 
 def _gt(a, b):
@@ -413,14 +495,17 @@ def evaluate(dataset_dir, strategy_id=None, registry=None, null_draws=NULL_DRAWS
                                   'benchmark': summarize(stressed_bench, labels)['balanced']}
     coverage = {s: report['summary']['by_scenario'][s]['n'] for s in SCENARIOS}
     coverage_ok = all(n >= MIN_CASES_PER_SCENARIO for n in coverage.values())
-    in_sample_checks = gates(report['summary'], report['benchmark_open_hold'])
+    report['robustness'] = robustness(datas, labels, trades, bench, item)
+    in_sample_checks = gates(report['summary'], report['benchmark_open_hold'], report['robustness'])
     oos = None
     if oos_idx:
         pick = lambda seq: [seq[i] for i in oos_idx]
         oos_summary = summarize(pick(trades), pick(labels))
         oos_bench = summarize(pick(bench), pick(labels))
+        oos_robust = robustness(pick(datas), pick(labels), pick(trades), pick(bench), item)
         oos = {'sessions': len({datas[i].case.trade_date for i in oos_idx}), 'summary': oos_summary,
-               'benchmark_open_hold': oos_bench, 'gates': gates(oos_summary, oos_bench)}
+               'benchmark_open_hold': oos_bench, 'robustness': oos_robust,
+               'gates': gates(oos_summary, oos_bench, oos_robust)}
     oos_sessions = oos['sessions'] if oos else 0
     decisive = oos['gates'] if oos and oos_sessions >= MIN_OOS_SESSIONS else in_sample_checks
     report['coverage'] = {'cases_per_scenario': coverage, 'minimum': MIN_CASES_PER_SCENARIO, 'ok': coverage_ok}
@@ -471,6 +556,10 @@ GATE_TEXT = {
     'G4_payoff_ratio_at_least_%g' % MIN_PAYOFF_RATIO: 'G4 盈亏比 ≥ %g' % MIN_PAYOFF_RATIO,
     'G5_trend_against_loss_smaller_than_benchmark': 'G5 方向错（逆势单边）时亏得比对照组少',
     'G6_with_direction_expectancy_positive': 'G6 方向对（顺势单边 + 先逆后顺）时平均赚钱',
+    'G7_payoff_ratio_beats_benchmark': 'G7 盈亏比高于对照组',
+    'G8_both_halves_beat_benchmark': 'G8 前一半交易日、后一半交易日各自都赢对照组（防过拟合）',
+    'G9_leave_one_day_out_stable': 'G9 去掉任意一天，平均收益和盈亏比仍都赢对照组（防过拟合）',
+    'G10_parameter_neighbors_beat_benchmark': 'G10 每个参数上下浮动 25%，平均收益和盈亏比仍都赢对照组（防过拟合）',
 }
 VERDICT_TEXT = {
     'ACCEPT': '达标，可以把策略状态改为 accepted',
@@ -570,6 +659,20 @@ def render_markdown(report):
             _num(report['direction_skill_0.6']['strategy']['payoff_ratio']),
             _pct(report['direction_skill_0.6']['benchmark']['expectancy'])),
     ]
+    robust = report['robustness']
+    halves = robust['halves']
+    lines.append('- **前后两半**：前一半（%s）策略平均 %s / 对照组 %s；后一半（%s）策略平均 %s / 对照组 %s。' % (
+        ' → '.join(halves['first_half']['days'] or ['—']), _pct(halves['first_half']['strategy_mean']),
+        _pct(halves['first_half']['benchmark_mean']), ' → '.join(halves['second_half']['days'] or ['—']),
+        _pct(halves['second_half']['strategy_mean']), _pct(halves['second_half']['benchmark_mean'])))
+    failed_days = robust['leave_one_day_out']['failed_days']
+    lines.append('- **去掉任意一天**：共 %d 次，%s。' % (
+        len(robust['leave_one_day_out']['runs']), '全部仍赢对照组' if not failed_days else '去掉这些天后输给对照组：' + '、'.join(failed_days)))
+    failed = robust['neighbors']['failed']
+    lines.append('- **参数上下浮动 25%%**：共 %d 组，%s。' % (
+        robust['neighbors']['count'], '全部仍赢对照组' if not failed else '输给对照组的：' + '；'.join(
+            '%s %s→%s（平均 %s，盈亏比 %s）' % (r['param'], r['from'], r['to'], _pct(r['expectancy']), _num(r['payoff_ratio']))
+            for r in failed)))
     stress_names = {'slippage_0': '不算滑点', 'slippage_0.5': '滑点加倍（让出振幅 50%）', 'delay_2m': '成交再晚 1 分钟'}
     for name, row in report['stress'].items():
         lines.append('- **%s**：策略平均每笔 %s、盈亏比 %s；对照组平均每笔 %s。' % (

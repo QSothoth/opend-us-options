@@ -13,7 +13,7 @@ from custody.marketdata import Bar  # noqa: E402
 from custody.registry import Registry  # noqa: E402
 from custody.strategy import Decision, session_minute  # noqa: E402
 
-ITEM = Registry().get('zero_dte_timing_v1')
+ITEM = Registry().get(Registry().default_id)
 PARAMS = ITEM['config']['params']
 CALL, PUT = 'US.SPY260914C100000', 'US.SPY260914P100000'
 
@@ -89,10 +89,16 @@ class SimulationTests(unittest.TestCase):
         self.assertEqual(trade['failure'], 'ENTRY_NOT_FILLED')
         self.assertIsNone(trade['net_return'])
 
-    def test_no_fill_after_the_session_close(self):
+    def test_unsellable_position_is_settled_at_expiry_value(self):
         option = [b for b in option_bars(self.closes, 100, 'CALL', CALL) if session_minute(session(), b.close_time) <= 100]
-        trade = ev.simulate(case_data(self.closes, option=option), Scripted(enter=50, exit_=200), PARAMS)
-        self.assertEqual(trade['failure'], 'EXIT_NOT_FILLED')
+        trade = ev.simulate(case_data(self.closes, option=option), Scripted(enter=50, exit_=200), PARAMS,
+                            ev.FillModel(slippage_fraction=0.0))
+        self.assertIsNone(trade['failure'])
+        self.assertTrue(trade['exit']['settled_at_expiry'])
+        intrinsic = max(0.0, self.closes[-1] - 100)
+        self.assertAlmostEqual(trade['exit']['price'], intrinsic)
+        paid = trade['entry']['price'] * 100
+        self.assertAlmostEqual(trade['net_return'], ((intrinsic - trade['entry']['price']) * 100 - 0.65) / paid, places=4)
 
 
 class LabelTests(unittest.TestCase):
@@ -136,6 +142,17 @@ class WeightingAndMetricsTests(unittest.TestCase):
         self.assertAlmostEqual(m['payoff_ratio'], 2.0)
         self.assertAlmostEqual(m['profit_factor'], 1.0)
         self.assertIsNone(ev.weighted_metrics([0.2, 0.3])['payoff_ratio'])
+
+    def test_parameter_neighbours_move_each_number_both_ways_and_skip_invalid(self):
+        from custody.engines.zero_dte_timing import validate_params
+        from helpers import BASE_PARAMS
+        moves = {(name, to) for name, _, to, _ in ev.neighbor_params(BASE_PARAMS, validate_params)}
+        self.assertIn(('trail_atr', 1.875), moves)
+        self.assertIn(('ema_fast', 7), moves)
+        self.assertIn(('momentum_lookback', 4), moves)            # ints move by at least one
+        self.assertNotIn(('trend_buffer_atr', 0.0), moves)        # zero-valued parameters are skipped
+        self.assertNotIn(('flatten_before_close_minutes', 11), moves)  # below the platform minimum -> invalid
+        self.assertTrue(all(validate_params(p) for _, _, _, p in ev.neighbor_params(BASE_PARAMS, validate_params)))
 
     def test_verdict_levels(self):
         passing = {'G1_completion_100pct': True, 'G3': True, 'G4': True}

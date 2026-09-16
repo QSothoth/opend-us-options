@@ -1,18 +1,19 @@
 """Registered strategy versions. Files are immutable: the index pins each file's SHA256.
 
-A strategy file (``custody/strategies/<strategy_id>.json``)::
+A strategy file (``custody/strategies/<strategy_id>.json``) is immutable::
 
     {
       "schema_version": 2,
-      "strategy_id": "zero_dte_timing_v1",
+      "strategy_id": "zero_dte_timing_v2",
       "engine": "zero_dte_timing",            # key in custody.engines.ENGINES
-      "status": "candidate",                  # candidate | accepted | retired
       "description": "...",
       "developed_on": {"release": "...", "generation": "V4", "sessions_through": "YYYY-MM-DD"},
       "params": { ... validated by the engine ... }
     }
 
-Never edit a registered file in place: add ``..._v2`` with a new file and index entry.
+``index.json`` pins each file's SHA256 and carries the lifecycle status, which is the
+only thing allowed to change: ``candidate`` -> ``accepted`` (after an ACCEPT verdict)
+-> ``retired``. Never edit a registered file: new parameters = new strategy id.
 """
 from pathlib import Path
 import hashlib
@@ -40,14 +41,15 @@ class Registry:
             doc = json.loads(raw)
             if doc.get('schema_version') != 2 or doc.get('strategy_id') != strategy_id:
                 raise ValueError('strategy file identity mismatch: ' + strategy_id)
-            if doc.get('status') not in STATUSES:
-                raise ValueError('invalid strategy status: ' + strategy_id)
+            status = meta.get('status')
+            if status not in STATUSES or 'status' in doc:
+                raise ValueError('strategy status belongs in index.json only: ' + strategy_id)
             engine = ENGINES.get(doc.get('engine'))
             if engine is None:
                 raise ValueError('unknown engine for %s: %r' % (strategy_id, doc.get('engine')))
             engine.validate(doc['params'])
             self._items[strategy_id] = {'strategy_id': strategy_id, 'sha256': digest, 'engine': doc['engine'],
-                                        'status': doc['status'], 'description': doc.get('description', ''),
+                                        'status': status, 'description': doc.get('description', ''),
                                         'config': doc}
         self.default_id = index.get('default')
         if self.default_id not in self._items or self._items[self.default_id]['status'] == 'retired':

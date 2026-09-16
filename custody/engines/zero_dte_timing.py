@@ -4,41 +4,40 @@ Inputs are only the same-day completed underlying 1m bars and the direction chos
 upstream (LONG = the bought option is a CALL, SHORT = a PUT). All prices below are
 *signed* by that direction, so "up" always means "in favour of the option".
 
-Entry (payoff first: pay premium only once the chosen direction is confirmed)
------------------------------------------------------------------------------
-No entry while the opening range forms. Afterwards, enter on the first completed
-bar where all three hold:
+There is one shot per contract per day, and the first breakout of the day is often
+false. The engine therefore separates two kinds of trades:
 
-* price is at least ``vwap_buffer_atr`` ATR on the favourable side of VWAP;
-* fast EMA is above slow EMA (by ``trend_buffer_atr`` ATR) and still rising;
+Confirmed entry (pay premium only once the direction has proven itself)
+------------------------------------------------------------------------
+After the opening range (``opening_minutes``) enter on the first completed bar where
+
+* the close is at least ``vwap_buffer_atr`` ATR on the favourable side of VWAP, and
+  the last ``persist_minutes`` closes were all on that side (the move has held);
+* the fast EMA is above the slow EMA (by ``trend_buffer_atr`` ATR) and still rising;
 * the close breaks the highest signed high of the previous ``momentum_lookback`` bars.
 
-This one rule adapts to the common day shapes instead of fixing a clock time:
+Reason ``reversal_reclaim`` when the day first moved against us by more than the
+opening-range height, otherwise ``trend_breakout``. From ``relax_after_minutes``
+(0 disables) a fresh breakout on either the VWAP side or the EMA trend is enough
+(``late_confirmation``).
 
-* trend in our favour (e.g. gap then run): fires right after the opening range;
-* early move against us, then reversal (低开高走 for a CALL): waits through the
-  adverse leg and fires on the VWAP reclaim with fresh momentum;
-* trend against us all day (高开低走 for a CALL): never confirms, so no premium is
-  paid early; the must-trade deadline enters late and the stop / no-progress rules
-  cut the position quickly;
-* chop: requires VWAP side + EMA trend + a fresh breakout at once, which filters
-  most whipsaws; what gets through is cut quickly by the stop or the no-progress rule.
+Forced entry (must-trade, the direction never confirmed)
+--------------------------------------------------------
+At ``must_enter_before_close_minutes`` the engine enters unconditionally
+(``must_trade_deadline``). Such a trade gets its own tight risk when configured:
+a fixed ``forced_stop_atr`` stop and a ``forced_fail_minutes`` no-progress clock.
 
-After ``relax_after_minutes`` a fresh breakout on either the VWAP side or the EMA
-trend is enough. At ``must_enter_before_close_minutes`` the engine enters
-unconditionally (must-trade: the upstream selector already decided this trade).
-
-Exit (cut losers early, let winners run)
-----------------------------------------
+Exits (cut losers early, let winners run)
+-----------------------------------------
 Risk is measured in the 1m ATR frozen at the entry decision.
 
-* invalidation stop: below the recent swing low, clamped to
-  [``stop_min_atr``, ``stop_max_atr``] ATR from the entry mark;
-* no progress: after ``fail_minutes`` without ``fail_progress_atr`` ATR of favourable
-  progress and back at/below the entry mark, exit (0DTE theta punishes waiting);
+* stop: confirmed entries below the recent swing low, clamped to
+  [``stop_min_atr``, ``stop_max_atr``] ATR; forced entries ``forced_stop_atr`` ATR;
+* no progress: after ``fail_minutes`` (forced: ``forced_fail_minutes``) without
+  ``fail_progress_atr`` ATR of progress and back at/below the entry mark;
 * breakeven: after ``breakeven_at_atr`` ATR of progress the stop moves to the entry mark;
 * trailing: after ``trail_activate_atr`` ATR the stop trails the best close by
-  ``trail_atr`` ATR. There is no profit target;
+  ``trail_atr`` ATR; there is no profit target;
 * flatten ``flatten_before_close_minutes`` before the session close.
 
 All stops are evaluated on completed 1m closes of the underlying.
@@ -54,7 +53,7 @@ SCHEMA = {
     'momentum_lookback': (int, 1, 30),
     'vwap_buffer_atr': (float, 0.0, 5.0),
     'trend_buffer_atr': (float, 0.0, 5.0),
-    'relax_after_minutes': (int, 1, 390),
+    'relax_after_minutes': (int, 0, 390),
     'must_enter_before_close_minutes': (int, 16, 389),
     'stop_lookback': (int, 1, 60),
     'stop_min_atr': (float, 0.1, 10.0),
@@ -66,12 +65,18 @@ SCHEMA = {
     'trail_atr': (float, 0.1, 50.0),
     'flatten_before_close_minutes': (int, 15, 120),
 }
+# Optional parameters (absent = the v1 behaviour). None means "same as the normal rule".
+OPTIONAL = {
+    'persist_minutes': ((int, 0, 120), 0),          # confirmation needs N consecutive closes on the VWAP side
+    'forced_stop_atr': ((float, 0.1, 10.0), None),  # fixed stop for entries that were never confirmed
+    'forced_fail_minutes': ((int, 1, 390), None),   # no-progress clock for never-confirmed entries
+}
 
 
 def validate_params(params):
     if not isinstance(params, dict):
         raise ValueError('params must be an object')
-    unknown, missing = set(params) - set(SCHEMA), set(SCHEMA) - set(params)
+    unknown, missing = set(params) - set(SCHEMA) - set(OPTIONAL), set(SCHEMA) - set(params)
     if unknown or missing:
         raise ValueError('params mismatch: unknown=%s missing=%s' % (sorted(unknown), sorted(missing)))
     out = {}
@@ -84,10 +89,19 @@ def validate_params(params):
         if not low <= value <= high:
             raise ValueError('%s must be within [%s, %s]' % (name, low, high))
         out[name] = kind(value)
+    for name, ((kind, low, high), default) in OPTIONAL.items():
+        value = params.get(name, default)
+        if value is not None:
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or (kind is int and value != int(value)):
+                raise ValueError(name + ' must be a number of the right kind')
+            if not low <= value <= high:
+                raise ValueError('%s must be within [%s, %s]' % (name, low, high))
+            value = kind(value)
+        out[name] = value
     if out['ema_fast'] >= out['ema_slow'] or out['stop_min_atr'] > out['stop_max_atr']:
         raise ValueError('inconsistent EMA or stop parameters')
-    if out['relax_after_minutes'] <= out['opening_minutes']:
-        raise ValueError('relax_after_minutes must follow the opening range')
+    if out['relax_after_minutes'] and out['relax_after_minutes'] <= out['opening_minutes']:
+        raise ValueError('relax_after_minutes must follow the opening range (or be 0 to disable)')
     return out
 
 
@@ -101,12 +115,13 @@ class ZeroDteTiming:
         self.sign = 1 if direction == 'LONG' else -1
         self.session = session
         self.must_enter_minute, self.flatten_minute = deadlines(self.p, session)
-        if self.p['relax_after_minutes'] >= self.must_enter_minute:
+        if self.p['relax_after_minutes'] and self.p['relax_after_minutes'] >= self.must_enter_minute:
             raise ValueError('relax_after_minutes must precede the must-enter deadline')
         self.ind = SessionIndicators(self.p['ema_fast'], self.p['ema_slow'], self.p['atr_period'],
                                      self.p['opening_minutes'],
                                      history=max(self.p['momentum_lookback'], self.p['stop_lookback']) + 2)
         self.phase = 'FLAT'            # FLAT -> ENTERING -> IN -> EXITING
+        self.vwap_side_bars = 0        # consecutive closes on the favourable side of VWAP
         self.entry_reason = self.exit_reason = None
         self.risk_distance = self.entry_atr = None
         self.entry_mark = self.entry_minute = self.stop = self.best = None
@@ -129,6 +144,7 @@ class ZeroDteTiming:
     def on_bar(self, bar):
         minute = session_minute(self.session, bar.close_time)
         self.ind.update(bar, minute)
+        self.vwap_side_bars = self.vwap_side_bars + 1 if self.sign * (bar.close - self.ind.vwap) > 0 else 0
         if self.phase != 'FLAT' and minute >= self.flatten_minute:
             if self.phase != 'EXITING':
                 self.phase, self.exit_reason = 'EXITING', 'scheduled_flatten'
@@ -146,9 +162,16 @@ class ZeroDteTiming:
         self._plan_risk()
         return Decision('ENTER', reason, self._diagnostics(minute))
 
+    @property
+    def forced(self):
+        return self.entry_reason in ('must_trade_deadline', 'platform_entry')
+
     def _plan_risk(self):
         """Freeze ATR and the stop distance from the latest completed bar."""
         self.entry_atr = self.ind.atr
+        if self.forced and self.p['forced_stop_atr'] is not None:
+            self.risk_distance = self.p['forced_stop_atr'] * self.entry_atr
+            return
         recent = self.ind.prior_bars(self.p['stop_lookback']) + [self.ind.bars[-1]]
         distance = self.sign * self.ind.close - min(self._lo(b) for b in recent)
         self.risk_distance = min(max(distance, self.p['stop_min_atr'] * self.entry_atr),
@@ -178,6 +201,8 @@ class ZeroDteTiming:
         prior = ind.prior_bars(p['momentum_lookback'])
         if len(prior) < p['momentum_lookback'] or close <= max(self._hi(b) for b in prior):
             return None
+        if self.vwap_side_bars < p['persist_minutes']:
+            return None
         vwap_side = close >= s * ind.vwap + p['vwap_buffer_atr'] * atr
         trend = (s * (ind.ema_fast - ind.ema_slow) >= p['trend_buffer_atr'] * atr
                  and s * (ind.ema_fast - ind.prev_ema_fast) > 0)
@@ -186,7 +211,7 @@ class ZeroDteTiming:
             if s * ind.session_open - min(s * ind.high, s * ind.low) > opening_range:
                 return 'reversal_reclaim'
             return 'trend_breakout'
-        if minute >= p['relax_after_minutes'] and (vwap_side or trend):
+        if p['relax_after_minutes'] and minute >= p['relax_after_minutes'] and (vwap_side or trend):
             return 'late_confirmation'
         return None
 
@@ -203,9 +228,14 @@ class ZeroDteTiming:
             reason = 'trailing_stop'
         if close <= self.stop:
             self.phase, self.exit_reason = 'EXITING', reason
-        elif (minute - self.entry_minute >= p['fail_minutes'] and progress < p['fail_progress_atr']
+        elif (minute - self.entry_minute >= self._fail_minutes() and progress < p['fail_progress_atr']
               and close <= self.entry_mark):
             self.phase, self.exit_reason = 'EXITING', 'no_progress'
         if self.phase == 'EXITING':
             return Decision('EXIT', self.exit_reason, self._diagnostics(minute))
         return Decision('HOLD', None, self._diagnostics(minute))
+
+    def _fail_minutes(self):
+        if self.forced and self.p['forced_fail_minutes'] is not None:
+            return self.p['forced_fail_minutes']
+        return self.p['fail_minutes']

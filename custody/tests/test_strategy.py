@@ -5,14 +5,14 @@ from datetime import time, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from helpers import path_bars, piecewise, session  # noqa: E402
+from helpers import BASE_PARAMS, path_bars, piecewise, session  # noqa: E402
 
 from custody.engines.zero_dte_timing import ZeroDteTiming, validate_params  # noqa: E402
 from custody.indicators import SessionIndicators  # noqa: E402
 from custody.registry import Registry  # noqa: E402
 from custody.strategy import Decision, build_strategy, deadlines, session_minute  # noqa: E402
 
-PARAMS = Registry().get('zero_dte_timing_v1')['config']['params']
+PARAMS = BASE_PARAMS
 
 
 def run(closes, direction='LONG', params=PARAMS, fill=True):
@@ -70,7 +70,7 @@ class ParameterTests(unittest.TestCase):
         early = session(close=time(13))
         self.assertEqual(deadlines(PARAMS, early)[1], 210 - 15)
         with self.assertRaises(ValueError):
-            build_strategy(Registry().get('zero_dte_timing_v1'), 'LONG', session(close=time(11)))
+            build_strategy(Registry().get(Registry().default_id), 'LONG', session(close=time(11)))
 
     def test_session_minute_rejects_partial_or_outside_bars(self):
         s = session()
@@ -167,10 +167,46 @@ class DeterminismTests(unittest.TestCase):
         for cut in (30, 90, 151, 240):
             self.assertEqual(run(closes[:cut]), full[:cut])
 
-    def test_registered_file_is_json_with_the_documented_shape(self):
-        doc = json.loads((Path(__file__).resolve().parents[1] / 'strategies' / 'zero_dte_timing_v1.json').read_text())
-        self.assertEqual(set(doc), {'schema_version', 'strategy_id', 'engine', 'status', 'description', 'developed_on', 'params'})
-        self.assertEqual(doc['developed_on']['release'], 'custody-train-0dte')
+    def test_registered_files_have_the_documented_shape(self):
+        registry = Registry()
+        for item in registry.list():
+            doc = json.loads((registry.root / (item['strategy_id'] + '.json')).read_text())
+            self.assertEqual(set(doc), {'schema_version', 'strategy_id', 'engine', 'description', 'developed_on', 'params'})
+            self.assertEqual(doc['developed_on']['release'], 'custody-train-0dte')
+        self.assertEqual([i['strategy_id'] for i in registry.list() if i['status'] != 'retired'], [registry.default_id])
+
+
+class OptionalRuleTests(unittest.TestCase):
+    def test_optional_parameters_default_to_v1_behaviour_and_validate(self):
+        engine = ZeroDteTiming(PARAMS, 'LONG', session())
+        self.assertEqual((engine.p['persist_minutes'], engine.p['forced_stop_atr'], engine.p['forced_fail_minutes']), (0, None, None))
+        for bad in ({'persist_minutes': -1}, {'forced_stop_atr': 0.0}, {'forced_fail_minutes': 2.5}, {'relax_after_minutes': 5}):
+            with self.assertRaises(ValueError, msg=str(bad)):
+                validate_params({**PARAMS, **bad})
+        validate_params({**PARAMS, 'relax_after_minutes': 0})
+
+    def test_persistence_rejects_a_fresh_breakout_until_the_vwap_side_has_held(self):
+        closes = piecewise([(1, 100.0), (15, 100.0), (390, 110.0)])
+        quick, _ = first(run(closes), 'ENTER')
+        held, reason = first(run(closes, params={**PARAMS, 'persist_minutes': 20}), 'ENTER')
+        self.assertEqual(reason, 'trend_breakout')
+        self.assertGreaterEqual(held, quick + 15)
+
+    def test_disabled_relaxation_leaves_only_confirmation_or_the_deadline(self):
+        closes = piecewise([(1, 100.0), (5, 100.0), (60, 98.5), (150, 99.8), (160, 99.6), (390, 99.7)])
+        reasons = {r for _, a, r in run(closes, params={**PARAMS, 'relax_after_minutes': 0}) if a == 'ENTER'}
+        self.assertNotIn('late_confirmation', reasons)
+
+    def test_forced_entries_get_their_own_tight_risk(self):
+        closes = piecewise([(1, 100.0), (390, 96.0)])[:210] + [97.8] * 180
+        params = {**PARAMS, 'forced_stop_atr': 1.0, 'forced_fail_minutes': 5}
+        decisions = run(closes, params=params)
+        entry, reason = first(decisions, 'ENTER')
+        exit_minute, exit_reason = first(decisions, 'EXIT')
+        self.assertEqual(reason, 'must_trade_deadline')
+        self.assertEqual((exit_minute - entry - 1, exit_reason), (5, 'no_progress'))
+        default_exit, _ = first(run(closes), 'EXIT')
+        self.assertGreater(default_exit, exit_minute)
 
 
 if __name__ == '__main__':

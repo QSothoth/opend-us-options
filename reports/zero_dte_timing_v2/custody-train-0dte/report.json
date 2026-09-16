@@ -1,10 +1,10 @@
 {
   "standard": "docs/STANDARD.md",
   "strategy": {
-    "strategy_id": "zero_dte_timing_v1",
-    "sha256": "6913713e9276bc77c44b650df65145296757b48d94e8925b1a41481db70e0d13",
+    "strategy_id": "zero_dte_timing_v2",
+    "sha256": "6aa51933f6cb1e186349509dc0dd5ad81d73957054f0137cacb7049b6c54444e",
     "engine": "zero_dte_timing",
-    "status": "retired"
+    "status": "candidate"
   },
   "strategy_params": {
     "ema_fast": 9,
@@ -14,7 +14,7 @@
     "momentum_lookback": 5,
     "vwap_buffer_atr": 0.25,
     "trend_buffer_atr": 0.0,
-    "relax_after_minutes": 120,
+    "relax_after_minutes": 0,
     "must_enter_before_close_minutes": 180,
     "stop_lookback": 10,
     "stop_min_atr": 1.0,
@@ -22,9 +22,12 @@
     "fail_minutes": 20,
     "fail_progress_atr": 1.0,
     "breakeven_at_atr": 2.0,
-    "trail_activate_atr": 3.0,
-    "trail_atr": 2.5,
-    "flatten_before_close_minutes": 15
+    "trail_activate_atr": 5.0,
+    "trail_atr": 5.0,
+    "flatten_before_close_minutes": 15,
+    "persist_minutes": 20,
+    "forced_stop_atr": 1.0,
+    "forced_fail_minutes": 10
   },
   "developed_on": {
     "release": "custody-train-0dte",
@@ -58,115 +61,115 @@
     "failures": {},
     "balanced": {
       "n": 36,
-      "expectancy": -0.223316,
-      "win_rate": 0.171601,
-      "average_win": 0.533444,
-      "average_loss": 0.380076,
-      "payoff_ratio": 1.403517,
-      "profit_factor": 0.290735
+      "expectancy": -0.080655,
+      "win_rate": 0.192434,
+      "average_win": 1.115319,
+      "average_loss": 0.365643,
+      "payoff_ratio": 3.050296,
+      "profit_factor": 0.726853
     },
     "balanced_dollars": {
       "n": 36,
-      "expectancy": -55.782091,
-      "win_rate": 0.171601,
-      "average_win": 44.586182,
-      "average_loss": 76.573136,
-      "payoff_ratio": 0.582269,
-      "profit_factor": 0.120616
+      "expectancy": -7.126366,
+      "win_rate": 0.192434,
+      "average_win": 85.243447,
+      "average_loss": 29.137095,
+      "payoff_ratio": 2.925599,
+      "profit_factor": 0.697139
     },
     "raw": {
       "n": 36,
-      "expectancy": -0.301493,
+      "expectancy": -0.274328,
       "win_rate": 0.111111,
-      "average_win": 0.81785,
-      "average_loss": 0.441411,
-      "payoff_ratio": 1.852808,
-      "profit_factor": 0.231601
+      "average_win": 0.933004,
+      "average_loss": 0.425245,
+      "payoff_ratio": 2.19404,
+      "profit_factor": 0.274255
     },
     "coverage_gaps": [],
     "by_scenario": {
       "trend_with": {
         "n": 2,
-        "expectancy": -0.261344,
-        "win_rate": 0.0,
-        "average_win": null,
-        "average_loss": 0.261344,
-        "payoff_ratio": null,
-        "profit_factor": 0.0,
+        "expectancy": 0.381472,
+        "win_rate": 0.5,
+        "average_win": 1.202319,
+        "average_loss": 0.439375,
+        "payoff_ratio": 2.73643,
+        "profit_factor": 2.73643,
         "label_zh": "顺势单边",
-        "median": -0.261344,
-        "upside_capture": 0.0
+        "median": 0.381472,
+        "upside_capture": 0.369171
       },
       "reversal_with": {
         "n": 8,
-        "expectancy": 0.125332,
+        "expectancy": -0.035125,
         "win_rate": 0.25,
-        "average_win": 1.403799,
-        "average_loss": 0.300824,
-        "payoff_ratio": 4.666522,
-        "profit_factor": 1.555507,
+        "average_win": 0.828485,
+        "average_loss": 0.322994,
+        "payoff_ratio": 2.565013,
+        "profit_factor": 0.855004,
         "label_zh": "先逆后顺",
-        "median": -0.290713,
-        "upside_capture": 0.131411
+        "median": -0.317489,
+        "upside_capture": 0.109564
       },
       "chop": {
         "n": 6,
-        "expectancy": -0.393303,
+        "expectancy": -0.26926,
         "win_rate": 0.0,
         "average_win": null,
-        "average_loss": 0.393303,
+        "average_loss": 0.26926,
         "payoff_ratio": null,
         "profit_factor": 0.0,
         "label_zh": "震荡",
-        "median": -0.455903,
+        "median": -0.238069,
         "upside_capture": 0.0
       },
       "reversal_against": {
         "n": 1,
-        "expectancy": 0.369825,
-        "win_rate": 1.0,
-        "average_win": 0.369825,
-        "average_loss": null,
+        "expectancy": -0.077064,
+        "win_rate": 0.0,
+        "average_win": null,
+        "average_loss": 0.077064,
         "payoff_ratio": null,
-        "profit_factor": null,
+        "profit_factor": 0.0,
         "label_zh": "先顺后逆",
-        "median": 0.369825,
-        "upside_capture": 0.422614
+        "median": -0.077064,
+        "upside_capture": 0.0
       },
       "trend_against": {
         "n": 19,
-        "expectancy": -0.491775,
+        "expectancy": -0.45606,
         "win_rate": 0.052632,
-        "average_win": 0.093976,
-        "average_loss": 0.524317,
-        "payoff_ratio": 0.179235,
-        "profit_factor": 0.009957,
+        "average_win": 0.872727,
+        "average_loss": 0.529881,
+        "payoff_ratio": 1.647024,
+        "profit_factor": 0.091501,
         "label_zh": "逆势单边",
-        "median": -0.40687,
-        "upside_capture": 0.012695
+        "median": -0.390255,
+        "upside_capture": 0.016198
       }
     },
     "with_direction": {
       "n": 10,
-      "expectancy": 0.047997,
-      "win_rate": 0.2,
-      "average_win": 1.403799,
-      "average_loss": 0.290954,
-      "payoff_ratio": 4.824823,
-      "profit_factor": 1.206206
+      "expectancy": 0.048195,
+      "win_rate": 0.3,
+      "average_win": 0.953096,
+      "average_loss": 0.33962,
+      "payoff_ratio": 2.806359,
+      "profit_factor": 1.202725
     },
-    "hold_minutes_median": 18.0,
+    "hold_minutes_median": 15.0,
     "entry_reasons": {
-      "trend_breakout": 20,
-      "reversal_reclaim": 7,
-      "late_confirmation": 9
+      "must_trade_deadline": 21,
+      "trend_breakout": 7,
+      "reversal_reclaim": 8
     },
     "exit_reasons": {
-      "invalidation_stop": 16,
-      "no_progress": 4,
-      "trailing_stop": 10,
-      "breakeven_stop": 5,
-      "scheduled_flatten": 1
+      "invalidation_stop": 17,
+      "trailing_stop": 6,
+      "no_progress": 2,
+      "breakeven_stop": 9,
+      "scheduled_flatten": 2
     }
   },
   "benchmark_open_hold": {
@@ -284,12 +287,12 @@
   "direction_skill_0.6": {
     "strategy": {
       "n": 36,
-      "expectancy": -0.215986,
-      "win_rate": 0.149781,
-      "average_win": 0.60608,
-      "average_loss": 0.360807,
-      "payoff_ratio": 1.679789,
-      "profit_factor": 0.295924
+      "expectancy": -0.030751,
+      "win_rate": 0.224781,
+      "average_win": 1.121945,
+      "average_loss": 0.364984,
+      "payoff_ratio": 3.073961,
+      "profit_factor": 0.891318
     },
     "benchmark": {
       "n": 36,
@@ -311,12 +314,12 @@
       },
       "strategy": {
         "n": 36,
-        "expectancy": -0.16702,
-        "win_rate": 0.187226,
-        "average_win": 0.571469,
-        "average_loss": 0.337134,
-        "payoff_ratio": 1.695077,
-        "profit_factor": 0.390468
+        "expectancy": -0.02283,
+        "win_rate": 0.207785,
+        "average_win": 1.157171,
+        "average_loss": 0.332326,
+        "payoff_ratio": 3.48204,
+        "profit_factor": 0.913282
       },
       "benchmark": {
         "n": 36,
@@ -337,12 +340,12 @@
       },
       "strategy": {
         "n": 36,
-        "expectancy": -0.266612,
-        "win_rate": 0.171601,
-        "average_win": 0.462903,
-        "average_loss": 0.41773,
-        "payoff_ratio": 1.10814,
-        "profit_factor": 0.229549
+        "expectancy": -0.124878,
+        "win_rate": 0.192434,
+        "average_win": 1.00839,
+        "average_loss": 0.394923,
+        "payoff_ratio": 2.553381,
+        "profit_factor": 0.608443
       },
       "benchmark": {
         "n": 36,
@@ -363,12 +366,12 @@
       },
       "strategy": {
         "n": 36,
-        "expectancy": -0.202499,
-        "win_rate": 0.317434,
-        "average_win": 0.306914,
-        "average_loss": 0.439406,
-        "payoff_ratio": 0.698474,
-        "profit_factor": 0.324833
+        "expectancy": -0.035555,
+        "win_rate": 0.235837,
+        "average_win": 1.028518,
+        "average_loss": 0.36395,
+        "payoff_ratio": 2.825984,
+        "profit_factor": 0.872159
       },
       "benchmark": {
         "n": 36,
@@ -383,8 +386,8 @@
   },
   "shuffle_null": {
     "draws": 1000,
-    "p_expectancy": 0.817183,
-    "p_payoff_ratio": 0.272727
+    "p_expectancy": 0.326673,
+    "p_payoff_ratio": 0.120879
   },
   "prefix_consistency": {
     "passed": true,
@@ -393,12 +396,12 @@
   "market_shapes": {
     "unknown_prev_close|LONG": {
       "n": 24,
-      "strategy_mean": -0.235788,
+      "strategy_mean": -0.189116,
       "benchmark_mean": -0.855092
     },
     "unknown_prev_close|SHORT": {
       "n": 12,
-      "strategy_mean": -0.432903,
+      "strategy_mean": -0.444752,
       "benchmark_mean": -0.629982
     }
   },
@@ -409,25 +412,25 @@
       "trade_date": "2026-08-17",
       "direction": "LONG",
       "entry": {
-        "minute": 106,
-        "reason": "trend_breakout",
-        "fill_minute": 107,
-        "price": 0.46,
-        "bar_close": 0.45
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 211,
+        "price": 0.105,
+        "bar_close": 0.1
       },
       "exit": {
-        "minute": 124,
+        "minute": 218,
         "reason": "invalidation_stop",
-        "fill_minute": 125,
-        "price": 0.28,
-        "bar_close": 0.29
+        "fill_minute": 219,
+        "price": 0.085,
+        "bar_close": 0.09
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.419565,
-      "net_pnl": -19.3,
-      "hold_minutes": 18,
-      "best_net_return": 0.075,
+      "net_return": -0.314286,
+      "net_pnl": -3.3,
+      "hold_minutes": 8,
+      "best_net_return": -0.12381,
       "benchmark_net_return": -1.003125,
       "scenario": "trend_against",
       "first_hour_move": -0.178,
@@ -441,25 +444,25 @@
       "trade_date": "2026-08-18",
       "direction": "LONG",
       "entry": {
-        "minute": 57,
-        "reason": "trend_breakout",
-        "fill_minute": 58,
-        "price": 1.1125,
-        "bar_close": 1.07
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 211,
+        "price": 0.4875,
+        "bar_close": 0.47
       },
       "exit": {
-        "minute": 78,
-        "reason": "no_progress",
-        "fill_minute": 79,
-        "price": 0.82,
-        "bar_close": 0.85
+        "minute": 230,
+        "reason": "invalidation_stop",
+        "fill_minute": 231,
+        "price": 0.3275,
+        "bar_close": 0.34
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.274607,
-      "net_pnl": -30.55,
-      "hold_minutes": 21,
-      "best_net_return": 0.010787,
+      "net_return": -0.354872,
+      "net_pnl": -17.3,
+      "hold_minutes": 20,
+      "best_net_return": 0.034872,
       "benchmark_net_return": -0.965769,
       "scenario": "trend_against",
       "first_hour_move": -0.018,
@@ -473,25 +476,25 @@
       "trade_date": "2026-08-19",
       "direction": "SHORT",
       "entry": {
-        "minute": 19,
-        "reason": "trend_breakout",
-        "fill_minute": 20,
-        "price": 2.34,
-        "bar_close": 2.24
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 211,
+        "price": 0.88,
+        "bar_close": 0.83
       },
       "exit": {
-        "minute": 25,
+        "minute": 216,
         "reason": "invalidation_stop",
-        "fill_minute": 26,
-        "price": 1.22,
-        "bar_close": 1.29
+        "fill_minute": 217,
+        "price": 0.745,
+        "bar_close": 0.78
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.484188,
-      "net_pnl": -113.3,
+      "net_return": -0.168182,
+      "net_pnl": -14.8,
       "hold_minutes": 6,
-      "best_net_return": -0.056838,
+      "best_net_return": 0.74375,
       "benchmark_net_return": -0.096327,
       "scenario": "chop",
       "first_hour_move": 0.076,
@@ -505,25 +508,25 @@
       "trade_date": "2026-08-20",
       "direction": "SHORT",
       "entry": {
-        "minute": 24,
+        "minute": 46,
         "reason": "trend_breakout",
-        "fill_minute": 25,
-        "price": 1.025,
-        "bar_close": 0.97
+        "fill_minute": 47,
+        "price": 1.6,
+        "bar_close": 1.55
       },
       "exit": {
-        "minute": 54,
-        "reason": "trailing_stop",
-        "fill_minute": 55,
-        "price": 0.945,
-        "bar_close": 0.97
+        "minute": 53,
+        "reason": "invalidation_stop",
+        "fill_minute": 54,
+        "price": 0.91,
+        "bar_close": 0.92
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.090732,
-      "net_pnl": -9.3,
-      "hold_minutes": 30,
-      "best_net_return": 2.509268,
+      "net_return": -0.439375,
+      "net_pnl": -70.3,
+      "hold_minutes": 7,
+      "best_net_return": 1.248125,
       "benchmark_net_return": 2.058915,
       "scenario": "trend_with",
       "first_hour_move": -0.05,
@@ -537,25 +540,25 @@
       "trade_date": "2026-08-21",
       "direction": "LONG",
       "entry": {
-        "minute": 88,
+        "minute": 118,
         "reason": "reversal_reclaim",
-        "fill_minute": 89,
-        "price": 0.145,
-        "bar_close": 0.14
+        "fill_minute": 119,
+        "price": 0.23,
+        "bar_close": 0.22
       },
       "exit": {
-        "minute": 164,
+        "minute": 183,
         "reason": "trailing_stop",
-        "fill_minute": 165,
-        "price": 0.27,
-        "bar_close": 0.28
+        "fill_minute": 184,
+        "price": 0.1325,
+        "bar_close": 0.14
       },
       "decisions": null,
       "failure": null,
-      "net_return": 0.772414,
-      "net_pnl": 11.2,
-      "hold_minutes": 76,
-      "best_net_return": 2.531034,
+      "net_return": -0.480435,
+      "net_pnl": -11.05,
+      "hold_minutes": 65,
+      "best_net_return": 1.226087,
       "benchmark_net_return": -1.008759,
       "scenario": "reversal_with",
       "first_hour_move": -0.792,
@@ -569,25 +572,25 @@
       "trade_date": "2026-08-21",
       "direction": "LONG",
       "entry": {
-        "minute": 121,
-        "reason": "late_confirmation",
-        "fill_minute": 122,
-        "price": 0.285,
-        "bar_close": 0.28
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 212,
+        "price": 0.17,
+        "bar_close": 0.17
       },
       "exit": {
-        "minute": 149,
-        "reason": "trailing_stop",
-        "fill_minute": 150,
-        "price": 0.22,
-        "bar_close": 0.22
+        "minute": 225,
+        "reason": "no_progress",
+        "fill_minute": 226,
+        "price": 0.13,
+        "bar_close": 0.13
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.273684,
-      "net_pnl": -7.8,
-      "hold_minutes": 28,
-      "best_net_return": 0.7,
+      "net_return": -0.311765,
+      "net_pnl": -5.3,
+      "hold_minutes": 14,
+      "best_net_return": 0.173529,
       "benchmark_net_return": -0.998093,
       "scenario": "reversal_with",
       "first_hour_move": -0.658,
@@ -601,25 +604,25 @@
       "trade_date": "2026-08-21",
       "direction": "LONG",
       "entry": {
-        "minute": 21,
-        "reason": "trend_breakout",
-        "fill_minute": 22,
-        "price": 0.535,
-        "bar_close": 0.5
+        "minute": 154,
+        "reason": "reversal_reclaim",
+        "fill_minute": 155,
+        "price": 0.21,
+        "bar_close": 0.2
       },
       "exit": {
-        "minute": 38,
+        "minute": 156,
         "reason": "invalidation_stop",
-        "fill_minute": 39,
-        "price": 0.25,
-        "bar_close": 0.26
+        "fill_minute": 157,
+        "price": 0.155,
+        "bar_close": 0.16
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.557009,
-      "net_pnl": -29.8,
-      "hold_minutes": 17,
-      "best_net_return": -0.183178,
+      "net_return": -0.32381,
+      "net_pnl": -6.8,
+      "hold_minutes": 2,
+      "best_net_return": 0.414286,
       "benchmark_net_return": -0.652093,
       "scenario": "reversal_with",
       "first_hour_move": -0.472,
@@ -633,25 +636,25 @@
       "trade_date": "2026-08-21",
       "direction": "SHORT",
       "entry": {
-        "minute": 130,
-        "reason": "late_confirmation",
-        "fill_minute": 131,
-        "price": 1.22,
-        "bar_close": 1.19
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 211,
+        "price": 0.24,
+        "bar_close": 0.24
       },
       "exit": {
-        "minute": 143,
-        "reason": "breakeven_stop",
-        "fill_minute": 144,
-        "price": 0.8925,
-        "bar_close": 0.91
+        "minute": 219,
+        "reason": "invalidation_stop",
+        "fill_minute": 220,
+        "price": 0.2075,
+        "bar_close": 0.22
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.279098,
-      "net_pnl": -34.05,
-      "hold_minutes": 13,
-      "best_net_return": 0.270082,
+      "net_return": -0.189583,
+      "net_pnl": -4.55,
+      "hold_minutes": 9,
+      "best_net_return": 1.70625,
       "benchmark_net_return": -0.969211,
       "scenario": "chop",
       "first_hour_move": -0.227,
@@ -665,25 +668,25 @@
       "trade_date": "2026-08-21",
       "direction": "SHORT",
       "entry": {
-        "minute": 68,
-        "reason": "trend_breakout",
-        "fill_minute": 69,
-        "price": 1.0075,
-        "bar_close": 0.92
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 211,
+        "price": 0.0825,
+        "bar_close": 0.08
       },
       "exit": {
-        "minute": 74,
-        "reason": "invalidation_stop",
-        "fill_minute": 75,
-        "price": 0.41,
-        "bar_close": 0.41
+        "minute": 317,
+        "reason": "trailing_stop",
+        "fill_minute": 318,
+        "price": 0.1675,
+        "bar_close": 0.17
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.605955,
-      "net_pnl": -61.05,
-      "hold_minutes": 6,
-      "best_net_return": -0.159305,
+      "net_return": 0.872727,
+      "net_pnl": 7.2,
+      "hold_minutes": 107,
+      "best_net_return": 5.387879,
       "benchmark_net_return": -0.987407,
       "scenario": "trend_against",
       "first_hour_move": -0.439,
@@ -697,25 +700,25 @@
       "trade_date": "2026-08-21",
       "direction": "LONG",
       "entry": {
-        "minute": 121,
-        "reason": "late_confirmation",
-        "fill_minute": 122,
-        "price": 0.46,
-        "bar_close": 0.44
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 211,
+        "price": 0.1875,
+        "bar_close": 0.18
       },
       "exit": {
-        "minute": 148,
-        "reason": "trailing_stop",
-        "fill_minute": 149,
-        "price": 0.4025,
-        "bar_close": 0.41
+        "minute": 221,
+        "reason": "no_progress",
+        "fill_minute": 222,
+        "price": 0.16,
+        "bar_close": 0.16
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.153261,
-      "net_pnl": -7.05,
-      "hold_minutes": 27,
-      "best_net_return": 0.613043,
+      "net_return": -0.216,
+      "net_pnl": -4.05,
+      "hold_minutes": 11,
+      "best_net_return": -0.029333,
       "benchmark_net_return": -1.000368,
       "scenario": "trend_against",
       "first_hour_move": -0.756,
@@ -729,25 +732,25 @@
       "trade_date": "2026-08-21",
       "direction": "LONG",
       "entry": {
-        "minute": 122,
-        "reason": "late_confirmation",
-        "fill_minute": 123,
-        "price": 0.2075,
-        "bar_close": 0.2
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 211,
+        "price": 0.0625,
+        "bar_close": 0.06
       },
       "exit": {
-        "minute": 136,
-        "reason": "trailing_stop",
-        "fill_minute": 137,
-        "price": 0.24,
-        "bar_close": 0.25
+        "minute": 226,
+        "reason": "breakeven_stop",
+        "fill_minute": 227,
+        "price": 0.05,
+        "bar_close": 0.05
       },
       "decisions": null,
       "failure": null,
-      "net_return": 0.093976,
-      "net_pnl": 1.95,
-      "hold_minutes": 14,
-      "best_net_return": 0.925301,
+      "net_return": -0.408,
+      "net_pnl": -2.55,
+      "hold_minutes": 16,
+      "best_net_return": 0.192,
       "benchmark_net_return": -1.00226,
       "scenario": "trend_against",
       "first_hour_move": -0.888,
@@ -761,25 +764,25 @@
       "trade_date": "2026-08-21",
       "direction": "LONG",
       "entry": {
-        "minute": 87,
+        "minute": 113,
         "reason": "reversal_reclaim",
-        "fill_minute": 88,
-        "price": 0.27,
-        "bar_close": 0.26
+        "fill_minute": 114,
+        "price": 0.31,
+        "bar_close": 0.31
       },
       "exit": {
-        "minute": 151,
+        "minute": 155,
         "reason": "trailing_stop",
-        "fill_minute": 152,
-        "price": 0.8325,
-        "bar_close": 0.86
+        "fill_minute": 156,
+        "price": 0.695,
+        "bar_close": 0.71
       },
       "decisions": null,
       "failure": null,
-      "net_return": 2.035185,
-      "net_pnl": 54.95,
-      "hold_minutes": 64,
-      "best_net_return": 4.211111,
+      "net_return": 1.2,
+      "net_pnl": 37.2,
+      "hold_minutes": 42,
+      "best_net_return": 3.53871,
       "benchmark_net_return": -0.978696,
       "scenario": "reversal_with",
       "first_hour_move": -0.717,
@@ -793,25 +796,25 @@
       "trade_date": "2026-08-21",
       "direction": "LONG",
       "entry": {
-        "minute": 36,
+        "minute": 119,
         "reason": "reversal_reclaim",
-        "fill_minute": 37,
-        "price": 0.8225,
-        "bar_close": 0.79
+        "fill_minute": 120,
+        "price": 0.825,
+        "bar_close": 0.81
       },
       "exit": {
-        "minute": 45,
-        "reason": "invalidation_stop",
-        "fill_minute": 46,
-        "price": 0.56,
-        "bar_close": 0.58
+        "minute": 155,
+        "reason": "trailing_stop",
+        "fill_minute": 156,
+        "price": 1.215,
+        "bar_close": 1.24
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.334954,
-      "net_pnl": -27.55,
-      "hold_minutes": 9,
-      "best_net_return": 1.443161,
+      "net_return": 0.45697,
+      "net_pnl": 37.7,
+      "hold_minutes": 36,
+      "best_net_return": 1.435758,
       "benchmark_net_return": -0.368235,
       "scenario": "reversal_with",
       "first_hour_move": -0.38,
@@ -825,25 +828,25 @@
       "trade_date": "2026-08-21",
       "direction": "SHORT",
       "entry": {
-        "minute": 155,
-        "reason": "late_confirmation",
-        "fill_minute": 156,
-        "price": 0.065,
-        "bar_close": 0.06
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 211,
+        "price": 0.0225,
+        "bar_close": 0.02
       },
       "exit": {
-        "minute": 175,
-        "reason": "invalidation_stop",
-        "fill_minute": 176,
-        "price": 0.02,
+        "minute": 292,
+        "reason": "breakeven_stop",
+        "fill_minute": 293,
+        "price": 0.0175,
         "bar_close": 0.02
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.892308,
-      "net_pnl": -5.8,
-      "hold_minutes": 20,
-      "best_net_return": -0.315385,
+      "net_return": -0.8,
+      "net_pnl": -1.8,
+      "hold_minutes": 82,
+      "best_net_return": 0.2,
       "benchmark_net_return": -1.000833,
       "scenario": "trend_against",
       "first_hour_move": -0.506,
@@ -857,25 +860,25 @@
       "trade_date": "2026-08-24",
       "direction": "LONG",
       "entry": {
-        "minute": 32,
+        "minute": 80,
         "reason": "reversal_reclaim",
-        "fill_minute": 33,
-        "price": 0.39,
-        "bar_close": 0.35
+        "fill_minute": 81,
+        "price": 0.3625,
+        "bar_close": 0.34
       },
       "exit": {
-        "minute": 96,
-        "reason": "breakeven_stop",
-        "fill_minute": 97,
-        "price": 0.175,
-        "bar_close": 0.18
+        "minute": 94,
+        "reason": "invalidation_stop",
+        "fill_minute": 95,
+        "price": 0.1925,
+        "bar_close": 0.2
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.584615,
-      "net_pnl": -22.8,
-      "hold_minutes": 64,
-      "best_net_return": 0.941026,
+      "net_return": -0.504828,
+      "net_pnl": -18.3,
+      "hold_minutes": 14,
+      "best_net_return": 1.088276,
       "benchmark_net_return": -0.961569,
       "scenario": "trend_against",
       "first_hour_move": -0.592,
@@ -889,25 +892,25 @@
       "trade_date": "2026-08-25",
       "direction": "LONG",
       "entry": {
-        "minute": 19,
-        "reason": "trend_breakout",
-        "fill_minute": 20,
-        "price": 1.31,
-        "bar_close": 1.27
+        "minute": 178,
+        "reason": "reversal_reclaim",
+        "fill_minute": 179,
+        "price": 0.475,
+        "bar_close": 0.46
       },
       "exit": {
-        "minute": 28,
-        "reason": "invalidation_stop",
-        "fill_minute": 29,
-        "price": 0.79,
-        "bar_close": 0.81
+        "minute": 194,
+        "reason": "breakeven_stop",
+        "fill_minute": 195,
+        "price": 0.3825,
+        "bar_close": 0.39
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.40687,
-      "net_pnl": -53.3,
-      "hold_minutes": 9,
-      "best_net_return": -0.147328,
+      "net_return": -0.222105,
+      "net_pnl": -10.55,
+      "hold_minutes": 16,
+      "best_net_return": 0.104211,
       "benchmark_net_return": -0.951228,
       "scenario": "trend_against",
       "first_hour_move": -0.391,
@@ -921,25 +924,25 @@
       "trade_date": "2026-08-28",
       "direction": "SHORT",
       "entry": {
-        "minute": 17,
-        "reason": "trend_breakout",
-        "fill_minute": 18,
-        "price": 2.3825,
-        "bar_close": 2.33
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 211,
+        "price": 0.085,
+        "bar_close": 0.08
       },
       "exit": {
-        "minute": 38,
-        "reason": "no_progress",
-        "fill_minute": 39,
-        "price": 1.61,
-        "bar_close": 1.63
+        "minute": 214,
+        "reason": "invalidation_stop",
+        "fill_minute": 215,
+        "price": 0.0775,
+        "bar_close": 0.08
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.329696,
-      "net_pnl": -78.55,
-      "hold_minutes": 21,
-      "best_net_return": 0.01553,
+      "net_return": -0.241176,
+      "net_pnl": -2.05,
+      "hold_minutes": 4,
+      "best_net_return": 0.523529,
       "benchmark_net_return": -1.002013,
       "scenario": "trend_against",
       "first_hour_move": 0.017,
@@ -953,25 +956,25 @@
       "trade_date": "2026-08-28",
       "direction": "SHORT",
       "entry": {
-        "minute": 39,
-        "reason": "trend_breakout",
-        "fill_minute": 40,
-        "price": 0.9075,
-        "bar_close": 0.84
+        "minute": 152,
+        "reason": "reversal_reclaim",
+        "fill_minute": 153,
+        "price": 1.4825,
+        "bar_close": 1.37
       },
       "exit": {
-        "minute": 73,
-        "reason": "trailing_stop",
-        "fill_minute": 74,
-        "price": 0.625,
-        "bar_close": 0.67
+        "minute": 183,
+        "reason": "breakeven_stop",
+        "fill_minute": 184,
+        "price": 1.035,
+        "bar_close": 1.06
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.32562,
-      "net_pnl": -29.55,
-      "hold_minutes": 34,
-      "best_net_return": 1.095868,
+      "net_return": -0.310624,
+      "net_pnl": -46.05,
+      "hold_minutes": 31,
+      "best_net_return": 0.282968,
       "benchmark_net_return": -0.884211,
       "scenario": "trend_against",
       "first_hour_move": -0.3,
@@ -985,25 +988,25 @@
       "trade_date": "2026-08-28",
       "direction": "SHORT",
       "entry": {
-        "minute": 41,
-        "reason": "reversal_reclaim",
-        "fill_minute": 42,
-        "price": 0.845,
-        "bar_close": 0.8
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 213,
+        "price": 0.02,
+        "bar_close": 0.02
       },
       "exit": {
-        "minute": 51,
+        "minute": 222,
         "reason": "invalidation_stop",
-        "fill_minute": 52,
-        "price": 0.2925,
-        "bar_close": 0.31
+        "fill_minute": 224,
+        "price": 0.01,
+        "bar_close": 0.01
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.669231,
-      "net_pnl": -56.55,
-      "hold_minutes": 10,
-      "best_net_return": 0.005325,
+      "net_return": -1.15,
+      "net_pnl": -2.3,
+      "hold_minutes": 11,
+      "best_net_return": -0.65,
       "benchmark_net_return": -1.001948,
       "scenario": "trend_against",
       "first_hour_move": -0.417,
@@ -1017,25 +1020,25 @@
       "trade_date": "2026-08-28",
       "direction": "LONG",
       "entry": {
-        "minute": 31,
+        "minute": 81,
         "reason": "trend_breakout",
-        "fill_minute": 32,
-        "price": 2.275,
-        "bar_close": 2.13
+        "fill_minute": 82,
+        "price": 3.395,
+        "bar_close": 3.33
       },
       "exit": {
-        "minute": 38,
-        "reason": "invalidation_stop",
-        "fill_minute": 39,
-        "price": 1.52,
-        "bar_close": 1.61
+        "minute": 102,
+        "reason": "breakeven_stop",
+        "fill_minute": 103,
+        "price": 3.0825,
+        "bar_close": 3.16
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.337582,
-      "net_pnl": -76.8,
-      "hold_minutes": 7,
-      "best_net_return": 0.844835,
+      "net_return": -0.095876,
+      "net_pnl": -32.55,
+      "hold_minutes": 21,
+      "best_net_return": 0.23623,
       "benchmark_net_return": -1.001606,
       "scenario": "trend_against",
       "first_hour_move": 0.062,
@@ -1049,25 +1052,25 @@
       "trade_date": "2026-08-28",
       "direction": "LONG",
       "entry": {
-        "minute": 19,
-        "reason": "trend_breakout",
-        "fill_minute": 20,
-        "price": 1.8675,
-        "bar_close": 1.77
+        "minute": 83,
+        "reason": "reversal_reclaim",
+        "fill_minute": 84,
+        "price": 2.88,
+        "bar_close": 2.85
       },
       "exit": {
-        "minute": 32,
+        "minute": 99,
         "reason": "breakeven_stop",
-        "fill_minute": 33,
-        "price": 1.545,
-        "bar_close": 1.63
+        "fill_minute": 100,
+        "price": 2.5525,
+        "bar_close": 2.61
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.179652,
-      "net_pnl": -33.55,
-      "hold_minutes": 13,
-      "best_net_return": 0.78822,
+      "net_return": -0.118229,
+      "net_pnl": -34.05,
+      "hold_minutes": 16,
+      "best_net_return": 0.159549,
       "benchmark_net_return": -0.99593,
       "scenario": "chop",
       "first_hour_move": -0.066,
@@ -1081,25 +1084,25 @@
       "trade_date": "2026-08-31",
       "direction": "LONG",
       "entry": {
-        "minute": 88,
-        "reason": "reversal_reclaim",
-        "fill_minute": 89,
-        "price": 0.6375,
-        "bar_close": 0.61
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 211,
+        "price": 0.28,
+        "bar_close": 0.27
       },
       "exit": {
-        "minute": 102,
+        "minute": 214,
         "reason": "invalidation_stop",
-        "fill_minute": 103,
-        "price": 0.4525,
-        "bar_close": 0.47
+        "fill_minute": 215,
+        "price": 0.2025,
+        "bar_close": 0.21
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.310588,
-      "net_pnl": -19.8,
-      "hold_minutes": 14,
-      "best_net_return": -0.071373,
+      "net_return": -0.323214,
+      "net_pnl": -9.05,
+      "hold_minutes": 4,
+      "best_net_return": 1.114286,
       "benchmark_net_return": -0.558177,
       "scenario": "reversal_with",
       "first_hour_move": -0.826,
@@ -1113,25 +1116,25 @@
       "trade_date": "2026-09-01",
       "direction": "LONG",
       "entry": {
-        "minute": 20,
+        "minute": 53,
         "reason": "trend_breakout",
-        "fill_minute": 21,
-        "price": 1.425,
-        "bar_close": 1.38
+        "fill_minute": 54,
+        "price": 2.18,
+        "bar_close": 2.14
       },
       "exit": {
-        "minute": 86,
-        "reason": "trailing_stop",
-        "fill_minute": 87,
-        "price": 1.965,
-        "bar_close": 1.99
+        "minute": 82,
+        "reason": "breakeven_stop",
+        "fill_minute": 83,
+        "price": 2.025,
+        "bar_close": 2.06
       },
       "decisions": null,
       "failure": null,
-      "net_return": 0.369825,
-      "net_pnl": 52.7,
-      "hold_minutes": 66,
-      "best_net_return": 0.875088,
+      "net_return": -0.077064,
+      "net_pnl": -16.8,
+      "hold_minutes": 29,
+      "best_net_return": 0.225688,
       "benchmark_net_return": -0.917358,
       "scenario": "reversal_against",
       "first_hour_move": 0.339,
@@ -1145,25 +1148,25 @@
       "trade_date": "2026-09-04",
       "direction": "LONG",
       "entry": {
-        "minute": 120,
-        "reason": "late_confirmation",
-        "fill_minute": 121,
-        "price": 0.01,
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 211,
+        "price": 0.0125,
         "bar_close": 0.01
       },
       "exit": {
-        "minute": 179,
-        "reason": "trailing_stop",
-        "fill_minute": 180,
-        "price": 0.01,
-        "bar_close": 0.01
+        "minute": 215,
+        "reason": "invalidation_stop",
+        "fill_minute": 216,
+        "price": 0.02,
+        "bar_close": 0.02
       },
       "decisions": null,
       "failure": null,
-      "net_return": -1.3,
-      "net_pnl": -1.3,
-      "hold_minutes": 59,
-      "best_net_return": 0.95,
+      "net_return": -0.44,
+      "net_pnl": -0.55,
+      "hold_minutes": 5,
+      "best_net_return": 0.56,
       "benchmark_net_return": -1.00628,
       "scenario": "trend_against",
       "first_hour_move": -0.686,
@@ -1177,25 +1180,25 @@
       "trade_date": "2026-09-04",
       "direction": "LONG",
       "entry": {
-        "minute": 31,
+        "minute": 159,
         "reason": "trend_breakout",
-        "fill_minute": 32,
-        "price": 2.2925,
-        "bar_close": 2.22
+        "fill_minute": 160,
+        "price": 1.99,
+        "bar_close": 1.99
       },
       "exit": {
-        "minute": 49,
-        "reason": "breakeven_stop",
-        "fill_minute": 50,
-        "price": 1.6,
-        "bar_close": 1.6
+        "minute": 188,
+        "reason": "trailing_stop",
+        "fill_minute": 189,
+        "price": 1.71,
+        "bar_close": 1.74
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.307743,
-      "net_pnl": -70.55,
-      "hold_minutes": 18,
-      "best_net_return": 1.054308,
+      "net_return": -0.147236,
+      "net_pnl": -29.3,
+      "hold_minutes": 29,
+      "best_net_return": 1.366583,
       "benchmark_net_return": 0.166774,
       "scenario": "reversal_with",
       "first_hour_move": -0.254,
@@ -1209,25 +1212,25 @@
       "trade_date": "2026-09-04",
       "direction": "LONG",
       "entry": {
-        "minute": 163,
-        "reason": "late_confirmation",
-        "fill_minute": 164,
-        "price": 0.0225,
-        "bar_close": 0.02
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 211,
+        "price": 0.01,
+        "bar_close": 0.01
       },
       "exit": {
-        "minute": 169,
-        "reason": "invalidation_stop",
-        "fill_minute": 170,
-        "price": 0.0275,
-        "bar_close": 0.03
+        "minute": 251,
+        "reason": "breakeven_stop",
+        "fill_minute": 256,
+        "price": 0.01,
+        "bar_close": 0.01
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.355556,
-      "net_pnl": -0.8,
-      "hold_minutes": 6,
-      "best_net_return": 0.2,
+      "net_return": -1.3,
+      "net_pnl": -1.3,
+      "hold_minutes": 45,
+      "best_net_return": 1.7,
       "benchmark_net_return": -1.00381,
       "scenario": "trend_against",
       "first_hour_move": -0.718,
@@ -1241,25 +1244,25 @@
       "trade_date": "2026-09-04",
       "direction": "LONG",
       "entry": {
-        "minute": 24,
-        "reason": "trend_breakout",
-        "fill_minute": 25,
-        "price": 2.9625,
-        "bar_close": 2.9
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 211,
+        "price": 0.775,
+        "bar_close": 0.73
       },
       "exit": {
-        "minute": 50,
+        "minute": 213,
         "reason": "invalidation_stop",
-        "fill_minute": 51,
-        "price": 1.645,
-        "bar_close": 1.73
+        "fill_minute": 214,
+        "price": 0.51,
+        "bar_close": 0.52
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.449114,
-      "net_pnl": -133.05,
-      "hold_minutes": 26,
-      "best_net_return": 0.144979,
+      "net_return": -0.35871,
+      "net_pnl": -27.8,
+      "hold_minutes": 3,
+      "best_net_return": -0.165161,
       "benchmark_net_return": -0.968364,
       "scenario": "chop",
       "first_hour_move": 0.048,
@@ -1273,25 +1276,25 @@
       "trade_date": "2026-09-09",
       "direction": "LONG",
       "entry": {
-        "minute": 26,
-        "reason": "trend_breakout",
-        "fill_minute": 27,
-        "price": 1.0575,
-        "bar_close": 1.03
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 211,
+        "price": 0.2225,
+        "bar_close": 0.21
       },
       "exit": {
-        "minute": 47,
-        "reason": "no_progress",
-        "fill_minute": 48,
-        "price": 0.745,
-        "bar_close": 0.76
+        "minute": 215,
+        "reason": "breakeven_stop",
+        "fill_minute": 216,
+        "price": 0.2275,
+        "bar_close": 0.24
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.307801,
-      "net_pnl": -32.55,
-      "hold_minutes": 21,
-      "best_net_return": 0.049173,
+      "net_return": -0.035955,
+      "net_pnl": -0.8,
+      "hold_minutes": 5,
+      "best_net_return": 0.67191,
       "benchmark_net_return": -0.975,
       "scenario": "trend_against",
       "first_hour_move": -0.028,
@@ -1305,25 +1308,25 @@
       "trade_date": "2026-09-11",
       "direction": "SHORT",
       "entry": {
-        "minute": 126,
-        "reason": "late_confirmation",
-        "fill_minute": 127,
-        "price": 0.04,
-        "bar_close": 0.04
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 211,
+        "price": 0.0125,
+        "bar_close": 0.01
       },
       "exit": {
-        "minute": 164,
-        "reason": "trailing_stop",
-        "fill_minute": 165,
-        "price": 0.0275,
-        "bar_close": 0.03
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 380,
+        "price": 0.01,
+        "bar_close": 0.01
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.6375,
-      "net_pnl": -2.55,
-      "hold_minutes": 38,
-      "best_net_return": 0.175,
+      "net_return": -1.24,
+      "net_pnl": -1.55,
+      "hold_minutes": 169,
+      "best_net_return": 2.76,
       "benchmark_net_return": -1.006522,
       "scenario": "trend_against",
       "first_hour_move": -0.669,
@@ -1337,25 +1340,25 @@
       "trade_date": "2026-09-11",
       "direction": "LONG",
       "entry": {
-        "minute": 135,
-        "reason": "late_confirmation",
-        "fill_minute": 136,
-        "price": 0.05,
-        "bar_close": 0.05
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 211,
+        "price": 0.0225,
+        "bar_close": 0.02
       },
       "exit": {
-        "minute": 158,
-        "reason": "no_progress",
-        "fill_minute": 159,
-        "price": 0.04,
-        "bar_close": 0.04
+        "minute": 215,
+        "reason": "invalidation_stop",
+        "fill_minute": 216,
+        "price": 0.02,
+        "bar_close": 0.02
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.46,
-      "net_pnl": -2.3,
-      "hold_minutes": 23,
-      "best_net_return": -0.11,
+      "net_return": -0.688889,
+      "net_pnl": -1.55,
+      "hold_minutes": 5,
+      "best_net_return": -0.244444,
       "benchmark_net_return": -1.002733,
       "scenario": "trend_against",
       "first_hour_move": -0.502,
@@ -1369,25 +1372,25 @@
       "trade_date": "2026-09-11",
       "direction": "LONG",
       "entry": {
-        "minute": 16,
-        "reason": "trend_breakout",
-        "fill_minute": 17,
-        "price": 11.1875,
-        "bar_close": 10.75
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 211,
+        "price": 0.595,
+        "bar_close": 0.58
       },
       "exit": {
-        "minute": 19,
-        "reason": "invalidation_stop",
-        "fill_minute": 20,
-        "price": 5.55,
-        "bar_close": 5.85
+        "minute": 282,
+        "reason": "trailing_stop",
+        "fill_minute": 283,
+        "price": 0.4375,
+        "bar_close": 0.45
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.505073,
-      "net_pnl": -565.05,
-      "hold_minutes": 3,
-      "best_net_return": -0.280715,
+      "net_return": -0.286555,
+      "net_pnl": -17.05,
+      "hold_minutes": 72,
+      "best_net_return": 1.041176,
       "benchmark_net_return": -0.981512,
       "scenario": "chop",
       "first_hour_move": -0.096,
@@ -1401,25 +1404,25 @@
       "trade_date": "2026-09-11",
       "direction": "LONG",
       "entry": {
-        "minute": 27,
-        "reason": "trend_breakout",
-        "fill_minute": 28,
-        "price": 3.63,
-        "bar_close": 3.57
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 211,
+        "price": 0.8625,
+        "bar_close": 0.82
       },
       "exit": {
-        "minute": 45,
-        "reason": "invalidation_stop",
-        "fill_minute": 46,
-        "price": 2.075,
-        "bar_close": 2.14
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 376,
+        "price": 1.9125,
+        "bar_close": 1.94
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.431956,
-      "net_pnl": -156.8,
-      "hold_minutes": 18,
-      "best_net_return": 0.076309,
+      "net_return": 1.202319,
+      "net_pnl": 103.7,
+      "hold_minutes": 165,
+      "best_net_return": 1.628406,
       "benchmark_net_return": -0.415538,
       "scenario": "trend_with",
       "first_hour_move": -0.088,
@@ -1433,25 +1436,25 @@
       "trade_date": "2026-09-11",
       "direction": "SHORT",
       "entry": {
-        "minute": 37,
+        "minute": 86,
         "reason": "trend_breakout",
-        "fill_minute": 38,
-        "price": 2.4325,
-        "bar_close": 2.37
+        "fill_minute": 87,
+        "price": 2.545,
+        "bar_close": 2.49
       },
       "exit": {
-        "minute": 50,
+        "minute": 96,
         "reason": "invalidation_stop",
-        "fill_minute": 51,
-        "price": 1.32,
-        "bar_close": 1.36
+        "fill_minute": 97,
+        "price": 1.3,
+        "bar_close": 1.33
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.462693,
-      "net_pnl": -112.55,
-      "hold_minutes": 13,
-      "best_net_return": 0.083042,
+      "net_return": -0.494303,
+      "net_pnl": -125.8,
+      "hold_minutes": 10,
+      "best_net_return": -0.097446,
       "benchmark_net_return": -0.878317,
       "scenario": "chop",
       "first_hour_move": -0.195,
@@ -1465,25 +1468,25 @@
       "trade_date": "2026-09-11",
       "direction": "SHORT",
       "entry": {
-        "minute": 65,
+        "minute": 85,
         "reason": "trend_breakout",
-        "fill_minute": 66,
-        "price": 1.455,
-        "bar_close": 1.42
+        "fill_minute": 86,
+        "price": 1.9075,
+        "bar_close": 1.84
       },
       "exit": {
-        "minute": 80,
-        "reason": "breakeven_stop",
-        "fill_minute": 81,
-        "price": 1.4375,
-        "bar_close": 1.49
+        "minute": 94,
+        "reason": "invalidation_stop",
+        "fill_minute": 95,
+        "price": 1.25,
+        "bar_close": 1.26
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.020962,
-      "net_pnl": -3.05,
-      "hold_minutes": 15,
-      "best_net_return": 0.267698,
+      "net_return": -0.351507,
+      "net_pnl": -67.05,
+      "hold_minutes": 9,
+      "best_net_return": -0.065793,
       "benchmark_net_return": -0.790336,
       "scenario": "reversal_with",
       "first_hour_move": -0.363,
@@ -1497,25 +1500,25 @@
       "trade_date": "2026-09-14",
       "direction": "LONG",
       "entry": {
-        "minute": 22,
+        "minute": 148,
         "reason": "trend_breakout",
-        "fill_minute": 23,
-        "price": 0.88,
-        "bar_close": 0.82
+        "fill_minute": 149,
+        "price": 1.0775,
+        "bar_close": 1.03
       },
       "exit": {
-        "minute": 375,
-        "reason": "scheduled_flatten",
-        "fill_minute": 376,
-        "price": 0.03,
-        "bar_close": 0.03
+        "minute": 155,
+        "reason": "invalidation_stop",
+        "fill_minute": 156,
+        "price": 0.67,
+        "bar_close": 0.69
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.980682,
-      "net_pnl": -86.3,
-      "hold_minutes": 353,
-      "best_net_return": 0.439773,
+      "net_return": -0.390255,
+      "net_pnl": -42.05,
+      "hold_minutes": 7,
+      "best_net_return": -0.186079,
       "benchmark_net_return": -0.97247,
       "scenario": "trend_against",
       "first_hour_move": -0.383,
@@ -1529,25 +1532,25 @@
       "trade_date": "2026-09-14",
       "direction": "SHORT",
       "entry": {
-        "minute": 67,
-        "reason": "reversal_reclaim",
-        "fill_minute": 68,
-        "price": 0.795,
-        "bar_close": 0.77
+        "minute": 210,
+        "reason": "must_trade_deadline",
+        "fill_minute": 211,
+        "price": 0.04,
+        "bar_close": 0.04
       },
       "exit": {
-        "minute": 76,
+        "minute": 240,
         "reason": "invalidation_stop",
-        "fill_minute": 77,
-        "price": 0.4925,
-        "bar_close": 0.51
+        "fill_minute": 241,
+        "price": 0.02,
+        "bar_close": 0.02
       },
       "decisions": null,
       "failure": null,
-      "net_return": -0.396855,
-      "net_pnl": -31.55,
-      "hold_minutes": 9,
-      "best_net_return": 0.002516,
+      "net_return": -0.825,
+      "net_pnl": -3.3,
+      "hold_minutes": 30,
+      "best_net_return": -0.325,
       "benchmark_net_return": -1.001569,
       "scenario": "trend_against",
       "first_hour_move": -0.24,
@@ -1564,7 +1567,7 @@
           "2026-08-25"
         ],
         "cases": 16,
-        "strategy_mean": -0.153455,
+        "strategy_mean": -0.137721,
         "benchmark_mean": -0.680316
       },
       "second_half": {
@@ -1573,7 +1576,7 @@
           "2026-09-14"
         ],
         "cases": 20,
-        "strategy_mean": -0.419924,
+        "strategy_mean": -0.383614,
         "benchmark_mean": -0.859846
       },
       "passed": true
@@ -1581,660 +1584,423 @@
     "leave_one_day_out": {
       "passed": false,
       "failed_days": [
-        "2026-08-17",
-        "2026-08-18",
-        "2026-08-19",
-        "2026-08-21",
-        "2026-08-24",
-        "2026-08-25",
-        "2026-08-28",
-        "2026-08-31",
-        "2026-09-01",
-        "2026-09-04",
-        "2026-09-09",
-        "2026-09-11",
-        "2026-09-14"
+        "2026-09-11"
       ],
       "runs": [
         {
           "dropped": "2026-08-17",
-          "passed": false,
-          "strategy_expectancy": -0.220083,
-          "strategy_payoff_ratio": 1.397227,
+          "passed": true,
+          "strategy_expectancy": -0.084144,
+          "strategy_payoff_ratio": 3.035607,
           "benchmark_expectancy": -0.387645,
           "benchmark_payoff_ratio": 2.294907
         },
         {
           "dropped": "2026-08-18",
-          "passed": false,
-          "strategy_expectancy": -0.222384,
-          "strategy_payoff_ratio": 1.387071,
+          "passed": true,
+          "strategy_expectancy": -0.0835,
+          "strategy_payoff_ratio": 3.042219,
           "benchmark_expectancy": -0.388238,
           "benchmark_payoff_ratio": 2.292921
         },
         {
           "dropped": "2026-08-19",
-          "passed": false,
-          "strategy_expectancy": -0.215862,
-          "strategy_payoff_ratio": 1.416984,
+          "passed": true,
+          "strategy_expectancy": -0.078154,
+          "strategy_payoff_ratio": 2.992724,
           "benchmark_expectancy": -0.387513,
           "benchmark_payoff_ratio": 2.237796
         },
         {
           "dropped": "2026-08-20",
           "passed": true,
-          "strategy_expectancy": -0.267684,
-          "strategy_payoff_ratio": 1.219677,
+          "strategy_expectancy": 0.152634,
+          "strategy_payoff_ratio": 3.330137,
           "benchmark_expectancy": -0.741413,
           "benchmark_payoff_ratio": 0.220529
         },
         {
           "dropped": "2026-08-21",
-          "passed": false,
-          "strategy_expectancy": -0.32311,
-          "strategy_payoff_ratio": 0.971039,
+          "passed": true,
+          "strategy_expectancy": -0.133978,
+          "strategy_payoff_ratio": 3.043126,
           "benchmark_expectancy": -0.304278,
           "benchmark_payoff_ratio": 2.26555
         },
         {
           "dropped": "2026-08-24",
-          "passed": false,
-          "strategy_expectancy": -0.217464,
-          "strategy_payoff_ratio": 1.408974,
+          "passed": true,
+          "strategy_expectancy": -0.08112,
+          "strategy_payoff_ratio": 3.066903,
           "benchmark_expectancy": -0.388305,
           "benchmark_payoff_ratio": 2.292698
         },
         {
           "dropped": "2026-08-25",
-          "passed": false,
-          "strategy_expectancy": -0.220285,
-          "strategy_payoff_ratio": 1.396332,
+          "passed": true,
+          "strategy_expectancy": -0.085608,
+          "strategy_payoff_ratio": 3.020694,
           "benchmark_expectancy": -0.388469,
           "benchmark_payoff_ratio": 2.292148
         },
         {
           "dropped": "2026-08-28",
-          "passed": false,
-          "strategy_expectancy": -0.210525,
-          "strategy_payoff_ratio": 1.344711,
+          "passed": true,
+          "strategy_expectancy": -0.085524,
+          "strategy_payoff_ratio": 3.000404,
           "benchmark_expectancy": -0.398884,
           "benchmark_payoff_ratio": 2.269078
         },
         {
           "dropped": "2026-08-31",
-          "passed": false,
-          "strategy_expectancy": -0.229653,
-          "strategy_payoff_ratio": 1.443892,
+          "passed": true,
+          "strategy_expectancy": -0.076653,
+          "strategy_payoff_ratio": 2.999663,
           "benchmark_expectancy": -0.36937,
           "benchmark_payoff_ratio": 2.293368
         },
         {
           "dropped": "2026-09-01",
-          "passed": false,
-          "strategy_expectancy": -0.38028,
-          "strategy_payoff_ratio": 0.240846,
+          "passed": true,
+          "strategy_expectancy": -0.088842,
+          "strategy_payoff_ratio": 2.699887,
           "benchmark_expectancy": -0.24493,
           "benchmark_payoff_ratio": 2.570331
         },
         {
           "dropped": "2026-09-04",
-          "passed": false,
-          "strategy_expectancy": -0.201928,
-          "strategy_payoff_ratio": 1.507122,
+          "passed": true,
+          "strategy_expectancy": -0.058984,
+          "strategy_payoff_ratio": 3.132501,
           "benchmark_expectancy": -0.380882,
           "benchmark_payoff_ratio": 2.553953
         },
         {
           "dropped": "2026-09-09",
-          "passed": false,
-          "strategy_expectancy": -0.221857,
-          "strategy_payoff_ratio": 1.389384,
+          "passed": true,
+          "strategy_expectancy": -0.088562,
+          "strategy_payoff_ratio": 2.991022,
           "benchmark_expectancy": -0.388092,
           "benchmark_payoff_ratio": 2.293411
         },
         {
           "dropped": "2026-09-11",
           "passed": false,
-          "strategy_expectancy": -0.150335,
-          "strategy_payoff_ratio": 1.758206,
+          "strategy_expectancy": -0.287443,
+          "strategy_payoff_ratio": 2.378934,
           "benchmark_expectancy": 0.015523,
           "benchmark_payoff_ratio": 2.189062
         },
         {
           "dropped": "2026-09-14",
-          "passed": false,
-          "strategy_expectancy": -0.207826,
-          "strategy_payoff_ratio": 1.430807,
+          "passed": true,
+          "strategy_expectancy": -0.078223,
+          "strategy_payoff_ratio": 3.120647,
           "benchmark_expectancy": -0.396876,
           "benchmark_payoff_ratio": 2.28171
         }
       ]
     },
     "neighbors": {
-      "passed": false,
-      "count": 33,
-      "failed": [
-        {
-          "param": "atr_period",
-          "from": 14,
-          "to": 10,
-          "passed": false,
-          "expectancy": -0.215693,
-          "payoff_ratio": 1.428633
-        },
-        {
-          "param": "atr_period",
-          "from": 14,
-          "to": 18,
-          "passed": false,
-          "expectancy": -0.233004,
-          "payoff_ratio": 1.212399
-        },
-        {
-          "param": "breakeven_at_atr",
-          "from": 2.0,
-          "to": 1.5,
-          "passed": false,
-          "expectancy": -0.229018,
-          "payoff_ratio": 1.394005
-        },
-        {
-          "param": "breakeven_at_atr",
-          "from": 2.0,
-          "to": 2.5,
-          "passed": false,
-          "expectancy": -0.225547,
-          "payoff_ratio": 1.393641
-        },
-        {
-          "param": "ema_fast",
-          "from": 9,
-          "to": 7,
-          "passed": false,
-          "expectancy": -0.256303,
-          "payoff_ratio": 1.270416
-        },
-        {
-          "param": "ema_fast",
-          "from": 9,
-          "to": 11,
-          "passed": false,
-          "expectancy": -0.238562,
-          "payoff_ratio": 1.338694
-        },
-        {
-          "param": "ema_slow",
-          "from": 21,
-          "to": 16,
-          "passed": false,
-          "expectancy": -0.256303,
-          "payoff_ratio": 1.270416
-        },
-        {
-          "param": "ema_slow",
-          "from": 21,
-          "to": 26,
-          "passed": false,
-          "expectancy": -0.238562,
-          "payoff_ratio": 1.338694
-        },
-        {
-          "param": "fail_minutes",
-          "from": 20,
-          "to": 15,
-          "passed": false,
-          "expectancy": -0.198428,
-          "payoff_ratio": 1.52398
-        },
-        {
-          "param": "fail_minutes",
-          "from": 20,
-          "to": 25,
-          "passed": false,
-          "expectancy": -0.228383,
-          "payoff_ratio": 1.381284
-        },
-        {
-          "param": "fail_progress_atr",
-          "from": 1.0,
-          "to": 0.75,
-          "passed": false,
-          "expectancy": -0.227547,
-          "payoff_ratio": 1.384905
-        },
-        {
-          "param": "fail_progress_atr",
-          "from": 1.0,
-          "to": 1.25,
-          "passed": false,
-          "expectancy": -0.215562,
-          "payoff_ratio": 1.438953
-        },
-        {
-          "param": "flatten_before_close_minutes",
-          "from": 15,
-          "to": 19,
-          "passed": false,
-          "expectancy": -0.222095,
-          "payoff_ratio": 1.408981
-        },
-        {
-          "param": "momentum_lookback",
-          "from": 5,
-          "to": 4,
-          "passed": false,
-          "expectancy": -0.221797,
-          "payoff_ratio": 1.41032
-        },
-        {
-          "param": "momentum_lookback",
-          "from": 5,
-          "to": 6,
-          "passed": false,
-          "expectancy": -0.229646,
-          "payoff_ratio": 1.375856
-        },
-        {
-          "param": "must_enter_before_close_minutes",
-          "from": 180,
-          "to": 135,
-          "passed": false,
-          "expectancy": -0.223316,
-          "payoff_ratio": 1.403517
-        },
-        {
-          "param": "must_enter_before_close_minutes",
-          "from": 180,
-          "to": 225,
-          "passed": false,
-          "expectancy": -0.223316,
-          "payoff_ratio": 1.403517
-        },
-        {
-          "param": "opening_minutes",
-          "from": 15,
-          "to": 11,
-          "passed": false,
-          "expectancy": -0.2126,
-          "payoff_ratio": 1.452965
-        },
-        {
-          "param": "opening_minutes",
-          "from": 15,
-          "to": 19,
-          "passed": false,
-          "expectancy": -0.219937,
-          "payoff_ratio": 1.418739
-        },
-        {
-          "param": "relax_after_minutes",
-          "from": 120,
-          "to": 90,
-          "passed": false,
-          "expectancy": -0.214313,
-          "payoff_ratio": 1.503665
-        },
-        {
-          "param": "relax_after_minutes",
-          "from": 120,
-          "to": 150,
-          "passed": false,
-          "expectancy": -0.247041,
-          "payoff_ratio": 1.443099
-        },
-        {
-          "param": "stop_lookback",
-          "from": 10,
-          "to": 8,
-          "passed": false,
-          "expectancy": -0.223316,
-          "payoff_ratio": 1.403517
-        },
-        {
-          "param": "stop_lookback",
-          "from": 10,
-          "to": 12,
-          "passed": false,
-          "expectancy": -0.223399,
-          "payoff_ratio": 1.403145
-        },
-        {
-          "param": "stop_max_atr",
-          "from": 2.0,
-          "to": 2.5,
-          "passed": false,
-          "expectancy": -0.240545,
-          "payoff_ratio": 1.330699
-        },
-        {
-          "param": "stop_min_atr",
-          "from": 1.0,
-          "to": 0.75,
-          "passed": false,
-          "expectancy": -0.223316,
-          "payoff_ratio": 1.403517
-        },
-        {
-          "param": "stop_min_atr",
-          "from": 1.0,
-          "to": 1.25,
-          "passed": false,
-          "expectancy": -0.223316,
-          "payoff_ratio": 1.403517
-        },
-        {
-          "param": "trail_activate_atr",
-          "from": 3.0,
-          "to": 2.25,
-          "passed": false,
-          "expectancy": -0.222627,
-          "payoff_ratio": 1.406594
-        },
-        {
-          "param": "trail_activate_atr",
-          "from": 3.0,
-          "to": 3.75,
-          "passed": false,
-          "expectancy": -0.264437,
-          "payoff_ratio": 1.241387
-        },
-        {
-          "param": "trail_atr",
-          "from": 2.5,
-          "to": 1.875,
-          "passed": false,
-          "expectancy": -0.201837,
-          "payoff_ratio": 1.654487
-        },
-        {
-          "param": "trail_atr",
-          "from": 2.5,
-          "to": 3.125,
-          "passed": false,
-          "expectancy": -0.273599,
-          "payoff_ratio": 0.796352
-        },
-        {
-          "param": "vwap_buffer_atr",
-          "from": 0.25,
-          "to": 0.1875,
-          "passed": false,
-          "expectancy": -0.22305,
-          "payoff_ratio": 1.404703
-        },
-        {
-          "param": "vwap_buffer_atr",
-          "from": 0.25,
-          "to": 0.3125,
-          "passed": false,
-          "expectancy": -0.223316,
-          "payoff_ratio": 1.403517
-        }
-      ],
+      "passed": true,
+      "count": 37,
+      "failed": [],
       "runs": [
         {
           "param": "atr_period",
           "from": 14,
           "to": 10,
-          "passed": false,
-          "expectancy": -0.215693,
-          "payoff_ratio": 1.428633
+          "passed": true,
+          "expectancy": -0.074608,
+          "payoff_ratio": 2.613058
         },
         {
           "param": "atr_period",
           "from": 14,
           "to": 18,
-          "passed": false,
-          "expectancy": -0.233004,
-          "payoff_ratio": 1.212399
+          "passed": true,
+          "expectancy": -0.080928,
+          "payoff_ratio": 3.047481
         },
         {
           "param": "breakeven_at_atr",
           "from": 2.0,
           "to": 1.5,
-          "passed": false,
-          "expectancy": -0.229018,
-          "payoff_ratio": 1.394005
+          "passed": true,
+          "expectancy": -0.080483,
+          "payoff_ratio": 3.052073
         },
         {
           "param": "breakeven_at_atr",
           "from": 2.0,
           "to": 2.5,
-          "passed": false,
-          "expectancy": -0.225547,
-          "payoff_ratio": 1.393641
+          "passed": true,
+          "expectancy": -0.124018,
+          "payoff_ratio": 2.659706
         },
         {
           "param": "ema_fast",
           "from": 9,
           "to": 7,
-          "passed": false,
-          "expectancy": -0.256303,
-          "payoff_ratio": 1.270416
+          "passed": true,
+          "expectancy": -0.080655,
+          "payoff_ratio": 3.050296
         },
         {
           "param": "ema_fast",
           "from": 9,
           "to": 11,
-          "passed": false,
-          "expectancy": -0.238562,
-          "payoff_ratio": 1.338694
+          "passed": true,
+          "expectancy": -0.079342,
+          "payoff_ratio": 3.068962
         },
         {
           "param": "ema_slow",
           "from": 21,
           "to": 16,
-          "passed": false,
-          "expectancy": -0.256303,
-          "payoff_ratio": 1.270416
+          "passed": true,
+          "expectancy": -0.080655,
+          "payoff_ratio": 3.050296
         },
         {
           "param": "ema_slow",
           "from": 21,
           "to": 26,
-          "passed": false,
-          "expectancy": -0.238562,
-          "payoff_ratio": 1.338694
+          "passed": true,
+          "expectancy": -0.079342,
+          "payoff_ratio": 3.068962
         },
         {
           "param": "fail_minutes",
           "from": 20,
           "to": 15,
-          "passed": false,
-          "expectancy": -0.198428,
-          "payoff_ratio": 1.52398
+          "passed": true,
+          "expectancy": -0.080655,
+          "payoff_ratio": 3.050296
         },
         {
           "param": "fail_minutes",
           "from": 20,
           "to": 25,
-          "passed": false,
-          "expectancy": -0.228383,
-          "payoff_ratio": 1.381284
+          "passed": true,
+          "expectancy": -0.080655,
+          "payoff_ratio": 3.050296
         },
         {
           "param": "fail_progress_atr",
           "from": 1.0,
           "to": 0.75,
-          "passed": false,
-          "expectancy": -0.227547,
-          "payoff_ratio": 1.384905
+          "passed": true,
+          "expectancy": -0.08393,
+          "payoff_ratio": 3.016837
         },
         {
           "param": "fail_progress_atr",
           "from": 1.0,
           "to": 1.25,
-          "passed": false,
-          "expectancy": -0.215562,
-          "payoff_ratio": 1.438953
+          "passed": true,
+          "expectancy": -0.076817,
+          "payoff_ratio": 3.090462
         },
         {
           "param": "flatten_before_close_minutes",
           "from": 15,
           "to": 19,
-          "passed": false,
-          "expectancy": -0.222095,
-          "payoff_ratio": 1.408981
+          "passed": true,
+          "expectancy": -0.042612,
+          "payoff_ratio": 3.590976
+        },
+        {
+          "param": "forced_fail_minutes",
+          "from": 10,
+          "to": 8,
+          "passed": true,
+          "expectancy": -0.078817,
+          "payoff_ratio": 3.069404
+        },
+        {
+          "param": "forced_fail_minutes",
+          "from": 10,
+          "to": 12,
+          "passed": true,
+          "expectancy": -0.080655,
+          "payoff_ratio": 3.050296
+        },
+        {
+          "param": "forced_stop_atr",
+          "from": 1.0,
+          "to": 0.75,
+          "passed": true,
+          "expectancy": -0.074439,
+          "payoff_ratio": 3.115889
+        },
+        {
+          "param": "forced_stop_atr",
+          "from": 1.0,
+          "to": 1.25,
+          "passed": true,
+          "expectancy": -0.0911,
+          "payoff_ratio": 2.94608
         },
         {
           "param": "momentum_lookback",
           "from": 5,
           "to": 4,
-          "passed": false,
-          "expectancy": -0.221797,
-          "payoff_ratio": 1.41032
+          "passed": true,
+          "expectancy": -0.081619,
+          "payoff_ratio": 3.040368
         },
         {
           "param": "momentum_lookback",
           "from": 5,
           "to": 6,
-          "passed": false,
-          "expectancy": -0.229646,
-          "payoff_ratio": 1.375856
+          "passed": true,
+          "expectancy": -0.081528,
+          "payoff_ratio": 3.041307
         },
         {
           "param": "must_enter_before_close_minutes",
           "from": 180,
           "to": 135,
-          "passed": false,
-          "expectancy": -0.223316,
-          "payoff_ratio": 1.403517
+          "passed": true,
+          "expectancy": -0.126673,
+          "payoff_ratio": 2.659216
         },
         {
           "param": "must_enter_before_close_minutes",
           "from": 180,
           "to": 225,
-          "passed": false,
-          "expectancy": -0.223316,
-          "payoff_ratio": 1.403517
+          "passed": true,
+          "expectancy": -0.303841,
+          "payoff_ratio": 2.434088
         },
         {
           "param": "opening_minutes",
           "from": 15,
           "to": 11,
-          "passed": false,
-          "expectancy": -0.2126,
-          "payoff_ratio": 1.452965
+          "passed": true,
+          "expectancy": -0.080655,
+          "payoff_ratio": 3.050296
         },
         {
           "param": "opening_minutes",
           "from": 15,
           "to": 19,
-          "passed": false,
-          "expectancy": -0.219937,
-          "payoff_ratio": 1.418739
+          "passed": true,
+          "expectancy": -0.080655,
+          "payoff_ratio": 3.050296
         },
         {
-          "param": "relax_after_minutes",
-          "from": 120,
-          "to": 90,
-          "passed": false,
-          "expectancy": -0.214313,
-          "payoff_ratio": 1.503665
+          "param": "persist_minutes",
+          "from": 20,
+          "to": 15,
+          "passed": true,
+          "expectancy": -0.323146,
+          "payoff_ratio": 2.83052
         },
         {
-          "param": "relax_after_minutes",
-          "from": 120,
-          "to": 150,
-          "passed": false,
-          "expectancy": -0.247041,
-          "payoff_ratio": 1.443099
+          "param": "persist_minutes",
+          "from": 20,
+          "to": 25,
+          "passed": true,
+          "expectancy": -0.086399,
+          "payoff_ratio": 2.992093
         },
         {
           "param": "stop_lookback",
           "from": 10,
           "to": 8,
-          "passed": false,
-          "expectancy": -0.223316,
-          "payoff_ratio": 1.403517
+          "passed": true,
+          "expectancy": -0.080655,
+          "payoff_ratio": 3.050296
         },
         {
           "param": "stop_lookback",
           "from": 10,
           "to": 12,
-          "passed": false,
-          "expectancy": -0.223399,
-          "payoff_ratio": 1.403145
+          "passed": true,
+          "expectancy": -0.080655,
+          "payoff_ratio": 3.050296
         },
         {
           "param": "stop_max_atr",
           "from": 2.0,
           "to": 1.5,
           "passed": true,
-          "expectancy": -0.279611,
-          "payoff_ratio": 2.853043
+          "expectancy": -0.097904,
+          "payoff_ratio": 3.104231
         },
         {
           "param": "stop_max_atr",
           "from": 2.0,
           "to": 2.5,
-          "passed": false,
-          "expectancy": -0.240545,
-          "payoff_ratio": 1.330699
+          "passed": true,
+          "expectancy": -0.077038,
+          "payoff_ratio": 3.088129
         },
         {
           "param": "stop_min_atr",
           "from": 1.0,
           "to": 0.75,
-          "passed": false,
-          "expectancy": -0.223316,
-          "payoff_ratio": 1.403517
+          "passed": true,
+          "expectancy": -0.080655,
+          "payoff_ratio": 3.050296
         },
         {
           "param": "stop_min_atr",
           "from": 1.0,
           "to": 1.25,
-          "passed": false,
-          "expectancy": -0.223316,
-          "payoff_ratio": 1.403517
+          "passed": true,
+          "expectancy": -0.080655,
+          "payoff_ratio": 3.050296
         },
         {
           "param": "trail_activate_atr",
-          "from": 3.0,
-          "to": 2.25,
-          "passed": false,
-          "expectancy": -0.222627,
-          "payoff_ratio": 1.406594
-        },
-        {
-          "param": "trail_activate_atr",
-          "from": 3.0,
+          "from": 5.0,
           "to": 3.75,
-          "passed": false,
-          "expectancy": -0.264437,
-          "payoff_ratio": 1.241387
+          "passed": true,
+          "expectancy": -0.080655,
+          "payoff_ratio": 3.050296
+        },
+        {
+          "param": "trail_activate_atr",
+          "from": 5.0,
+          "to": 6.25,
+          "passed": true,
+          "expectancy": -0.081334,
+          "payoff_ratio": 3.043294
         },
         {
           "param": "trail_atr",
-          "from": 2.5,
-          "to": 1.875,
-          "passed": false,
-          "expectancy": -0.201837,
-          "payoff_ratio": 1.654487
+          "from": 5.0,
+          "to": 3.75,
+          "passed": true,
+          "expectancy": -0.045483,
+          "payoff_ratio": 3.182553
         },
         {
           "param": "trail_atr",
-          "from": 2.5,
-          "to": 3.125,
-          "passed": false,
-          "expectancy": -0.273599,
-          "payoff_ratio": 0.796352
+          "from": 5.0,
+          "to": 6.25,
+          "passed": true,
+          "expectancy": -0.116301,
+          "payoff_ratio": 2.613057
         },
         {
           "param": "vwap_buffer_atr",
           "from": 0.25,
           "to": 0.1875,
-          "passed": false,
-          "expectancy": -0.22305,
-          "payoff_ratio": 1.404703
+          "passed": true,
+          "expectancy": -0.080655,
+          "payoff_ratio": 3.050296
         },
         {
           "param": "vwap_buffer_atr",
           "from": 0.25,
           "to": 0.3125,
-          "passed": false,
-          "expectancy": -0.223316,
-          "payoff_ratio": 1.403517
+          "passed": true,
+          "expectancy": -0.080655,
+          "payoff_ratio": 3.050296
         }
       ]
     }
@@ -2253,13 +2019,13 @@
   "gates_in_sample": {
     "G1_completion_100pct": true,
     "G3_expectancy_beats_benchmark": true,
-    "G4_payoff_ratio_at_least_2": false,
+    "G4_payoff_ratio_at_least_2": true,
     "G5_trend_against_loss_smaller_than_benchmark": true,
     "G6_with_direction_expectancy_positive": true,
-    "G7_payoff_ratio_beats_benchmark": false,
+    "G7_payoff_ratio_beats_benchmark": true,
     "G8_both_halves_beat_benchmark": true,
     "G9_leave_one_day_out_stable": false,
-    "G10_parameter_neighbors_beat_benchmark": false
+    "G10_parameter_neighbors_beat_benchmark": true
   },
   "out_of_sample": null,
   "verdict": "REJECT"

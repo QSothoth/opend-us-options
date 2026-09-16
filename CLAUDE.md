@@ -70,10 +70,15 @@ V4 固定值：zip SHA256 `65398673c6617ef0a013c1795936016404babe4a1d4fc1777e165
 2. **必做一笔**：每个参数文件都必须有 `must_enter_before_close_minutes`（在这之前必须 ENTER）和 `flatten_before_close_minutes`（在这之前必须 EXIT，平台强制至少 15 分钟）。平台会独立执行这两个截止时间。
 3. **一天一笔**：止损出场后当天不再入场。
 4. **不以固定时间点或固定价格作为入场逻辑。**截止时刻的强制入场只是「必做一笔」的兜底，不是策略本体。
-5. **注册文件不可变**：`custody/strategies/index.json` 固定每个文件的 SHA256。改任何参数 = 新的 `strategy_id`（例如 `zero_dte_timing_v2`）+ 新文件，旧文件不动。
-6. **状态**：`candidate`（可 dryrun / paper）→ `accepted`（只有评测结论为 ACCEPT 才能改成这个；live 模式只接受 accepted）→ `retired`。
-7. **当前唯一策略**：`zero_dte_timing_v1`，状态 `candidate`，说明见 `docs/STRATEGY.md`。
-8. **不做大规模搜参**：新版本只能做少量有明确理由的结构性改动；每个尝试过的变体及其评测结果都要记进 `docs/STRATEGY.md` 的研究记录。
+5. **注册文件不可变**：`custody/strategies/index.json` 固定每个文件的 SHA256。改任何参数 = 新的 `strategy_id`（例如 `zero_dte_timing_v3`）+ 新文件，旧文件不动。
+6. **状态写在 `index.json`**（参数文件里不能有状态）：`candidate`（可 dryrun / paper）→ `accepted`（只有评测结论为 ACCEPT 才能改成这个；live 只接受 accepted）→ `retired`（保留做审计，不能再建任务）。
+7. **当前唯一可用策略**：`zero_dte_timing_v2`（`candidate`，默认）；`zero_dte_timing_v1` 已 `retired`。说明见 `docs/STRATEGY.md`。
+8. **防过拟合的研究流程（必须遵守）**：
+   - 先写清假设和理由，再**事先写下**要试的少量候选（每轮不超过 5 个）和选择规则，然后才跑评测；跑完不得改规则；
+   - 只做有结构性理由的改动，参数取整数或常见值，不做网格搜参；
+   - 用完整评测标准（含 G8–G10 防过拟合门槛）比较候选；
+   - 对「从这些候选里挑一个」的过程做留一天交叉验证，报告样本外估计；
+   - 每一轮的全部候选、结果（包括失败的）都记进 `docs/STRATEGY.md`。
 
 已删除、禁止复活的旧策略：`orb_rvol_rsi_1m_v1`、`retest_rvol_adx_5m_v1`、`custody_trend_1m_v1`、`custody_payoff_1m_v2`、`custody_payoff_aggressive_1m_v2`（固定时间入场 / 可以整天不交易 / 在 V3 上用 3 万组参数搜出来 / 用正股收益代替期权收益）。
 
@@ -82,8 +87,9 @@ V4 固定值：zip SHA256 `65398673c6617ef0a013c1795936016404babe4a1d4fc1777e165
 - **唯一口径**：`python3 -m custody evaluate --dataset <数据集目录> --out reports/<strategy_id>/<dataset>/`
 - **成交**：决策后至少 1 分钟、第一根有成交量的期权 1m K 线，按收盘价向不利方向让出该 K 线振幅的 25%，单边手续费 $0.65/张。
 - **主口径**：方向对称加权（消除数据集里方向对错比例的影响）；**主指标**：盈亏比。
-- **门槛**：G1 完成率 100%；G2 没有偷看未来数据；G3 平均每笔收益好于对照组；G4 盈亏比 ≥ 2.0；G5 逆势单边时亏得比对照组少；G6 方向正确时平均赚钱。
-- **结论等级**：INVALID（G1/G2 不过）/ REJECT（G3–G6 有不过）/ PROVISIONAL（门槛全过但场景覆盖不足或样本外 < 20 个交易日）/ ACCEPT。
+- **门槛**：G1 完成率 100%；G2 没有偷看未来数据；G3 平均每笔收益好于对照组；G4 盈亏比 ≥ 2.0；G5 逆势单边时亏得比对照组少；G6 方向正确时平均赚钱；G7 盈亏比高于对照组；G8 前后两半交易日都赢对照组；G9 去掉任意一天仍赢对照组；G10 参数上下浮动 25% 仍赢对照组。
+- **结论等级**：INVALID（G1/G2 不过）/ REJECT（G3–G10 有不过）/ PROVISIONAL（门槛全过但场景覆盖不足或样本外 < 20 个交易日）/ ACCEPT。
+- **卖不出去的仓位**按收盘内在价值结算（`settled_at_expiry`），策略和对照组同一规则。
 - **禁止**：用正股收益 × 乘数代替期权收益；用合成数据评测；删掉失败的 case 再算；看完评测结果再改标准让策略通过。
 - 报告放在 `reports/<strategy_id>/<dataset>/`（`report.json` + `REPORT.md`），和策略版本一起提交。
 
@@ -108,7 +114,7 @@ custody/
   strategy.py             策略接口（Decision / 截止时间 / build_strategy）
   indicators.py           当天 1m 因果指标（VWAP / EMA / ATR / 开盘区间）
   engines/                策略引擎代码（zero_dte_timing.py）
-  strategies/             注册的策略参数文件 + index.json（不可变）
+  strategies/             注册的策略参数文件（不可变）+ index.json（哈希与状态）
   dataset.py              数据集布局、校验、读取
   evaluate.py             评测标准实现
   freeze.py               每日只读 OpenD 冻结（两边）
@@ -133,7 +139,7 @@ unzip -q data/custody-train-0dte.zip -d data
 
 # 评测（离线）
 python3 -m custody strategies
-python3 -m custody evaluate --dataset data/custody-train-0dte --out reports/zero_dte_timing_v1/custody-train-0dte
+python3 -m custody evaluate --dataset data/custody-train-0dte --out reports/zero_dte_timing_v2/custody-train-0dte
 
 # 每个交易日收盘 20 分钟后冻结当天数据（只读 OpenD，需要 futu-api）
 python3 -m custody freeze --dataset data/custody-0dte-work

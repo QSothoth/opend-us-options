@@ -10,7 +10,7 @@
 请求（`POST /v1/jobs` 或 `CustodyService.create_job`，JSON Schema 见 `custody/job_request.schema.json`）：
 
 ```json
-{"strategy_id": "zero_dte_timing_v1", "symbol": "SPY", "direction": "LONG", "contract": "US.SPY260916C600000", "max_qty": 1}
+{"strategy_id": "zero_dte_timing_v2", "symbol": "SPY", "direction": "LONG", "contract": "US.SPY260916C600000", "max_qty": 1}
 ```
 
 - 必填前四项；`max_qty` 默认 1；`trade_date` 默认美东今天，且必须是今天。
@@ -53,7 +53,7 @@
 ```bash
 pip install futu-api
 python3 -m custody dryrun --symbol US.QQQ --direction LONG --contract US.QQQ260916C705000 \
-  --db /tmp/custody-dryrun.sqlite [--strategy zero_dte_timing_v1] [--intent-only] [--once] [--wxpusher-spt "$CUSTODY_WXPUSHER_SPT"]
+  --db /tmp/custody-dryrun.sqlite [--strategy zero_dte_timing_v2] [--intent-only] [--once] [--wxpusher-spt "$CUSTODY_WXPUSHER_SPT"]
 ```
 
 - 只用 `OpenQuoteContext`；服务处于 `dryrun` 模式时 `dispatch_next` 直接拒绝，控制器也没有券商对象。

@@ -1,3 +1,4 @@
+import hashlib
 import io
 import json
 import sqlite3
@@ -15,7 +16,7 @@ from custody.service import CustodyService
 
 DAY = '2026-09-14'
 T = datetime(2026, 9, 14, 10, 0, tzinfo=ET)
-SID = 'zero_dte_timing_v1'
+SID = Registry().default_id
 CALL, PUT = 'US.SPY260914C600000', 'US.SPY260914P600000'
 
 
@@ -140,17 +141,33 @@ class ServiceTests(unittest.TestCase):
     def test_registry_is_immutable_and_has_one_default(self):
         registry = Registry()
         self.assertEqual(registry.default_id, SID)
-        self.assertEqual([s['strategy_id'] for s in registry.list()], [SID])
+        usable = [s['strategy_id'] for s in registry.list() if s['status'] != 'retired']
+        self.assertEqual(usable, [SID])
         item = registry.get(SID)
         item['config']['params']['trail_atr'] = 99
         self.assertNotEqual(registry.get(SID)['config']['params']['trail_atr'], 99)
-        root = Path(self.tmp.name) / 'strategies'
-        root.mkdir()
         source = Path(registry.root)
-        (root / 'index.json').write_text((source / 'index.json').read_text())
-        (root / 'zero_dte_timing_v1.json').write_text((source / 'zero_dte_timing_v1.json').read_text().replace('"trail_atr": 2.5', '"trail_atr": 3.5'))
-        with self.assertRaisesRegex(ValueError, 'immutable'):
-            Registry(root)
+        for name, mutate, message in (
+                ('changed', lambda text: text.replace('"trail_atr": 5.0', '"trail_atr": 6.0'), 'immutable'),
+                ('status_in_file', lambda text: text.replace('"engine"', '"status": "accepted",\n  "engine"'), 'status belongs')):
+            root = Path(self.tmp.name) / name
+            root.mkdir()
+            for path in source.iterdir():
+                (root / path.name).write_text(path.read_text())
+            target = root / (SID + '.json')
+            target.write_text(mutate(target.read_text()))
+            if name == 'status_in_file':  # re-pin the hash so the status rule itself is exercised
+                index = json.loads((root / 'index.json').read_text())
+                index['strategies'][SID]['sha256'] = hashlib.sha256(target.read_bytes()).hexdigest()
+                (root / 'index.json').write_text(json.dumps(index))
+            with self.assertRaisesRegex(ValueError, message):
+                Registry(root)
+
+    def test_retired_strategy_cannot_start_a_job(self):
+        retired = [s['strategy_id'] for s in Registry().list() if s['status'] == 'retired']
+        self.assertTrue(retired)
+        with self.assertRaisesRegex(ValueError, 'retired'):
+            self.service.create_job(dict(self.request, strategy_id=retired[0]), T)
 
     # lifecycle ------------------------------------------------------------
     def test_enter_fill_exit_fill_is_one_round_trip(self):
@@ -336,7 +353,7 @@ class ServiceTests(unittest.TestCase):
         created = json.loads(call(self.request, 'Bearer ' + token)[0])
         self.assertEqual((status[-1], created['state'], created['strategy_status']), ('200 OK', 'IDLE', 'candidate'))
         listed = json.loads(call({}, 'Bearer ' + token, '/v1/strategies', 'GET')[0])
-        self.assertEqual(listed['strategies'][0]['strategy_id'], SID)
+        self.assertIn(SID, [s['strategy_id'] for s in listed['strategies']])
         call(dict(self.request, direction='SHORT', contract=PUT), 'Bearer ' + token)
         self.assertEqual(status[-1], '200 OK')
         call(dict(self.request, max_qty=5), 'Bearer ' + token)

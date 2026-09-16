@@ -13,6 +13,16 @@ from custody.models import ET, Session
 
 DAY = '2026-09-14'
 
+# Engine behaviour tests use explicit parameters so they never depend on which
+# strategy file happens to be registered.
+BASE_PARAMS = {
+    'ema_fast': 9, 'ema_slow': 21, 'atr_period': 14, 'opening_minutes': 15, 'momentum_lookback': 5,
+    'vwap_buffer_atr': 0.25, 'trend_buffer_atr': 0.0, 'relax_after_minutes': 120,
+    'must_enter_before_close_minutes': 180, 'stop_lookback': 10, 'stop_min_atr': 1.0, 'stop_max_atr': 2.0,
+    'fail_minutes': 20, 'fail_progress_atr': 1.0, 'breakeven_at_atr': 2.0, 'trail_activate_atr': 3.0,
+    'trail_atr': 2.5, 'flatten_before_close_minutes': 15,
+}
+
 
 def session(day=DAY, close=time(16)):
     d = datetime.fromisoformat(day)
