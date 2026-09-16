@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "default": "zero_dte_timing_v2",
+  "default": "zero_dte_timing_v3",
   "strategies": {
     "zero_dte_timing_v1": {
       "file": "zero_dte_timing_v1.json",
@@ -10,6 +10,11 @@
     "zero_dte_timing_v2": {
       "file": "zero_dte_timing_v2.json",
       "sha256": "6aa51933f6cb1e186349509dc0dd5ad81d73957054f0137cacb7049b6c54444e",
+      "status": "retired"
+    },
+    "zero_dte_timing_v3": {
+      "file": "zero_dte_timing_v3.json",
+      "sha256": "d4ba15055defd66d849f625fcfcc474763f7e00439b4dc14c39dda2ad8da589c",
       "status": "candidate"
     }
   }

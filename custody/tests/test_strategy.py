@@ -15,10 +15,10 @@ from custody.strategy import Decision, build_strategy, deadlines, session_minute
 PARAMS = BASE_PARAMS
 
 
-def run(closes, direction='LONG', params=PARAMS, fill=True):
+def run(closes, direction='LONG', params=PARAMS, fill=True, strike=None):
     """Feed bars; report the entry fill at the next bar close (like the evaluator)."""
     s = session()
-    engine = ZeroDteTiming(params, direction, s)
+    engine = ZeroDteTiming(params, direction, s, strike)
     decisions, pending = [], None
     for bar in path_bars(closes):
         if fill and pending is not None and engine.phase == 'ENTERING':
@@ -158,6 +158,59 @@ class ExitScenarioTests(unittest.TestCase):
         self.assertEqual((engine.phase, engine.entry_reason), ('IN', 'platform_entry'))
         with self.assertRaises(ValueError):
             engine.on_entry_filled(bars[1].close_time, 100.0)
+
+
+class ContractAwareRuleTests(unittest.TestCase):
+    falling = [100.0] * 15 + piecewise([(1, 100.0), (375, 97.0)], 375)
+
+    def test_rules_that_need_the_strike_refuse_to_run_without_it(self):
+        for extra in ({'friction_force_z': 1.0}, {'charm_exit_before_close_minutes': 90},
+                      {'protection_needs_moneyness': 1}, {'otm_stop_shrink': 0.25}):
+            with self.assertRaisesRegex(ValueError, 'strike', msg=str(extra)):
+                ZeroDteTiming({**PARAMS, **extra}, 'LONG', session())
+            ZeroDteTiming({**PARAMS, **extra}, 'LONG', session(), 100.0)
+        with self.assertRaisesRegex(ValueError, 'together'):
+            validate_params({**PARAMS, 'giveback_activate_atr': 2.0})
+
+    def test_friction_budget_forces_the_entry_before_the_option_is_worthless(self):
+        params = {**PARAMS, 'relax_after_minutes': 0}
+        late, late_reason = first(run(self.falling, params=params, strike=100.0), 'ENTER')
+        early, early_reason = first(run(self.falling, params={**params, 'friction_force_z': 1.0}, strike=100.0), 'ENTER')
+        self.assertEqual((late, late_reason), (390 - PARAMS['must_enter_before_close_minutes'], 'must_trade_deadline'))
+        self.assertEqual(early_reason, 'friction_deadline')
+        self.assertTrue(PARAMS['opening_minutes'] <= early < late, early)
+
+    def test_out_of_the_money_entries_get_a_tighter_stop(self):
+        def risk(extra):
+            engine = ZeroDteTiming({**PARAMS, 'relax_after_minutes': 0, 'friction_force_z': 1.0, **extra}, 'LONG', session(), 100.0)
+            for bar in path_bars(self.falling):
+                if engine.on_bar(bar).action == 'ENTER':
+                    return engine.risk_distance / engine.entry_atr, engine._otm_z(engine.ind.minute)
+        plain, z = risk({})
+        shrunk, _ = risk({'otm_stop_shrink': 0.25})
+        self.assertGreaterEqual(z, 1.0)
+        self.assertAlmostEqual(shrunk, plain * max(0.5, 1 - 0.25 * z))
+
+    def test_protection_only_counts_once_the_option_is_at_the_money(self):
+        rising = [100.0] * 15 + piecewise([(1, 100.0), (375, 103.0)], 375)
+        charm = {**PARAMS, 'charm_exit_before_close_minutes': 90}
+        self.assertEqual(first(run(rising, params=charm, strike=105.0), 'EXIT')[1], 'scheduled_flatten')
+        gated = {**charm, 'protection_needs_moneyness': 1}
+        self.assertEqual(first(run(rising, params=gated, strike=105.0), 'EXIT'), (300, 'charm_exit'))
+        self.assertEqual(first(run(rising, params=gated, strike=101.0), 'EXIT')[1], 'scheduled_flatten')
+
+    def test_giveback_lock_keeps_half_of_the_best_move(self):
+        closes = [100.0] * 15 + [100.05, 100.1] + piecewise([(1, 100.1), (30, 101.0), (45, 100.3), (400, 100.3)], 373)
+        exit_minute, reason = first(run(closes, params={**PARAMS, 'trail_activate_atr': 50.0, 'giveback_activate_atr': 2.0, 'giveback_fraction': 0.5}), 'EXIT')
+        self.assertEqual(reason, 'giveback_stop')
+        self.assertLess(exit_minute, 17 + 45)
+
+    def test_no_progress_clock_shrinks_later_in_the_day(self):
+        engine = ZeroDteTiming({**PARAMS, 'fail_time_scaling': 1}, 'LONG', session())
+        engine.entry_minute = PARAMS['opening_minutes']
+        self.assertAlmostEqual(engine._fail_minutes(), PARAMS['fail_minutes'])
+        engine.entry_minute = 300
+        self.assertAlmostEqual(engine._fail_minutes(), PARAMS['fail_minutes'] * ((390 - 300) / (390 - 15)) ** 0.5)
 
 
 class DeterminismTests(unittest.TestCase):

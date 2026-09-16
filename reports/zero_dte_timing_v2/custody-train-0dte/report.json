@@ -4,7 +4,7 @@
     "strategy_id": "zero_dte_timing_v2",
     "sha256": "6aa51933f6cb1e186349509dc0dd5ad81d73957054f0137cacb7049b6c54444e",
     "engine": "zero_dte_timing",
-    "status": "candidate"
+    "status": "retired"
   },
   "strategy_params": {
     "ema_fast": 9,
@@ -392,6 +392,25 @@
   "prefix_consistency": {
     "passed": true,
     "mismatches": []
+  },
+  "bootstrap_by_day": {
+    "draws": 1000,
+    "strategy_expectancy": [
+      -0.404337,
+      0.233299
+    ],
+    "strategy_payoff_ratio": [
+      2.10909,
+      4.510987
+    ],
+    "benchmark_expectancy": [
+      -0.836174,
+      0.353833
+    ],
+    "expectancy_minus_benchmark": [
+      -0.740155,
+      0.976966
+    ]
   },
   "market_shapes": {
     "unknown_prev_close|LONG": {
@@ -2025,7 +2044,8 @@
     "G7_payoff_ratio_beats_benchmark": true,
     "G8_both_halves_beat_benchmark": true,
     "G9_leave_one_day_out_stable": false,
-    "G10_parameter_neighbors_beat_benchmark": true
+    "G10_parameter_neighbors_beat_benchmark": true,
+    "G11_profit_factor_above_1": false
   },
   "out_of_sample": null,
   "verdict": "REJECT"

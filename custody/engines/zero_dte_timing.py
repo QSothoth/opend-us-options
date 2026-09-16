@@ -27,6 +27,24 @@ At ``must_enter_before_close_minutes`` the engine enters unconditionally
 (``must_trade_deadline``). Such a trade gets its own tight risk when configured:
 a fixed ``forced_stop_atr`` stop and a ``forced_fail_minutes`` no-progress clock.
 
+Optional contract-aware rules (need the strike; all off by default)
+-------------------------------------------------------------------
+* ``friction_force_z``: an unconfirmed trade is forced as soon as the option is this many
+  expected remaining moves out of the money (1m ATR x sqrt(minutes left)); beyond that the
+  round-trip cost alone becomes a large share of a collapsing premium (reason
+  ``friction_deadline``, treated as a forced entry);
+* ``giveback_activate_atr`` / ``giveback_fraction``: after that much progress the stop
+  locks in all but ``giveback_fraction`` of the best move, and the no-progress rule stops;
+* ``charm_exit_before_close_minutes``: that close to the close, an out-of-the-money
+  position that is not yet protected by a trail or lock is sold (``charm_exit``);
+* ``protection_needs_moneyness`` = 1: the trail/lock only counts as protection once the
+  option is at or in the money - underlying progress measured in ATR says little about
+  an option that is still far from its strike;
+* ``otm_stop_shrink``: an entry already out of the money gets a proportionally tighter
+  stop (factor ``max(0.5, 1 - shrink * z)``) because each ATR costs it a larger share of premium;
+* ``fail_time_scaling`` = 1: the no-progress clock shrinks with the square root of the
+  share of the session left (more patience early, less in the afternoon).
+
 Exits (cut losers early, let winners run)
 -----------------------------------------
 Risk is measured in the 1m ATR frozen at the entry decision.
@@ -70,7 +88,16 @@ OPTIONAL = {
     'persist_minutes': ((int, 0, 120), 0),          # confirmation needs N consecutive closes on the VWAP side
     'forced_stop_atr': ((float, 0.1, 10.0), None),  # fixed stop for entries that were never confirmed
     'forced_fail_minutes': ((int, 1, 390), None),   # no-progress clock for never-confirmed entries
+    'friction_force_z': ((float, 0.1, 5.0), None),  # force the entry once the option is this far out of the money
+    'giveback_activate_atr': ((float, 0.5, 20.0), None),  # proportional profit lock starts after this progress
+    'giveback_fraction': ((float, 0.1, 0.9), None),       # ... and gives back at most this share of the peak
+    'charm_exit_before_close_minutes': ((int, 16, 389), None),  # late exit for unprotected out-of-the-money positions
+    'protection_needs_moneyness': ((int, 0, 1), 0),  # 1: a trail/lock only protects once the option is at/in the money
+    'otm_stop_shrink': ((float, 0.05, 0.9), None),   # stop distance x max(0.5, 1 - shrink * OTM z at entry)
+    'fail_time_scaling': ((int, 0, 1), 0),           # 1: no-progress clock x sqrt(share of the session left)
 }
+OTM_STOP_FLOOR = 0.5
+STRIKE_RULES = ('friction_force_z', 'charm_exit_before_close_minutes', 'protection_needs_moneyness', 'otm_stop_shrink')
 
 
 def validate_params(params):
@@ -100,6 +127,8 @@ def validate_params(params):
         out[name] = value
     if out['ema_fast'] >= out['ema_slow'] or out['stop_min_atr'] > out['stop_max_atr']:
         raise ValueError('inconsistent EMA or stop parameters')
+    if (out['giveback_activate_atr'] is None) != (out['giveback_fraction'] is None):
+        raise ValueError('giveback_activate_atr and giveback_fraction go together')
     if out['relax_after_minutes'] and out['relax_after_minutes'] <= out['opening_minutes']:
         raise ValueError('relax_after_minutes must follow the opening range (or be 0 to disable)')
     return out
@@ -108,13 +137,19 @@ def validate_params(params):
 class ZeroDteTiming:
     validate = staticmethod(validate_params)
 
-    def __init__(self, params, direction, session):
+    def __init__(self, params, direction, session, strike=None):
         self.p = validate_params(params)
+        if strike is not None and (isinstance(strike, bool) or not strike > 0):
+            raise ValueError('strike must be positive')
+        if strike is None and any(self.p[name] not in (None, 0) for name in STRIKE_RULES):
+            raise ValueError('these rules need the contract strike: ' + ', '.join(STRIKE_RULES))
+        self.strike = strike
         if direction not in ('LONG', 'SHORT'):
             raise ValueError('direction must be LONG or SHORT')
         self.sign = 1 if direction == 'LONG' else -1
         self.session = session
         self.must_enter_minute, self.flatten_minute = deadlines(self.p, session)
+        self.session_minutes = int((session.closes - session.opens).total_seconds() // 60)
         if self.p['relax_after_minutes'] and self.p['relax_after_minutes'] >= self.must_enter_minute:
             raise ValueError('relax_after_minutes must precede the must-enter deadline')
         self.ind = SessionIndicators(self.p['ema_fast'], self.p['ema_slow'], self.p['atr_period'],
@@ -164,18 +199,27 @@ class ZeroDteTiming:
 
     @property
     def forced(self):
-        return self.entry_reason in ('must_trade_deadline', 'platform_entry')
+        return self.entry_reason in ('must_trade_deadline', 'friction_deadline', 'platform_entry')
+
+    def _otm_z(self, minute):
+        """How far out of the money, in expected remaining moves (1m ATR x sqrt(minutes left))."""
+        left = max(self.session_minutes - minute, 1)
+        distance = -self.sign * (self.ind.close - self.strike)
+        return distance / (self.ind.atr * left ** 0.5)
 
     def _plan_risk(self):
         """Freeze ATR and the stop distance from the latest completed bar."""
         self.entry_atr = self.ind.atr
         if self.forced and self.p['forced_stop_atr'] is not None:
             self.risk_distance = self.p['forced_stop_atr'] * self.entry_atr
-            return
-        recent = self.ind.prior_bars(self.p['stop_lookback']) + [self.ind.bars[-1]]
-        distance = self.sign * self.ind.close - min(self._lo(b) for b in recent)
-        self.risk_distance = min(max(distance, self.p['stop_min_atr'] * self.entry_atr),
-                                 self.p['stop_max_atr'] * self.entry_atr)
+        else:
+            recent = self.ind.prior_bars(self.p['stop_lookback']) + [self.ind.bars[-1]]
+            distance = self.sign * self.ind.close - min(self._lo(b) for b in recent)
+            self.risk_distance = min(max(distance, self.p['stop_min_atr'] * self.entry_atr),
+                                     self.p['stop_max_atr'] * self.entry_atr)
+        if self.p['otm_stop_shrink'] is not None:
+            z = max(0.0, self._otm_z(self.ind.minute))
+            self.risk_distance *= max(OTM_STOP_FLOOR, 1 - self.p['otm_stop_shrink'] * z)
 
     def on_entry_filled(self, at, underlying_mark):
         if self.phase == 'FLAT' and self.ind.count:
@@ -195,6 +239,9 @@ class ZeroDteTiming:
         p, ind, s = self.p, self.ind, self.sign
         if minute >= self.must_enter_minute:
             return 'must_trade_deadline'
+        if (p['friction_force_z'] is not None and minute >= p['opening_minutes']
+                and self._otm_z(minute) >= p['friction_force_z']):
+            return 'friction_deadline'
         if minute < p['opening_minutes'] or ind.prev_ema_fast is None:
             return None
         atr, close = ind.atr, s * bar.close
@@ -226,9 +273,20 @@ class ZeroDteTiming:
         if progress >= p['trail_activate_atr']:
             self.stop = max(self.stop, self.best - p['trail_atr'] * self.entry_atr)
             reason = 'trailing_stop'
+        locked = p['giveback_activate_atr'] is not None and progress >= p['giveback_activate_atr']
+        if locked:
+            line = self.entry_mark + (1 - p['giveback_fraction']) * (self.best - self.entry_mark)
+            if line >= self.stop:
+                self.stop, reason = line, 'giveback_stop'
+        protected = locked or progress >= p['trail_activate_atr']
+        if protected and p['protection_needs_moneyness'] and self._otm_z(minute) > 0:
+            protected = False  # underlying progress in ATR means little while the option is still out of the money
         if close <= self.stop:
             self.phase, self.exit_reason = 'EXITING', reason
-        elif (minute - self.entry_minute >= self._fail_minutes() and progress < p['fail_progress_atr']
+        elif (p['charm_exit_before_close_minutes'] is not None and not protected
+              and minute >= self.session_minutes - p['charm_exit_before_close_minutes'] and self._otm_z(minute) > 0):
+            self.phase, self.exit_reason = 'EXITING', 'charm_exit'
+        elif (not locked and minute - self.entry_minute >= self._fail_minutes() and progress < p['fail_progress_atr']
               and close <= self.entry_mark):
             self.phase, self.exit_reason = 'EXITING', 'no_progress'
         if self.phase == 'EXITING':
@@ -236,6 +294,10 @@ class ZeroDteTiming:
         return Decision('HOLD', None, self._diagnostics(minute))
 
     def _fail_minutes(self):
+        minutes = self.p['fail_minutes']
         if self.forced and self.p['forced_fail_minutes'] is not None:
-            return self.p['forced_fail_minutes']
-        return self.p['fail_minutes']
+            minutes = self.p['forced_fail_minutes']
+        if self.p['fail_time_scaling']:
+            left = (self.session_minutes - self.entry_minute) / (self.session_minutes - self.p['opening_minutes'])
+            minutes = max(1.0, minutes * max(left, 0.0) ** 0.5)
+        return minutes

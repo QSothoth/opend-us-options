@@ -198,7 +198,7 @@ class FrameSourceTests(unittest.TestCase):
 
     def job(self, entry_at=None, entry_underlying=None, direction='LONG'):
         item = Registry().get(SID)
-        return {'strategy': item, 'request': {'symbol': 'SPY', 'direction': direction},
+        return {'strategy': item, 'request': {'symbol': 'SPY', 'direction': direction}, 'contract': {'strike': 100.0},
                 'entry_at': entry_at, 'entry_underlying': entry_underlying}
 
     def test_bar_boundary_floors_to_completed_regular_minutes(self):
@@ -209,7 +209,7 @@ class FrameSourceTests(unittest.TestCase):
     def test_replay_matches_the_engine_and_injects_the_entry_fill(self):
         bars = path_bars(piecewise([(1, 100.0), (15, 100.0), (390, 110.0)]))
         s = session()
-        engine = build_strategy(Registry().get(SID), 'LONG', s)
+        engine = build_strategy(Registry().get(SID), 'LONG', s, 100.0)
         entry_minute = next(i for i, b in enumerate(bars, 1) if engine.on_bar(b).action == 'ENTER')
         source = StrategyFrameSource(self.History(bars))
         at = bars[entry_minute - 1].close_time

@@ -5,9 +5,9 @@ direction and contract chosen upstream, should the single daily trade enter now,
 keep holding, or exit now? It never chooses the direction or the contract, never
 sees option prices, previous sessions or daily bars, and must be deterministic.
 
-Lifecycle for one (symbol, session, direction)::
+Lifecycle for one (contract, session)::
 
-    engine = build_strategy(item, direction, session)
+    engine = build_strategy(item, direction, session, strike)
     for bar in same_day_underlying_1m_bars:        # completed bars, in order
         if entry filled at or before bar.close_time:
             engine.on_entry_filled(fill_time, underlying_mark)   # exactly once
@@ -71,12 +71,12 @@ def engines():
     return ENGINES
 
 
-def build_strategy(item: dict, direction: str, session: Session):
-    """Instantiate the registered engine for one job/case."""
+def build_strategy(item: dict, direction: str, session: Session, strike: float | None = None):
+    """Instantiate the registered engine for one job/case (strike of the exact contract)."""
     if direction not in ('LONG', 'SHORT'):
         raise ValueError('direction must be LONG or SHORT')
     config = item['config']
     engine = engines().get(config['engine'])
     if engine is None:
         raise ValueError('unknown strategy engine: %r' % (config['engine'],))
-    return engine(config['params'], direction, session)
+    return engine(config['params'], direction, session, strike)

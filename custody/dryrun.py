@@ -133,7 +133,7 @@ class StrategyFrameSource:
         key = (boundary.isoformat(), job['entry_at'])
         if key != self._key:
             session, bars = self.history.collect(boundary)
-            engine = build_strategy(job['strategy'], job['request']['direction'], session)
+            engine = build_strategy(job['strategy'], job['request']['direction'], session, job['contract']['strike'])
             entry_at = instant(job['entry_at']) if job['entry_at'] else None
             decision = None
             for bar in bars:

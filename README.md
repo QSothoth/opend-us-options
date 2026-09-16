@@ -23,7 +23,7 @@ python3 -m unittest discover -s custody/tests
 mkdir -p data && gh release download custody-train-0dte --repo QSothoth/opend-us-options --dir data
 echo "65398673c6617ef0a013c1795936016404babe4a1d4fc1777e16502c2621c7d3  data/custody-train-0dte.zip" | sha256sum -c
 unzip -q data/custody-train-0dte.zip -d data
-python3 -m custody evaluate --dataset data/custody-train-0dte --out reports/zero_dte_timing_v2/custody-train-0dte
+python3 -m custody evaluate --dataset data/custody-train-0dte --out reports/zero_dte_timing_v3/custody-train-0dte
 
 # 需要 OpenD + futu-api：每个交易日收盘后冻结当天数据；盘中只读观察一个任务
 python3 -m custody freeze --dataset data/custody-0dte-work
@@ -32,8 +32,8 @@ python3 -m custody dryrun --symbol US.QQQ --direction LONG --contract US.QQQ2609
 
 ## 当前状态
 
-- 当前策略 `zero_dte_timing_v2`（`candidate`）：V4 上平均每笔 −8.1%、盈亏比 3.05，对照组（09:35 买入拿到 15:45）为 −37.9%、2.31；过 10 个门槛中的 9 个，参数上下浮动 25% 的 37 组全部仍赢对照组。结论仍是 **REJECT**：去掉 2026-09-11 这一天就输给对照组，V4 只有 2 张「顺势单边」合约，证据不够。详见 [报告](reports/zero_dte_timing_v2/custody-train-0dte/REPORT.md) 和 [策略说明](docs/STRATEGY.md)。
-- `zero_dte_timing_v1` 已退役（`retired`）。
+- 当前策略 `zero_dte_timing_v3`（`candidate`）：V4 上按方向对错各半，平均每笔 +0.8%、盈亏比 4.33、利润因子 1.03；对照组（09:35 买入拿到 15:45）为 −37.9%、2.31、0.44。过 11 个门槛中的 10 个，参数上下浮动 25% 的 44 组全部仍赢对照组。结论仍是 **REJECT**：去掉 2026-09-11 这一天就输给对照组；六轮 19 个候选的挑选过程做留一天交叉验证，样本外估计为 −23.9% / 5.43，好于对照组但整体仍不赚钱。详见 [报告](reports/zero_dte_timing_v3/custody-train-0dte/REPORT.md) 和 [策略说明](docs/STRATEGY.md)。
+- `zero_dte_timing_v1`、`zero_dte_timing_v2` 已退役（`retired`）。
 - 下一步是每天 freeze 两边数据，攒够样本外交易日后再评测，而不是继续在 V4 上调参。
 - 没有真实券商下单连接；`dryrun` 绝不下单。
 

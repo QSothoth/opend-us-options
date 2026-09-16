@@ -44,6 +44,7 @@ MIN_PAYOFF_RATIO = 2.0
 MIN_CASES_PER_SCENARIO = 5
 MIN_OOS_SESSIONS = 20
 NULL_DRAWS = 1000
+BOOTSTRAP_DRAWS = 1000        # trading-day bootstrap for the direction-balanced metrics (report only)
 NEIGHBOR_SCALE = 0.25          # parameter neighbours: each numeric parameter x0.75 and x1.25
 CAPTURE_MIN_BEST = 0.20      # upside capture counts cases whose best reachable exit was >= +20%
 
@@ -162,7 +163,7 @@ def simulate(data: CaseData, engine, params, fill=PRIMARY_FILL, until_minute=Non
 
 
 def run_strategy(data: CaseData, item, fill=PRIMARY_FILL, until_minute=None):
-    engine = build_strategy(item, data.case.direction, data.session)
+    engine = build_strategy(item, data.case.direction, data.session, data.case.strike)
     return simulate(data, engine, item['config']['params'], fill, until_minute)
 
 
@@ -333,6 +334,32 @@ def shuffle_null(datas, trades, labels, fill=PRIMARY_FILL, draws=NULL_DRAWS, see
             'p_payoff_ratio': (ge_payoff + 1) / (valid + 1)}
 
 
+def day_bootstrap(datas, labels, trades, bench, draws=BOOTSTRAP_DRAWS, seed=20260917):
+    """95% intervals of the balanced metrics when whole trading days are resampled."""
+    days = sorted({d.case.trade_date for d in datas})
+    by_day = {day: [i for i, d in enumerate(datas) if d.case.trade_date == day] for day in days}
+    rng = random.Random(seed)
+    samples = {'strategy_expectancy': [], 'strategy_payoff_ratio': [], 'benchmark_expectancy': [],
+               'expectancy_minus_benchmark': []}
+    for _ in range(draws):
+        idx = [i for _ in days for i in by_day[rng.choice(days)]]
+        sub_labels = [labels[i] for i in idx]
+        s_bal = summarize([trades[i] for i in idx], sub_labels)['balanced']
+        b_bal = summarize([bench[i] for i in idx], sub_labels)['balanced']
+        if s_bal['expectancy'] is None or b_bal['expectancy'] is None:
+            continue
+        samples['strategy_expectancy'].append(s_bal['expectancy'])
+        samples['benchmark_expectancy'].append(b_bal['expectancy'])
+        samples['expectancy_minus_benchmark'].append(s_bal['expectancy'] - b_bal['expectancy'])
+        if s_bal['payoff_ratio'] is not None:
+            samples['strategy_payoff_ratio'].append(s_bal['payoff_ratio'])
+
+    def interval(values):
+        values = sorted(values)
+        return [values[int(0.025 * (len(values) - 1))], values[int(0.975 * (len(values) - 1))]] if values else None
+    return {'draws': draws, **{k: interval(v) for k, v in samples.items()}}
+
+
 def prefix_consistency(datas, trades, item, fill=PRIMARY_FILL):
     """Re-run each case truncated at its entry/exit decision minute; decisions must match."""
     mismatches = []
@@ -354,14 +381,17 @@ def gates(summary, benchmark, robust):
     against, bench_against = s['by_scenario']['trend_against'], b['by_scenario']['trend_against']
     checks = {
         'G1_completion_100pct': s['completion_rate'] == 1.0,
-        'G3_expectancy_beats_benchmark': _gt(s['balanced']['expectancy'], b['balanced']['expectancy']),
+        'G3_expectancy_beats_benchmark': (_gt(s['balanced']['expectancy'], b['balanced']['expectancy'])
+                                          and _gt(s['balanced_dollars']['expectancy'], b['balanced_dollars']['expectancy'])),
         'G4_payoff_ratio_at_least_%g' % MIN_PAYOFF_RATIO: _ge(s['balanced']['payoff_ratio'], MIN_PAYOFF_RATIO),
         'G5_trend_against_loss_smaller_than_benchmark': _gt(against['expectancy'], bench_against['expectancy']),
         'G6_with_direction_expectancy_positive': _gt(s['with_direction']['expectancy'], 0.0),
-        'G7_payoff_ratio_beats_benchmark': _gt(s['balanced']['payoff_ratio'], b['balanced']['payoff_ratio']),
+        'G7_payoff_ratio_beats_benchmark': (_gt(s['balanced']['payoff_ratio'], b['balanced']['payoff_ratio'])
+                                            and _gt(s['balanced_dollars']['payoff_ratio'], b['balanced_dollars']['payoff_ratio'])),
         'G8_both_halves_beat_benchmark': robust['halves']['passed'],
         'G9_leave_one_day_out_stable': robust['leave_one_day_out']['passed'],
         'G10_parameter_neighbors_beat_benchmark': robust['neighbors']['passed'],
+        'G11_profit_factor_above_1': _gt(s['balanced']['profit_factor'], 1.0),
     }
     return checks
 
@@ -484,6 +514,7 @@ def evaluate(dataset_dir, strategy_id=None, registry=None, null_draws=NULL_DRAWS
         'stress': {},
         'shuffle_null': shuffle_null(datas, trades, labels, draws=null_draws) if null_draws else None,
         'prefix_consistency': prefix_consistency(datas, trades, item),
+        'bootstrap_by_day': day_bootstrap(datas, labels, trades, bench, draws=BOOTSTRAP_DRAWS if null_draws else 50),
         'market_shapes': _market_shapes(trades, bench, labels),
         'cases': [dict(t, decisions=None, benchmark_net_return=b['net_return'], **l)
                   for t, b, l in zip(trades, bench, labels)],
@@ -552,14 +583,15 @@ def _num(x, fmt='%.2f'):
 
 GATE_TEXT = {
     'G1_completion_100pct': 'G1 每张合约都完成了一买一卖',
-    'G3_expectancy_beats_benchmark': 'G3 平均每笔收益好于对照组',
+    'G3_expectancy_beats_benchmark': 'G3 平均每笔收益好于对照组（按收益率和按美元都要好）',
     'G4_payoff_ratio_at_least_%g' % MIN_PAYOFF_RATIO: 'G4 盈亏比 ≥ %g' % MIN_PAYOFF_RATIO,
     'G5_trend_against_loss_smaller_than_benchmark': 'G5 方向错（逆势单边）时亏得比对照组少',
     'G6_with_direction_expectancy_positive': 'G6 方向对（顺势单边 + 先逆后顺）时平均赚钱',
-    'G7_payoff_ratio_beats_benchmark': 'G7 盈亏比高于对照组',
+    'G7_payoff_ratio_beats_benchmark': 'G7 盈亏比高于对照组（按收益率和按美元都要高）',
     'G8_both_halves_beat_benchmark': 'G8 前一半交易日、后一半交易日各自都赢对照组（防过拟合）',
     'G9_leave_one_day_out_stable': 'G9 去掉任意一天，平均收益和盈亏比仍都赢对照组（防过拟合）',
     'G10_parameter_neighbors_beat_benchmark': 'G10 每个参数上下浮动 25%，平均收益和盈亏比仍都赢对照组（防过拟合）',
+    'G11_profit_factor_above_1': 'G11 整体赚钱（总赚 ÷ 总亏 > 1）',
 }
 VERDICT_TEXT = {
     'ACCEPT': '达标，可以把策略状态改为 accepted',
@@ -654,6 +686,10 @@ def render_markdown(report):
         '- **随机时点对照**：把策略的买卖时间随机换到别的合约上，重复 %s 次。随机时间的平均收益不比策略差的比例 p = %s，盈亏比 p = %s。'
         'p 越小越说明择时真的用上了当天走势；p 大于 0.1 基本等于没有择时能力。' % (
             null['draws'] if null else 0, _num(null and null['p_expectancy'], '%.2f'), _num(null and null['p_payoff_ratio'], '%.2f')),
+        '- **按交易日重抽样 %d 次的 95%% 区间**：策略平均每笔 %s ~ %s，盈亏比 %s ~ %s；策略减对照组的平均收益 %s ~ %s（区间跨过 0 说明还不能确定比对照组好）。' % (
+            report['bootstrap_by_day']['draws'], *[_pct(x) for x in (report['bootstrap_by_day']['strategy_expectancy'] or [None, None])],
+            *[_num(x) for x in (report['bootstrap_by_day']['strategy_payoff_ratio'] or [None, None])],
+            *[_pct(x) for x in (report['bootstrap_by_day']['expectancy_minus_benchmark'] or [None, None])]),
         '- **假设上游方向对 60%%**：策略平均每笔 %s、盈亏比 %s；对照组平均每笔 %s。' % (
             _pct(report['direction_skill_0.6']['strategy']['expectancy']),
             _num(report['direction_skill_0.6']['strategy']['payoff_ratio']),
@@ -692,9 +728,10 @@ def render_markdown(report):
 
 REASON_ZH = {
     'trend_breakout': '顺势突破', 'reversal_reclaim': '反转收复', 'late_confirmation': '午后放宽确认',
-    'must_trade_deadline': '到点必须买', 'platform_must_enter': '平台强制买',
+    'must_trade_deadline': '到点必须买', 'platform_must_enter': '平台强制买', 'friction_deadline': '虚值过深提前强制买',
     'invalidation_stop': '止损', 'breakeven_stop': '正股跌回买入价离场', 'trailing_stop': '从高点回撤离场',
     'no_progress': '迟迟不涨离场', 'scheduled_flatten': '收盘前强平', 'platform_flatten': '平台强平',
+    'charm_exit': '午后仍虚值离场', 'giveback_stop': '回吐过半离场',
 }
 
 

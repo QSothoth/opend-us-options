@@ -1,0 +1,38 @@
+{
+  "schema_version": 2,
+  "strategy_id": "zero_dte_timing_v3",
+  "engine": "zero_dte_timing",
+  "description": "单笔末日期权择时：走势站稳 20 分钟才提前入场；期权一旦虚值到「一个剩余预期波动」就按摩擦预算强制入场，不等它变成废纸；虚值入场止损按虚值程度收紧；只有期权真正回到平值/实值才进入盈利保护，14:30 仍虚值就卖出；赢单宽跟踪，15:45 强平。",
+  "developed_on": {
+    "release": "custody-train-0dte",
+    "generation": "V4",
+    "sessions_through": "2026-09-14"
+  },
+  "params": {
+    "ema_fast": 9,
+    "ema_slow": 21,
+    "atr_period": 14,
+    "opening_minutes": 15,
+    "momentum_lookback": 5,
+    "vwap_buffer_atr": 0.25,
+    "trend_buffer_atr": 0.0,
+    "relax_after_minutes": 0,
+    "must_enter_before_close_minutes": 180,
+    "stop_lookback": 10,
+    "stop_min_atr": 1.0,
+    "stop_max_atr": 2.0,
+    "fail_minutes": 20,
+    "fail_progress_atr": 1.0,
+    "breakeven_at_atr": 2.0,
+    "trail_activate_atr": 5.0,
+    "trail_atr": 5.0,
+    "flatten_before_close_minutes": 15,
+    "persist_minutes": 20,
+    "forced_stop_atr": 1.0,
+    "forced_fail_minutes": 10,
+    "friction_force_z": 1.0,
+    "charm_exit_before_close_minutes": 90,
+    "protection_needs_moneyness": 1,
+    "otm_stop_shrink": 0.25
+  }
+}
