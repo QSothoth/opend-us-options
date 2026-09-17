@@ -1,20 +1,10 @@
 {
   "schema_version": 2,
-  "default": "zero_dte_timing_v3",
+  "default": "zero_dte_timing_v4",
   "strategies": {
-    "zero_dte_timing_v1": {
-      "file": "zero_dte_timing_v1.json",
-      "sha256": "6913713e9276bc77c44b650df65145296757b48d94e8925b1a41481db70e0d13",
-      "status": "retired"
-    },
-    "zero_dte_timing_v2": {
-      "file": "zero_dte_timing_v2.json",
-      "sha256": "6aa51933f6cb1e186349509dc0dd5ad81d73957054f0137cacb7049b6c54444e",
-      "status": "retired"
-    },
-    "zero_dte_timing_v3": {
-      "file": "zero_dte_timing_v3.json",
-      "sha256": "d4ba15055defd66d849f625fcfcc474763f7e00439b4dc14c39dda2ad8da589c",
+    "zero_dte_timing_v4": {
+      "file": "zero_dte_timing_v4.json",
+      "sha256": "25c07b993a8211cdb087f826788d71c385400b25a7f3a5c2d202cb030b79ff71",
       "status": "candidate"
     }
   }

@@ -19,7 +19,7 @@ class Controller:
         self.service, self.broker = service, broker
 
     def step(self, job_id, now, quote=None, frame=None):
-        # Clock first (flatten / must-trade deadline) so they never wait for a bar.
+        # Clock first: flatten must never wait for a bar.
         self.service.heartbeat(job_id, now, quote)
         job = self.service.get_job(job_id)
         failed = False

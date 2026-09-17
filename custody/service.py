@@ -1,4 +1,4 @@
-"""Durable must-trade state machine: one bought 0DTE option per underlying per day.
+"""Durable single-trade state machine: at most one bought 0DTE option per contract/day.
 
 Broker I/O is injected (:class:`custody.ports.Broker`); market data and strategy
 decisions arrive from the caller as :class:`~custody.models.Quote` and
@@ -14,9 +14,9 @@ Guarantees
   contract and day conflicts.
 * Only 0DTE contracts (expiry == trade date) and only registered strategies; live
   mode additionally requires strategy status ``accepted`` (docs/STANDARD.md).
-* Must-trade: the strategy's ENTER frame buys; at the strategy's must-enter deadline
-  the heartbeat forces the entry even without frames. Unfilled/rejected entries are
-  retried until the flatten time; a partial entry is still the day's only trade.
+* Entry requires a strategy signal; no heartbeat or deadline can force a purchase.
+  Unfilled entries may retry on another ENTER frame before flatten; a partial
+  entry is still the day's only trade.
 * Every intent is persisted before broker I/O. An ambiguous submission becomes
   UNKNOWN and is never blindly resubmitted.
 * Exit cancels any live entry remainder first and sells only the owned quantity.
@@ -32,9 +32,9 @@ import sqlite3
 
 from .models import ET, JobRequest, OrderUpdate, instant, positive, symbol
 from .registry import Registry
-from .strategy import ACTIONS, deadlines
+from .strategy import ACTIONS, flatten_minute
 
-SCHEMA_VERSION = '3'
+SCHEMA_VERSION = '4'
 TERMINAL = {'FILLED', 'CANCELED', 'REJECTED'}
 ACTIVE = {'CREATED', 'DISPATCHING', 'UNKNOWN', 'OPEN', 'PARTIAL'}
 
@@ -152,18 +152,17 @@ class CustodyService:
         session = self.calendar.session(request.trade_date)
         if session.day != request.trade_date:
             raise ValueError('calendar date mismatch')
-        must_enter, flatten = deadlines(strategy['config']['params'], session)
-        must_enter_at = session.opens + timedelta(minutes=must_enter)
+        flatten = flatten_minute(strategy['config']['params'], session)
         flatten_at = session.opens + timedelta(minutes=flatten)
-        if now >= must_enter_at:
-            raise ValueError('entry window closed: create the job before %s' % must_enter_at.isoformat())
+        if now >= flatten_at:
+            raise ValueError('entry window closed: create the job before %s' % flatten_at.isoformat())
         job_id = hashlib.sha256(encode([self.account, request.contract, request.trade_date]).encode()).hexdigest()[:32]
         job = {'id': job_id, 'request': asdict(request), 'strategy': strategy, 'contract': asdict(contract),
                'mode': self.mode, 'state': 'IDLE', 'position_qty': 0, 'entry_at': None, 'entry_underlying': None,
                'entry_reason': None, 'entry_diagnostics': None, 'exit_requested': False, 'exit_reason': None,
                'exit_decision_at': None, 'attention': None, 'last_bar': None,
                'opens': session.opens.isoformat(), 'closes': session.closes.isoformat(),
-               'must_enter_at': must_enter_at.isoformat(), 'flatten_at': flatten_at.isoformat(),
+               'flatten_at': flatten_at.isoformat(),
                'created_at': now.isoformat()}
         with self._tx() as db:
             row = db.execute('SELECT id, fingerprint FROM jobs WHERE account=? AND contract=? AND day=?',
@@ -233,7 +232,7 @@ class CustodyService:
                 if job['state'] == 'IDLE':
                     job['state'] = 'WATCH'
                 if job['state'] == 'WATCH' and frame.action == 'ENTER':
-                    self._enter(db, job, now, quote, frame.reason or 'strategy_entry', frame.diagnostics, forced=False)
+                    self._enter(db, job, now, quote, frame.reason or 'strategy_entry', frame.diagnostics)
                 elif job['position_qty'] and not job['exit_requested'] and frame.action == 'EXIT':
                     self._request_exit(db, job, frame.reason or 'strategy_exit', now, quote)
             self._save(db, job)
@@ -397,10 +396,11 @@ class CustodyService:
         db.execute('INSERT INTO orders VALUES (?,?,?)', (key, job['id'], encode(order)))
         return order
 
-    def _enter(self, db, job, now, quote, reason, diagnostics, forced):
+    def _enter(self, db, job, now, quote, reason, diagnostics):
         if any(o['side'] == 'BUY_OPEN' and o['status'] in ACTIVE for o in self._orders(db, job)):
             return
-        if not self._quote_ok(job, quote, now, allow_wide=forced):
+        job.update(entry_reason=reason, entry_diagnostics=diagnostics)
+        if not self._quote_ok(job, quote, now):
             job['attention'] = 'ENTRY_WAITING_VALID_QUOTE'
             return
         self._new(db, job, 'LIMIT', 'BUY_OPEN', job['request']['max_qty'], now, quote, reason=reason)
@@ -437,7 +437,9 @@ class CustodyService:
             return
         if job['position_qty'] == 0:
             never_entered = job['entry_at'] is None and job['exit_reason'] != 'operator_stop'
-            job.update(state='DONE', attention='ENTRY_NOT_FILLED' if never_entered else None)
+            attempted = job['entry_reason'] is not None or any(o['side'] == 'BUY_OPEN' for o in orders)
+            outcome = 'ENTRY_NOT_FILLED' if attempted else 'NO_ENTRY_SIGNAL'
+            job.update(state='DONE', attention=outcome if never_entered else None)
             return
         sells = [o for o in orders if o['side'] == 'SELL_CLOSE' and o['status'] in ACTIVE]
         if sells:
@@ -472,7 +474,3 @@ class CustodyService:
                 self._entry_finished(job, now)
             elif self._new(db, job, 'CANCEL', 'CANCEL', 0, now, target=buy['client_order_id']):
                 job['attention'] = 'ENTRY_TIMEOUT_CANCEL_PENDING'
-        if (job['state'] in ('IDLE', 'WATCH') and job['position_qty'] == 0
-                and now >= instant(job['must_enter_at'])
-                and not any(o['side'] == 'BUY_OPEN' and o['status'] in ACTIVE for o in self._orders(db, job))):
-            self._enter(db, job, now, quote, 'must_trade_deadline', None, forced=True)

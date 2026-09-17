@@ -4,6 +4,7 @@ import json
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -131,8 +132,8 @@ class ServiceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'accepted'):
             live.create_job(self.request, T)
 
-    def test_entry_window_closes_at_the_must_enter_deadline(self):
-        late = T.replace(hour=13, minute=0)
+    def test_entry_window_closes_at_flatten(self):
+        late = T.replace(hour=15, minute=45)
         with self.assertRaisesRegex(ValueError, 'entry window closed'):
             self.service.create_job(self.request, late)
         with self.assertRaisesRegex(ValueError, 'today'):
@@ -164,10 +165,11 @@ class ServiceTests(unittest.TestCase):
                 Registry(root)
 
     def test_retired_strategy_cannot_start_a_job(self):
-        retired = [s['strategy_id'] for s in Registry().list() if s['status'] == 'retired']
-        self.assertTrue(retired)
-        with self.assertRaisesRegex(ValueError, 'retired'):
-            self.service.create_job(dict(self.request, strategy_id=retired[0]), T)
+        item = self.service.registry.get(SID)
+        item['status'] = 'retired'
+        with patch.object(self.service.registry, 'get', return_value=item):
+            with self.assertRaisesRegex(ValueError, 'retired'):
+                self.service.create_job(self.request, T)
 
     # lifecycle ------------------------------------------------------------
     def test_enter_fill_exit_fill_is_one_round_trip(self):
@@ -183,14 +185,24 @@ class ServiceTests(unittest.TestCase):
         state = self.fill(sell['client_order_id'], when=later)
         self.assertEqual((state['state'], state['position_qty'], state['exit_reason']), ('DONE', 0, 'trailing_stop'))
 
-    def test_must_trade_deadline_forces_entry_without_frames_even_if_spread_is_wide(self):
+    def test_heartbeat_never_forces_entry_and_empty_job_finishes(self):
         j = self.job()
-        deadline = datetime.fromisoformat(j['must_enter_at'])
-        self.service.heartbeat(j['id'], deadline - timedelta(seconds=1), self.quote(deadline, 0.5, 1.0))
-        self.assertEqual(self.orders(j), [])
-        state = self.service.heartbeat(j['id'], deadline, self.quote(deadline, 0.5, 1.0))
-        self.assertEqual((state['state'], state['entry_reason']), ('ENTRY', 'must_trade_deadline'))
-        self.assertEqual(self.orders(j, 'BUY_OPEN')[0]['limit_price'], 1.0)
+        for hour in (13, 14, 15):
+            now = T.replace(hour=hour)
+            state = self.service.heartbeat(j['id'], now, self.quote(now, 0.5, 1.0))
+            self.assertEqual(state['orders'], [])
+        end = datetime.fromisoformat(j['flatten_at'])
+        state = self.service.heartbeat(j['id'], end, self.quote(end))
+        self.assertEqual((state['state'], state['attention'], state['orders']), ('DONE', 'NO_ENTRY_SIGNAL', []))
+        state = self.service.on_frame(j['id'], self.frame(end), end, self.quote(end))
+        self.assertEqual(state['orders'], [])
+
+    def test_signal_blocked_by_quote_is_not_reported_as_no_signal(self):
+        j = self.job()
+        self.service.on_frame(j['id'], self.frame(), T, None)
+        end = datetime.fromisoformat(j['flatten_at'])
+        state = self.service.heartbeat(j['id'], end, self.quote(end))
+        self.assertEqual((state['state'], state['attention'], state['orders']), ('DONE', 'ENTRY_NOT_FILLED', []))
 
     def test_wide_or_stale_quote_blocks_a_strategy_entry(self):
         j = self.job()

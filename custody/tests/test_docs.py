@@ -9,8 +9,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class DocsTests(unittest.TestCase):
-    def test_agents_and_claude_rules_are_identical(self):
-        self.assertEqual((ROOT / 'AGENTS.md').read_text(), (ROOT / 'CLAUDE.md').read_text())
+    def test_claude_references_agents(self):
+        self.assertTrue((ROOT / 'AGENTS.md').is_file())
+        self.assertEqual((ROOT / 'CLAUDE.md').read_text(), '@AGENTS.md\n')
 
     def test_standard_document_matches_the_code_constants(self):
         text = (ROOT / 'docs' / 'STANDARD.md').read_text()
@@ -27,11 +28,14 @@ class DocsTests(unittest.TestCase):
             self.assertIn('custody check', text, name)
 
     def test_every_registered_strategy_has_a_committed_report(self):
-        for item in (i for i in Registry().list() if i['status'] != 'retired'):
+        for item in Registry().list():
             reports = list((ROOT / 'reports' / item['strategy_id']).glob('*/report.json'))
             self.assertTrue(reports, item['strategy_id'])
             for path in reports:
-                self.assertEqual(json.loads(path.read_text())['strategy']['sha256'], item['sha256'], path)
+                report = json.loads(path.read_text())
+                self.assertEqual(report['strategy']['sha256'], item['sha256'], path)
+                self.assertIn('completion_score', report['summary'], path)
+                self.assertNotIn('G1_completion_100pct', report['gates_in_sample'], path)
 
 
 if __name__ == '__main__':

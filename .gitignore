@@ -16,6 +16,6 @@ venv/
 .idea/
 .vscode/
 
-# Datasets live in GitHub Releases, never in git (AGENTS.md section 3).
+# Datasets live in GitHub Releases, never in git (docs/DATA.md).
 data/
 *.zip

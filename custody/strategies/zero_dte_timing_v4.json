@@ -1,12 +1,12 @@
 {
   "schema_version": 2,
-  "strategy_id": "zero_dte_timing_v2",
+  "strategy_id": "zero_dte_timing_v4",
   "engine": "zero_dte_timing",
-  "description": "单笔末日期权择时：确认要「站稳」（连续 20 分钟在 VWAP 有利一侧 + EMA 趋势 + 新突破）才提前入场，止损给足空间、盈利后宽跟踪让大行情跑；一直没确认就在 13:00 强制入场，但用 1 ATR 紧止损、10 分钟不涨就走。",
+  "description": "单笔末日期权择时：仅在正股走势确认后入场，无信号可空仓；按正股止损与跟踪退出，收盘前退出，完成率独立计分。",
   "developed_on": {
     "release": "custody-train-0dte",
     "generation": "V4",
-    "sessions_through": "2026-09-14"
+    "sessions_through": "2026-09-16"
   },
   "params": {
     "ema_fast": 9,
@@ -17,7 +17,6 @@
     "vwap_buffer_atr": 0.25,
     "trend_buffer_atr": 0.0,
     "relax_after_minutes": 0,
-    "must_enter_before_close_minutes": 180,
     "stop_lookback": 10,
     "stop_min_atr": 1.0,
     "stop_max_atr": 2.0,
@@ -28,7 +27,8 @@
     "trail_atr": 5.0,
     "flatten_before_close_minutes": 15,
     "persist_minutes": 20,
-    "forced_stop_atr": 1.0,
-    "forced_fail_minutes": 10
+    "charm_exit_before_close_minutes": 90,
+    "protection_needs_moneyness": 1,
+    "otm_stop_shrink": 0.25
   }
 }

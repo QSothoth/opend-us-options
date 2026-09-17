@@ -4,7 +4,7 @@ A strategy file (``custody/strategies/<strategy_id>.json``) is immutable::
 
     {
       "schema_version": 2,
-      "strategy_id": "zero_dte_timing_v2",
+      "strategy_id": "zero_dte_timing_v4",
       "engine": "zero_dte_timing",            # key in custody.engines.ENGINES
       "description": "...",
       "developed_on": {"release": "...", "generation": "V4", "sessions_through": "YYYY-MM-DD"},

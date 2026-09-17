@@ -285,7 +285,7 @@ def main(argv=None):
                               simulate_fills=not args.intent_only)
         _json_logger('dryrun_start', job_id=job['id'], mode=service.mode, strategy_id=job['strategy']['strategy_id'],
                      strategy_status=job['strategy']['status'], symbol=underlying, direction=args.direction,
-                     contract=args.contract, state=job['state'], must_enter_at=job['must_enter_at'],
+                     contract=args.contract, state=job['state'],
                      flatten_at=job['flatten_at'], orders_never_submitted=True, simulated_fills=not args.intent_only)
         runner.run(ticks=1 if args.once else args.ticks)
         return 0

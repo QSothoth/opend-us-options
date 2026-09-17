@@ -1,8 +1,8 @@
 {
   "standard": "docs/STANDARD.md",
   "strategy": {
-    "strategy_id": "zero_dte_timing_v3",
-    "sha256": "d4ba15055defd66d849f625fcfcc474763f7e00439b4dc14c39dda2ad8da589c",
+    "strategy_id": "zero_dte_timing_v4",
+    "sha256": "25c07b993a8211cdb087f826788d71c385400b25a7f3a5c2d202cb030b79ff71",
     "engine": "zero_dte_timing",
     "status": "candidate"
   },
@@ -15,7 +15,6 @@
     "vwap_buffer_atr": 0.25,
     "trend_buffer_atr": 0.0,
     "relax_after_minutes": 0,
-    "must_enter_before_close_minutes": 180,
     "stop_lookback": 10,
     "stop_min_atr": 1.0,
     "stop_max_atr": 2.0,
@@ -26,9 +25,6 @@
     "trail_atr": 5.0,
     "flatten_before_close_minutes": 15,
     "persist_minutes": 20,
-    "forced_stop_atr": 1.0,
-    "forced_fail_minutes": 10,
-    "friction_force_z": 1.0,
     "charm_exit_before_close_minutes": 90,
     "protection_needs_moneyness": 1,
     "otm_stop_shrink": 0.25
@@ -36,7 +32,7 @@
   "developed_on": {
     "release": "custody-train-0dte",
     "generation": "V4",
-    "sessions_through": "2026-09-14"
+    "sessions_through": "2026-09-16"
   },
   "dataset": {
     "name": "custody-eval-2026-09-16",
@@ -147,9 +143,34 @@
   },
   "summary": {
     "cases": 10,
-    "completed": 10,
-    "completion_rate": 1.0,
-    "failures": {},
+    "completed": 7,
+    "completion_rate": 0.7,
+    "completion_score": 70.0,
+    "outcomes": {
+      "NO_ENTRY_SIGNAL": 3,
+      "COMPLETED": 7
+    },
+    "traded": {
+      "n": 0,
+      "expectancy": null,
+      "win_rate": null,
+      "average_win": null,
+      "average_loss": null,
+      "payoff_ratio": null,
+      "profit_factor": null
+    },
+    "traded_raw": {
+      "n": 7,
+      "expectancy": -0.288464,
+      "win_rate": 0.0,
+      "average_win": null,
+      "average_loss": 0.288464,
+      "payoff_ratio": null,
+      "profit_factor": 0.0
+    },
+    "failures": {
+      "NO_ENTRY_SIGNAL": 3
+    },
     "balanced": {
       "n": 0,
       "expectancy": null,
@@ -170,14 +191,14 @@
     },
     "raw": {
       "n": 10,
-      "expectancy": -0.248765,
+      "expectancy": -0.201925,
       "win_rate": 0.0,
       "average_win": null,
-      "average_loss": 0.248765,
+      "average_loss": 0.288464,
       "payoff_ratio": null,
       "profit_factor": 0.0
     },
-    "dollars_total": -267.25,
+    "dollars_total": -379.6,
     "coverage_gaps": [
       "trend_with/trend_against",
       "reversal_with/reversal_against"
@@ -192,6 +213,7 @@
         "payoff_ratio": null,
         "profit_factor": null,
         "label_zh": "顺势单边",
+        "traded": 0,
         "median": null,
         "upside_capture": null
       },
@@ -204,6 +226,7 @@
         "payoff_ratio": null,
         "profit_factor": null,
         "label_zh": "先逆后顺",
+        "traded": 0,
         "median": null,
         "upside_capture": null
       },
@@ -216,6 +239,7 @@
         "payoff_ratio": null,
         "profit_factor": null,
         "label_zh": "震荡",
+        "traded": 0,
         "median": null,
         "upside_capture": null
       },
@@ -228,19 +252,21 @@
         "payoff_ratio": null,
         "profit_factor": 0.0,
         "label_zh": "先顺后逆",
+        "traded": 2,
         "median": -0.383435,
         "upside_capture": 0.0
       },
       "trend_against": {
         "n": 8,
-        "expectancy": -0.215097,
+        "expectancy": -0.156547,
         "win_rate": 0.0,
         "average_win": null,
-        "average_loss": 0.215097,
+        "average_loss": 0.250476,
         "payoff_ratio": null,
         "profit_factor": 0.0,
         "label_zh": "逆势单边",
-        "median": -0.165299,
+        "traded": 5,
+        "median": -0.204733,
         "upside_capture": 0.0
       }
     },
@@ -253,23 +279,43 @@
       "payoff_ratio": null,
       "profit_factor": null
     },
-    "hold_minutes_median": 12.5,
+    "hold_minutes_median": 14,
     "entry_reasons": {
-      "friction_deadline": 2,
-      "trend_breakout": 5,
-      "must_trade_deadline": 3
+      "trend_breakout": 7
     },
     "exit_reasons": {
-      "invalidation_stop": 4,
       "breakeven_stop": 2,
-      "trailing_stop": 2,
-      "no_progress": 2
+      "trailing_stop": 1,
+      "no_progress": 1,
+      "invalidation_stop": 3
     }
   },
   "benchmark_open_hold": {
     "cases": 10,
     "completed": 10,
     "completion_rate": 1.0,
+    "completion_score": 100.0,
+    "outcomes": {
+      "COMPLETED": 10
+    },
+    "traded": {
+      "n": 0,
+      "expectancy": null,
+      "win_rate": null,
+      "average_win": null,
+      "average_loss": null,
+      "payoff_ratio": null,
+      "profit_factor": null
+    },
+    "traded_raw": {
+      "n": 10,
+      "expectancy": -0.992993,
+      "win_rate": 0.0,
+      "average_win": null,
+      "average_loss": 0.992993,
+      "payoff_ratio": null,
+      "profit_factor": 0.0
+    },
     "failures": {},
     "balanced": {
       "n": 0,
@@ -313,6 +359,7 @@
         "payoff_ratio": null,
         "profit_factor": null,
         "label_zh": "顺势单边",
+        "traded": 0,
         "median": null,
         "upside_capture": null
       },
@@ -325,6 +372,7 @@
         "payoff_ratio": null,
         "profit_factor": null,
         "label_zh": "先逆后顺",
+        "traded": 0,
         "median": null,
         "upside_capture": null
       },
@@ -337,6 +385,7 @@
         "payoff_ratio": null,
         "profit_factor": null,
         "label_zh": "震荡",
+        "traded": 0,
         "median": null,
         "upside_capture": null
       },
@@ -349,6 +398,7 @@
         "payoff_ratio": null,
         "profit_factor": 0.0,
         "label_zh": "先顺后逆",
+        "traded": 2,
         "median": -1.002108,
         "upside_capture": 0.0
       },
@@ -361,6 +411,7 @@
         "payoff_ratio": null,
         "profit_factor": 0.0,
         "label_zh": "逆势单边",
+        "traded": 8,
         "median": -1.001818,
         "upside_capture": 0.0
       }
@@ -497,7 +548,7 @@
   "market_shapes": {
     "unknown_prev_close|LONG": {
       "n": 10,
-      "strategy_mean": -0.248765,
+      "strategy_mean": -0.201925,
       "benchmark_mean": -0.992993
     }
   },
@@ -507,26 +558,16 @@
       "contract": "US.INTC260916C103000",
       "trade_date": "2026-09-16",
       "direction": "LONG",
-      "entry": {
-        "minute": 203,
-        "reason": "friction_deadline",
-        "fill_minute": 204,
-        "price": 0.21,
-        "bar_close": 0.21
-      },
-      "exit": {
-        "minute": 212,
-        "reason": "invalidation_stop",
-        "fill_minute": 213,
-        "price": 0.195,
-        "bar_close": 0.2
-      },
+      "entry": null,
+      "exit": null,
       "decisions": null,
-      "failure": null,
-      "net_return": -0.133333,
-      "net_pnl": -2.8,
-      "hold_minutes": 9,
-      "best_net_return": 1.22381,
+      "entry_signal": null,
+      "outcome": "NO_ENTRY_SIGNAL",
+      "failure": "NO_ENTRY_SIGNAL",
+      "net_return": null,
+      "net_pnl": null,
+      "hold_minutes": null,
+      "best_net_return": null,
       "benchmark_net_return": -1.002277,
       "scenario": "trend_against",
       "first_hour_move": 0.073,
@@ -554,6 +595,11 @@
         "bar_close": 3.25
       },
       "decisions": null,
+      "entry_signal": {
+        "minute": 49,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
       "failure": null,
       "net_return": -0.20075,
       "net_pnl": -80.3,
@@ -586,6 +632,11 @@
         "bar_close": 0.42
       },
       "decisions": null,
+      "entry_signal": {
+        "minute": 32,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
       "failure": null,
       "net_return": -0.56612,
       "net_pnl": -51.8,
@@ -618,6 +669,11 @@
         "bar_close": 0.97
       },
       "decisions": null,
+      "entry_signal": {
+        "minute": 36,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
       "failure": null,
       "net_return": -0.190598,
       "net_pnl": -22.3,
@@ -636,25 +692,30 @@
       "trade_date": "2026-09-16",
       "direction": "LONG",
       "entry": {
-        "minute": 210,
-        "reason": "must_trade_deadline",
-        "fill_minute": 211,
-        "price": 5.3925,
-        "bar_close": 5.23
+        "minute": 254,
+        "reason": "trend_breakout",
+        "fill_minute": 255,
+        "price": 7.0875,
+        "bar_close": 7.0
       },
       "exit": {
-        "minute": 221,
-        "reason": "no_progress",
-        "fill_minute": 222,
-        "price": 5.1625,
-        "bar_close": 5.2
+        "minute": 271,
+        "reason": "breakeven_stop",
+        "fill_minute": 272,
+        "price": 5.5,
+        "bar_close": 5.7
       },
       "decisions": null,
+      "entry_signal": {
+        "minute": 254,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
       "failure": null,
-      "net_return": -0.045063,
-      "net_pnl": -24.3,
-      "hold_minutes": 11,
-      "best_net_return": 1.145016,
+      "net_return": -0.22582,
+      "net_pnl": -160.05,
+      "hold_minutes": 17,
+      "best_net_return": 0.632028,
       "benchmark_net_return": -0.938205,
       "scenario": "trend_against",
       "first_hour_move": -0.06,
@@ -682,6 +743,11 @@
         "bar_close": 0.59
       },
       "decisions": null,
+      "entry_signal": {
+        "minute": 47,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
       "failure": null,
       "net_return": -0.361905,
       "net_pnl": -32.3,
@@ -700,25 +766,30 @@
       "trade_date": "2026-09-16",
       "direction": "LONG",
       "entry": {
-        "minute": 79,
-        "reason": "friction_deadline",
-        "fill_minute": 80,
-        "price": 0.205,
-        "bar_close": 0.2
+        "minute": 200,
+        "reason": "trend_breakout",
+        "fill_minute": 201,
+        "price": 0.265,
+        "bar_close": 0.26
       },
       "exit": {
-        "minute": 299,
-        "reason": "trailing_stop",
-        "fill_minute": 300,
-        "price": 0.0975,
-        "bar_close": 0.1
+        "minute": 211,
+        "reason": "invalidation_stop",
+        "fill_minute": 212,
+        "price": 0.22,
+        "bar_close": 0.22
       },
       "decisions": null,
+      "entry_signal": {
+        "minute": 200,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
       "failure": null,
-      "net_return": -0.587805,
-      "net_pnl": -12.05,
-      "hold_minutes": 220,
-      "best_net_return": 0.595122,
+      "net_return": -0.218868,
+      "net_pnl": -5.8,
+      "hold_minutes": 11,
+      "best_net_return": -0.067925,
       "benchmark_net_return": -1.00625,
       "scenario": "trend_against",
       "first_hour_move": -0.171,
@@ -746,6 +817,11 @@
         "bar_close": 0.82
       },
       "decisions": null,
+      "entry_signal": {
+        "minute": 98,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
       "failure": null,
       "net_return": -0.255189,
       "net_pnl": -27.05,
@@ -763,26 +839,16 @@
       "contract": "US.META260916C680000",
       "trade_date": "2026-09-16",
       "direction": "LONG",
-      "entry": {
-        "minute": 210,
-        "reason": "must_trade_deadline",
-        "fill_minute": 211,
-        "price": 1.525,
-        "bar_close": 1.5
-      },
-      "exit": {
-        "minute": 235,
-        "reason": "breakeven_stop",
-        "fill_minute": 236,
-        "price": 1.5275,
-        "bar_close": 1.57
-      },
+      "entry": null,
+      "exit": null,
       "decisions": null,
-      "failure": null,
-      "net_return": -0.006885,
-      "net_pnl": -1.05,
-      "hold_minutes": 25,
-      "best_net_return": 1.868525,
+      "entry_signal": null,
+      "outcome": "NO_ENTRY_SIGNAL",
+      "failure": "NO_ENTRY_SIGNAL",
+      "net_return": null,
+      "net_pnl": null,
+      "hold_minutes": null,
+      "best_net_return": null,
       "benchmark_net_return": -0.994714,
       "scenario": "trend_against",
       "first_hour_move": -0.006,
@@ -795,26 +861,16 @@
       "contract": "US.MSFT260916C495000",
       "trade_date": "2026-09-16",
       "direction": "LONG",
-      "entry": {
-        "minute": 210,
-        "reason": "must_trade_deadline",
-        "fill_minute": 211,
-        "price": 0.95,
-        "bar_close": 0.95
-      },
-      "exit": {
-        "minute": 213,
-        "reason": "invalidation_stop",
-        "fill_minute": 214,
-        "price": 0.83,
-        "bar_close": 0.84
-      },
+      "entry": null,
+      "exit": null,
       "decisions": null,
-      "failure": null,
-      "net_return": -0.14,
-      "net_pnl": -13.3,
-      "hold_minutes": 3,
-      "best_net_return": 0.167895,
+      "entry_signal": null,
+      "outcome": "NO_ENTRY_SIGNAL",
+      "failure": "NO_ENTRY_SIGNAL",
+      "net_return": null,
+      "net_pnl": null,
+      "hold_minutes": null,
+      "best_net_return": null,
       "benchmark_net_return": -1.001359,
       "scenario": "trend_against",
       "first_hour_move": -0.053,
@@ -837,7 +893,7 @@
           "2026-09-16"
         ],
         "cases": 10,
-        "strategy_mean": -0.248765,
+        "strategy_mean": -0.201925,
         "benchmark_mean": -0.992993
       },
       "passed": null
@@ -858,7 +914,7 @@
     },
     "neighbors": {
       "passed": null,
-      "count": 44,
+      "count": 36,
       "failed": [],
       "runs": [
         {
@@ -982,54 +1038,6 @@
           "payoff_ratio": null
         },
         {
-          "param": "forced_fail_minutes",
-          "from": 10,
-          "to": 8,
-          "passed": null,
-          "expectancy": null,
-          "payoff_ratio": null
-        },
-        {
-          "param": "forced_fail_minutes",
-          "from": 10,
-          "to": 12,
-          "passed": null,
-          "expectancy": null,
-          "payoff_ratio": null
-        },
-        {
-          "param": "forced_stop_atr",
-          "from": 1.0,
-          "to": 0.75,
-          "passed": null,
-          "expectancy": null,
-          "payoff_ratio": null
-        },
-        {
-          "param": "forced_stop_atr",
-          "from": 1.0,
-          "to": 1.25,
-          "passed": null,
-          "expectancy": null,
-          "payoff_ratio": null
-        },
-        {
-          "param": "friction_force_z",
-          "from": 1.0,
-          "to": 0.75,
-          "passed": null,
-          "expectancy": null,
-          "payoff_ratio": null
-        },
-        {
-          "param": "friction_force_z",
-          "from": 1.0,
-          "to": 1.25,
-          "passed": null,
-          "expectancy": null,
-          "payoff_ratio": null
-        },
-        {
           "param": "momentum_lookback",
           "from": 5,
           "to": 4,
@@ -1041,22 +1049,6 @@
           "param": "momentum_lookback",
           "from": 5,
           "to": 6,
-          "passed": null,
-          "expectancy": null,
-          "payoff_ratio": null
-        },
-        {
-          "param": "must_enter_before_close_minutes",
-          "from": 180,
-          "to": 135,
-          "passed": null,
-          "expectancy": null,
-          "payoff_ratio": null
-        },
-        {
-          "param": "must_enter_before_close_minutes",
-          "from": 180,
-          "to": 225,
           "passed": null,
           "expectancy": null,
           "payoff_ratio": null
@@ -1228,7 +1220,6 @@
     "ok": false
   },
   "gates_in_sample": {
-    "G1_completion_100pct": true,
     "G3_expectancy_beats_benchmark": null,
     "G4_payoff_ratio_at_least_2": null,
     "G5_trend_against_loss_smaller_than_benchmark": true,
@@ -1239,650 +1230,6 @@
     "G10_parameter_neighbors_beat_benchmark": null,
     "G11_profit_factor_above_1": null
   },
-  "out_of_sample": {
-    "sessions": 1,
-    "summary": {
-      "cases": 10,
-      "completed": 10,
-      "completion_rate": 1.0,
-      "failures": {},
-      "balanced": {
-        "n": 0,
-        "expectancy": null,
-        "win_rate": null,
-        "average_win": null,
-        "average_loss": null,
-        "payoff_ratio": null,
-        "profit_factor": null
-      },
-      "balanced_dollars": {
-        "n": 0,
-        "expectancy": null,
-        "win_rate": null,
-        "average_win": null,
-        "average_loss": null,
-        "payoff_ratio": null,
-        "profit_factor": null
-      },
-      "raw": {
-        "n": 10,
-        "expectancy": -0.248765,
-        "win_rate": 0.0,
-        "average_win": null,
-        "average_loss": 0.248765,
-        "payoff_ratio": null,
-        "profit_factor": 0.0
-      },
-      "dollars_total": -267.25,
-      "coverage_gaps": [
-        "trend_with/trend_against",
-        "reversal_with/reversal_against"
-      ],
-      "by_scenario": {
-        "trend_with": {
-          "n": 0,
-          "expectancy": null,
-          "win_rate": null,
-          "average_win": null,
-          "average_loss": null,
-          "payoff_ratio": null,
-          "profit_factor": null,
-          "label_zh": "顺势单边",
-          "median": null,
-          "upside_capture": null
-        },
-        "reversal_with": {
-          "n": 0,
-          "expectancy": null,
-          "win_rate": null,
-          "average_win": null,
-          "average_loss": null,
-          "payoff_ratio": null,
-          "profit_factor": null,
-          "label_zh": "先逆后顺",
-          "median": null,
-          "upside_capture": null
-        },
-        "chop": {
-          "n": 0,
-          "expectancy": null,
-          "win_rate": null,
-          "average_win": null,
-          "average_loss": null,
-          "payoff_ratio": null,
-          "profit_factor": null,
-          "label_zh": "震荡",
-          "median": null,
-          "upside_capture": null
-        },
-        "reversal_against": {
-          "n": 2,
-          "expectancy": -0.383435,
-          "win_rate": 0.0,
-          "average_win": null,
-          "average_loss": 0.383435,
-          "payoff_ratio": null,
-          "profit_factor": 0.0,
-          "label_zh": "先顺后逆",
-          "median": -0.383435,
-          "upside_capture": 0.0
-        },
-        "trend_against": {
-          "n": 8,
-          "expectancy": -0.215097,
-          "win_rate": 0.0,
-          "average_win": null,
-          "average_loss": 0.215097,
-          "payoff_ratio": null,
-          "profit_factor": 0.0,
-          "label_zh": "逆势单边",
-          "median": -0.165299,
-          "upside_capture": 0.0
-        }
-      },
-      "with_direction": {
-        "n": 0,
-        "expectancy": null,
-        "win_rate": null,
-        "average_win": null,
-        "average_loss": null,
-        "payoff_ratio": null,
-        "profit_factor": null
-      },
-      "hold_minutes_median": 12.5,
-      "entry_reasons": {
-        "friction_deadline": 2,
-        "trend_breakout": 5,
-        "must_trade_deadline": 3
-      },
-      "exit_reasons": {
-        "invalidation_stop": 4,
-        "breakeven_stop": 2,
-        "trailing_stop": 2,
-        "no_progress": 2
-      }
-    },
-    "benchmark_open_hold": {
-      "cases": 10,
-      "completed": 10,
-      "completion_rate": 1.0,
-      "failures": {},
-      "balanced": {
-        "n": 0,
-        "expectancy": null,
-        "win_rate": null,
-        "average_win": null,
-        "average_loss": null,
-        "payoff_ratio": null,
-        "profit_factor": null
-      },
-      "balanced_dollars": {
-        "n": 0,
-        "expectancy": null,
-        "win_rate": null,
-        "average_win": null,
-        "average_loss": null,
-        "payoff_ratio": null,
-        "profit_factor": null
-      },
-      "raw": {
-        "n": 10,
-        "expectancy": -0.992993,
-        "win_rate": 0.0,
-        "average_win": null,
-        "average_loss": 0.992993,
-        "payoff_ratio": null,
-        "profit_factor": 0.0
-      },
-      "dollars_total": -2276.5,
-      "coverage_gaps": [
-        "trend_with/trend_against",
-        "reversal_with/reversal_against"
-      ],
-      "by_scenario": {
-        "trend_with": {
-          "n": 0,
-          "expectancy": null,
-          "win_rate": null,
-          "average_win": null,
-          "average_loss": null,
-          "payoff_ratio": null,
-          "profit_factor": null,
-          "label_zh": "顺势单边",
-          "median": null,
-          "upside_capture": null
-        },
-        "reversal_with": {
-          "n": 0,
-          "expectancy": null,
-          "win_rate": null,
-          "average_win": null,
-          "average_loss": null,
-          "payoff_ratio": null,
-          "profit_factor": null,
-          "label_zh": "先逆后顺",
-          "median": null,
-          "upside_capture": null
-        },
-        "chop": {
-          "n": 0,
-          "expectancy": null,
-          "win_rate": null,
-          "average_win": null,
-          "average_loss": null,
-          "payoff_ratio": null,
-          "profit_factor": null,
-          "label_zh": "震荡",
-          "median": null,
-          "upside_capture": null
-        },
-        "reversal_against": {
-          "n": 2,
-          "expectancy": -1.002108,
-          "win_rate": 0.0,
-          "average_win": null,
-          "average_loss": 1.002108,
-          "payoff_ratio": null,
-          "profit_factor": 0.0,
-          "label_zh": "先顺后逆",
-          "median": -1.002108,
-          "upside_capture": 0.0
-        },
-        "trend_against": {
-          "n": 8,
-          "expectancy": -0.990714,
-          "win_rate": 0.0,
-          "average_win": null,
-          "average_loss": 0.990714,
-          "payoff_ratio": null,
-          "profit_factor": 0.0,
-          "label_zh": "逆势单边",
-          "median": -1.001818,
-          "upside_capture": 0.0
-        }
-      },
-      "with_direction": {
-        "n": 0,
-        "expectancy": null,
-        "win_rate": null,
-        "average_win": null,
-        "average_loss": null,
-        "payoff_ratio": null,
-        "profit_factor": null
-      },
-      "hold_minutes_median": 370.0,
-      "entry_reasons": {
-        "benchmark_open": 10
-      },
-      "exit_reasons": {
-        "scheduled_flatten": 10
-      }
-    },
-    "robustness": {
-      "halves": {
-        "first_half": {
-          "days": null,
-          "cases": 0,
-          "strategy_mean": null,
-          "benchmark_mean": null
-        },
-        "second_half": {
-          "days": [
-            "2026-09-16",
-            "2026-09-16"
-          ],
-          "cases": 10,
-          "strategy_mean": -0.248765,
-          "benchmark_mean": -0.992993
-        },
-        "passed": null
-      },
-      "leave_one_day_out": {
-        "passed": null,
-        "failed_days": [],
-        "runs": [
-          {
-            "dropped": "2026-09-16",
-            "passed": null,
-            "strategy_expectancy": null,
-            "strategy_payoff_ratio": null,
-            "benchmark_expectancy": null,
-            "benchmark_payoff_ratio": null
-          }
-        ]
-      },
-      "neighbors": {
-        "passed": null,
-        "count": 44,
-        "failed": [],
-        "runs": [
-          {
-            "param": "atr_period",
-            "from": 14,
-            "to": 10,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "atr_period",
-            "from": 14,
-            "to": 18,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "breakeven_at_atr",
-            "from": 2.0,
-            "to": 1.5,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "breakeven_at_atr",
-            "from": 2.0,
-            "to": 2.5,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "charm_exit_before_close_minutes",
-            "from": 90,
-            "to": 68,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "charm_exit_before_close_minutes",
-            "from": 90,
-            "to": 112,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "ema_fast",
-            "from": 9,
-            "to": 7,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "ema_fast",
-            "from": 9,
-            "to": 11,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "ema_slow",
-            "from": 21,
-            "to": 16,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "ema_slow",
-            "from": 21,
-            "to": 26,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "fail_minutes",
-            "from": 20,
-            "to": 15,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "fail_minutes",
-            "from": 20,
-            "to": 25,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "fail_progress_atr",
-            "from": 1.0,
-            "to": 0.75,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "fail_progress_atr",
-            "from": 1.0,
-            "to": 1.25,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "flatten_before_close_minutes",
-            "from": 15,
-            "to": 19,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "forced_fail_minutes",
-            "from": 10,
-            "to": 8,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "forced_fail_minutes",
-            "from": 10,
-            "to": 12,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "forced_stop_atr",
-            "from": 1.0,
-            "to": 0.75,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "forced_stop_atr",
-            "from": 1.0,
-            "to": 1.25,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "friction_force_z",
-            "from": 1.0,
-            "to": 0.75,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "friction_force_z",
-            "from": 1.0,
-            "to": 1.25,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "momentum_lookback",
-            "from": 5,
-            "to": 4,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "momentum_lookback",
-            "from": 5,
-            "to": 6,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "must_enter_before_close_minutes",
-            "from": 180,
-            "to": 135,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "must_enter_before_close_minutes",
-            "from": 180,
-            "to": 225,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "opening_minutes",
-            "from": 15,
-            "to": 11,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "opening_minutes",
-            "from": 15,
-            "to": 19,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "otm_stop_shrink",
-            "from": 0.25,
-            "to": 0.1875,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "otm_stop_shrink",
-            "from": 0.25,
-            "to": 0.3125,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "persist_minutes",
-            "from": 20,
-            "to": 15,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "persist_minutes",
-            "from": 20,
-            "to": 25,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "protection_needs_moneyness",
-            "from": 1,
-            "to": 0,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "stop_lookback",
-            "from": 10,
-            "to": 8,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "stop_lookback",
-            "from": 10,
-            "to": 12,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "stop_max_atr",
-            "from": 2.0,
-            "to": 1.5,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "stop_max_atr",
-            "from": 2.0,
-            "to": 2.5,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "stop_min_atr",
-            "from": 1.0,
-            "to": 0.75,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "stop_min_atr",
-            "from": 1.0,
-            "to": 1.25,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "trail_activate_atr",
-            "from": 5.0,
-            "to": 3.75,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "trail_activate_atr",
-            "from": 5.0,
-            "to": 6.25,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "trail_atr",
-            "from": 5.0,
-            "to": 3.75,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "trail_atr",
-            "from": 5.0,
-            "to": 6.25,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "vwap_buffer_atr",
-            "from": 0.25,
-            "to": 0.1875,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          },
-          {
-            "param": "vwap_buffer_atr",
-            "from": 0.25,
-            "to": 0.3125,
-            "passed": null,
-            "expectancy": null,
-            "payoff_ratio": null
-          }
-        ]
-      }
-    },
-    "gates": {
-      "G1_completion_100pct": true,
-      "G3_expectancy_beats_benchmark": null,
-      "G4_payoff_ratio_at_least_2": null,
-      "G5_trend_against_loss_smaller_than_benchmark": true,
-      "G6_with_direction_expectancy_positive": null,
-      "G7_payoff_ratio_beats_benchmark": null,
-      "G8_both_halves_beat_benchmark": null,
-      "G9_leave_one_day_out_stable": null,
-      "G10_parameter_neighbors_beat_benchmark": null,
-      "G11_profit_factor_above_1": null
-    }
-  },
+  "out_of_sample": null,
   "verdict": "PROVISIONAL"
 }

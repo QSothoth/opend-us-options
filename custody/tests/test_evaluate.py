@@ -76,12 +76,47 @@ class SimulationTests(unittest.TestCase):
         gross = (trade['exit']['price'] - trade['entry']['price']) * 100
         self.assertAlmostEqual(trade['net_pnl'], gross - 1.30, places=3)
 
-    def test_platform_forces_entry_and_flatten_when_the_engine_does_not(self):
+    def test_platform_never_forces_entry_but_still_flattens_a_position(self):
         trade = ev.simulate(case_data(self.closes), Scripted(), PARAMS)
-        must_enter, flatten = 390 - PARAMS['must_enter_before_close_minutes'], 390 - PARAMS['flatten_before_close_minutes']
-        self.assertEqual((trade['entry']['reason'], trade['entry']['minute']), ('platform_must_enter', must_enter))
-        self.assertEqual((trade['exit']['reason'], trade['exit']['minute']), ('platform_flatten', flatten))
-        self.assertIsNone(trade['failure'])
+        self.assertIsNone(trade['entry'])
+        self.assertEqual(trade['outcome'], 'NO_ENTRY_SIGNAL')
+        trade = ev.simulate(case_data(self.closes), Scripted(enter=10), PARAMS)
+        self.assertEqual((trade['exit']['reason'], trade['exit']['minute']),
+                         ('platform_flatten', 390 - PARAMS['flatten_before_close_minutes']))
+        for minute in (374, 375, 380):
+            trade = ev.simulate(case_data(self.closes), Scripted(enter=minute), PARAMS)
+            self.assertIsNone(trade['entry'])
+
+    def test_completion_score_separates_missing_signals_fills_and_settlement(self):
+        data = case_data(self.closes)
+        labels = [{'scenario': 'chop'}] * 4
+        complete = ev.simulate(data, Scripted(enter=10, exit_=20), PARAMS)
+        flat = ev.simulate(data, Scripted(), PARAMS)
+        sparse = case_data(self.closes, option=data.option[:30])
+        unfilled = ev.simulate(sparse, Scripted(enter=40), PARAMS)
+        settled = ev.simulate(sparse, Scripted(enter=10, exit_=40), PARAMS)
+        summary = ev.summarize([complete, flat, unfilled, settled], labels)
+        self.assertEqual(summary['completion_score'], 25.0)
+        self.assertEqual(summary['outcomes'], {'COMPLETED': 1, 'NO_ENTRY_SIGNAL': 1,
+                                              'ENTRY_NOT_FILLED': 1, 'EXIT_NOT_FILLED': 1})
+        self.assertEqual(summary['raw']['n'], 4)
+        self.assertEqual(summary['traded_raw']['n'], 2)
+        self.assertAlmostEqual(summary['raw']['expectancy'], (complete['net_return'] + settled['net_return']) / 4)
+        self.assertEqual(summary['dollars_total'], complete['net_pnl'] + settled['net_pnl'])
+        zero = ev.summarize([flat], labels[:1])
+        self.assertEqual(zero['completion_score'], 0)
+        self.assertIsNone(zero['balanced']['payoff_ratio'])
+        self.assertIsNone(zero['traded']['expectancy'])
+
+    def test_shuffled_control_preserves_nonparticipation(self):
+        data = case_data(self.closes)
+        trade = ev.simulate(data, Scripted(enter=10, exit_=20), PARAMS)
+        flat = ev.simulate(data, Scripted(), PARAMS)
+        # Identical tapes: shuffling one trade and one skipped case cannot change expectancy.
+        result = ev.shuffle_null([data, data], [trade, flat], [{'scenario': 'chop'}] * 2,
+                                 draws=20, params=PARAMS)
+        self.assertEqual(result['p_expectancy'], 1.0)
+        self.assertIsNone(result['p_payoff_ratio'])
 
     def test_unfillable_entry_is_a_failure_not_a_zero(self):
         option = [b for b in option_bars(self.closes, 100, 'CALL', CALL) if session_minute(session(), b.close_time) < 30]
@@ -155,13 +190,12 @@ class WeightingAndMetricsTests(unittest.TestCase):
         self.assertTrue(all(validate_params(p) for _, _, _, p in ev.neighbor_params(BASE_PARAMS, validate_params)))
 
     def test_verdict_levels(self):
-        passing = {'G1_completion_100pct': True, 'G3': True, 'G4': True}
+        passing = {'G3': True, 'G4': True}
         self.assertEqual(ev.verdict(passing, True, True, 25, True), 'ACCEPT')
         self.assertEqual(ev.verdict(passing, True, True, 5, True), 'PROVISIONAL')
         self.assertEqual(ev.verdict(passing, True, False, 25, True), 'PROVISIONAL')
         self.assertEqual(ev.verdict(passing, True, True, 25, False), 'PROVISIONAL')  # one-sided data can never be ACCEPT
         self.assertEqual(ev.verdict(dict(passing, G4=False), True, True, 25, True), 'REJECT')
-        self.assertEqual(ev.verdict(dict(passing, G1_completion_100pct=False), True, True, 25, True), 'INVALID')
         self.assertEqual(ev.verdict(passing, False, True, 25, True), 'INVALID')
         self.assertEqual(ev.verdict(dict(passing, G4=None), True, True, 25, True), 'PROVISIONAL')   # cannot judge -> never ACCEPT
         self.assertEqual(ev.verdict(dict(passing, G3=None, G4=False), True, True, 25, True), 'REJECT')
@@ -182,19 +216,20 @@ class EndToEndTests(unittest.TestCase):
             for i, points in enumerate(([(1, 100.0), (15, 100.0), (390, 103.0)],
                                         [(1, 100.0), (60, 98.0), (390, 101.0)])):
                 closes = piecewise(points)
-                day = '2026-09-1%d' % (4 + i)
-                for right, code in (('CALL', 'US.SPY26091%dC100000' % (4 + i)), ('PUT', 'US.SPY26091%dP100000' % (4 + i))):
+                day = '2026-09-1%d' % (6 + i)
+                for right, code in (('CALL', 'US.SPY26091%dC100000' % (6 + i)), ('PUT', 'US.SPY26091%dP100000' % (6 + i))):
                     cases.append({'symbol': 'US.SPY', 'contract': code, 'trade_date': day, 'underlying': closes,
                                   'option': option_bars(closes, 100, right, code, day=day)})
             write_dataset(Path(tmp) / 'ds', cases)
             report = ev.evaluate(Path(tmp) / 'ds', null_draws=20)
             self.assertEqual(report['dataset']['cases'], 4)
             self.assertEqual((report['dataset']['sides']['ok'], report['dataset']['sides']['both_sides']), (True, 2))
-            self.assertEqual(report['summary']['completion_rate'], 1.0)
+            self.assertEqual(report['summary']['completion_score'], 25.0)
+            self.assertNotIn('G1_completion_100pct', report['gates_in_sample'])
             self.assertTrue(report['prefix_consistency']['passed'])
             self.assertIn(report['verdict'], ('REJECT', 'PROVISIONAL'))  # never ACCEPT without OOS sessions
             self.assertEqual(set(report['summary']['by_scenario']), set(ev.SCENARIOS))
-            # 2026-09-15 is after the strategy's development cutoff: one out-of-sample session.
+            # 2026-09-17 is after the strategy's development cutoff: one out-of-sample session.
             self.assertEqual(report['out_of_sample']['sessions'], 1)
             markdown = ev.render_markdown(report)
             for section in ('## 先看这里', '对照组', '## 1. 过没过门槛', '## 2. 总体', '## 3. 分走势看', '## 4. 结果靠不靠得住', '## 5. 逐笔明细'):

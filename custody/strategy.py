@@ -20,9 +20,8 @@ Actions:
 * ``HOLD``  - in position (or entry pending), keep holding;
 * ``EXIT``  - sell now (repeated until the platform finishes the exit).
 
-Must-trade is part of the contract: every engine must return ``ENTER`` no later than
-its own ``must_enter_before_close_minutes`` and ``EXIT`` no later than
-``flatten_before_close_minutes``. The platform enforces both deadlines independently.
+Completion is a soft evaluation score: WAIT all day is valid. The platform never
+forces entry. Existing positions must EXIT by ``flatten_before_close_minutes``.
 """
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -56,14 +55,12 @@ def session_length(session: Session) -> int:
     return int((session.closes - session.opens).total_seconds() // 60)
 
 
-def deadlines(params: dict, session: Session) -> tuple[int, int]:
-    """Return (must_enter_minute, flatten_minute) counted from the session open."""
-    length = session_length(session)
-    flatten = length - max(int(params['flatten_before_close_minutes']), PLATFORM_MIN_FLATTEN_MINUTES)
-    must_enter = length - int(params['must_enter_before_close_minutes'])
-    if not 0 < must_enter < flatten:
-        raise ValueError('strategy deadlines do not fit this session')
-    return must_enter, flatten
+def flatten_minute(params: dict, session: Session) -> int:
+    """Last entry boundary and mandatory exit decision, in minutes from the open."""
+    minute = session_length(session) - max(int(params['flatten_before_close_minutes']), PLATFORM_MIN_FLATTEN_MINUTES)
+    if minute <= 0:
+        raise ValueError('flatten deadline does not fit this session')
+    return minute
 
 
 def engines():

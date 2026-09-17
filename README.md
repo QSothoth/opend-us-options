@@ -1,15 +1,15 @@
 # opend-us-options
 
 **末日期权（0DTE）单笔择时。**上游选好标的、方向和当天到期的合约后，本项目只决定这一张期权当天何时买、何时卖：
-每张合约当天必做且只做一笔（同一标的可以同时有做多和做空的合约），信号只看当天正股 1 分钟 K 线，盈亏按期权成交价计算，目标是放大盈亏比。
+每张合约当天争取完成一笔、最多一笔；无信号可以不交易，完成率独立计分（同一标的可以同时有做多和做空的合约），信号只看当天正股 1 分钟 K 线，盈亏按期权成交价计算，目标是放大盈亏比。
 
-项目规范（Release、训练数据、策略与评测的约定）见 **[AGENTS.md](AGENTS.md)**（与 `CLAUDE.md` 一致）。
+项目规范（Release、训练数据、策略与评测的约定）见 **[AGENTS.md](AGENTS.md)**（`CLAUDE.md` 引用此文件）。
 
 | 文档 | 内容 |
 |---|---|
-| [docs/DATA.md](docs/DATA.md) | 数据集布局、V1–V4 代际、每日冻结、发布 Release |
+| [docs/DATA.md](docs/DATA.md) | 可用数据集、每日冻结、发布 Release |
 | [docs/STANDARD.md](docs/STANDARD.md) | 评测标准：成交模型、场景标签、方向对称加权、门槛与结论 |
-| [docs/STRATEGY.md](docs/STRATEGY.md) | 当前唯一策略 `zero_dte_timing_v1`、研究记录、如何写新策略 |
+| [docs/STRATEGY.md](docs/STRATEGY.md) | 当前策略、研究记录、如何写新策略 |
 | [docs/RUNTIME.md](docs/RUNTIME.md) | 状态机、控制 API、dryrun |
 | [docs/OPEND_SETUP.md](docs/OPEND_SETUP.md) | 本地 OpenD |
 
@@ -19,26 +19,23 @@
 # 测试（仅标准库，不连 OpenD）
 python3 -m unittest discover -s custody/tests
 
-# 取训练数据 V4 并评测当前策略
-mkdir -p data && gh release download custody-train-0dte --repo QSothoth/opend-us-options --dir data
-echo "65398673c6617ef0a013c1795936016404babe4a1d4fc1777e16502c2621c7d3  data/custody-train-0dte.zip" | sha256sum -c
-unzip -q data/custody-train-0dte.zip -d data
-python3 -m custody check --dataset data/custody-train-0dte    # V4 是单边遗留数据，会提示两边不全
-python3 -m custody evaluate --dataset data/custody-train-0dte --out reports/zero_dte_timing_v3/custody-train-0dte
+# 查看注册状态；数据下载与哈希校验见 docs/DATA.md
+python3 -m custody strategies
 
-# 需要 OpenD + futu-api：每个交易日收盘后冻结当天数据；盘中只读观察一个任务
-python3 -m custody freeze --dataset data/custody-0dte-work
-python3 -m custody dryrun --symbol US.QQQ --direction LONG --contract US.QQQ260916C705000
+# 下载后离线评测，显式指定策略，避免默认值与报告目录错配
+python3 -m custody evaluate --strategy zero_dte_timing_v4 \
+  --dataset data/custody-train-0dte --out reports/zero_dte_timing_v4/custody-train-0dte
 ```
+
+数据获取、每日冻结及发布只按 [数据流程](docs/DATA.md) 操作；盘中观察见 [dryrun](docs/RUNTIME.md#4-dryrun)。
+V4 是单边遗留数据，`custody check` 会以非零退出码拒绝发布；离线评测允许它做诊断。
 
 ## 当前状态
 
-- 当前策略 `zero_dte_timing_v3`（`candidate`）：V4 上按方向对错各半，平均每笔 +0.8%、盈亏比 4.33、利润因子 1.03；对照组（09:35 买入拿到 15:45）为 −37.9%、2.31、0.44。过 11 个门槛中的 10 个，参数上下浮动 25% 的 44 组全部仍赢对照组。结论仍是 **REJECT**：去掉 2026-09-11 这一天就输给对照组；六轮 19 个候选的挑选过程做留一天交叉验证，样本外估计为 −23.9% / 5.43，好于对照组但整体仍不赚钱。详见 [报告](reports/zero_dte_timing_v3/custody-train-0dte/REPORT.md) 和 [策略说明](docs/STRATEGY.md)。
-- 样本外验证集 `custody-eval-2026-09-16`（10 张 CALL，当天全部方向错）：v3 平均每笔 −24.9%（美元合计 −$267），对照组 −99.3%（−$2,276）；方向错时的亏损控制成立，盈亏比类门槛因数据只有一边而不适用，结论 PROVISIONAL。见 [报告](reports/zero_dte_timing_v3/custody-eval-2026-09-16/REPORT.md)。
-- `zero_dte_timing_v1`、`zero_dte_timing_v2` 已退役（`retired`）。
-- **统一要求：训练集和验证集的每个标的每天都必须同时有同一行权价的 CALL 和 PUT**（`custody check` 强制）；V4 和 `custody-eval-2026-09-16` 都是单边遗留数据，结论最高 PROVISIONAL。
-- 下一步是每天用 `custody freeze` 两边一起冻结数据，攒够样本外交易日后再评测，而不是继续在 V4 上调参。
-- 没有真实券商下单连接；`dryrun` 绝不下单。
+- 默认策略和生命周期以 [注册表](custody/strategies/index.json) 为准；当前 v4 为 candidate，尚未达到 ACCEPT。
+- v4 取消强制入场，保留确认信号和退出规则；最新 [V4 训练数据报告](reports/zero_dte_timing_v4/custody-train-0dte/REPORT.md) 与 [遗留验证数据报告](reports/zero_dte_timing_v4/custody-eval-2026-09-16/REPORT.md) 同时展示完成分和收益。研究记录见 [策略说明](docs/STRATEGY.md)。
+- 下一步每天冻结同一行权价的 CALL / PUT，积累样本外交易日；验证集不得用于调参。
+- 没有真实券商下单连接；dryrun 只读行情、记录模拟成交。
 
 ## 安全
 

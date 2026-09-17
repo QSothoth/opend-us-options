@@ -10,8 +10,8 @@ What is fixed here (and therefore identical for every strategy version):
   fills on the first traded option bar at minute >= t + delay, at that bar's close
   moved against us by ``slippage_fraction`` of the bar's high-low range, plus a
   per-contract fee on both sides;
-* the must-trade platform rules: entry no later than the strategy's must-enter
-  deadline, exit no later than its flatten time, no fill after the session close;
+* entry only on a signal before flatten; forced exit at flatten, no fill after
+  the session close; completion scored separately from economic performance;
 * ex-post scenario labels (never visible to strategies) and the mirror-symmetric
   scenario weighting that removes the direction mix of the dataset;
 * the reference benchmark (buy right after the open, hold to flatten), the
@@ -29,7 +29,7 @@ from pathlib import Path
 
 from .dataset import CaseData, Dataset
 from .registry import Registry
-from .strategy import Decision, build_strategy, deadlines, session_minute
+from .strategy import Decision, build_strategy, flatten_minute, session_minute
 
 SCENARIOS = ('trend_with', 'reversal_with', 'chop', 'reversal_against', 'trend_against')
 SCENARIO_ZH = {'trend_with': '顺势单边', 'reversal_with': '先逆后顺', 'chop': '震荡',
@@ -82,7 +82,7 @@ class OpenHoldBenchmark:
 
     def __init__(self, params, direction, session):
         self.session = session
-        self.must_enter, self.flatten = deadlines(params, session)
+        self.flatten = flatten_minute(params, session)
         self.phase = 'FLAT'
 
     def on_bar(self, bar):
@@ -101,9 +101,9 @@ class OpenHoldBenchmark:
 
 # ------------------------------------------------------------------ simulation
 def simulate(data: CaseData, engine, params, fill=PRIMARY_FILL, until_minute=None):
-    """Run one case through the must-trade platform rules. Returns a trade dict."""
+    """Run one case with optional entry and mandatory exit of an existing position. Returns a trade dict."""
     session, case = data.session, data.case
-    must_enter, flatten = deadlines(params, session)
+    flatten = flatten_minute(params, session)
     options = {session_minute(session, b.close_time): b for b in data.option}
     last_minute = session_minute(session, data.underlying[-1].close_time)
     entry = exit_ = pending_entry = pending_exit = None
@@ -114,7 +114,7 @@ def simulate(data: CaseData, engine, params, fill=PRIMARY_FILL, until_minute=Non
             break
         option = options.get(minute)
         if pending_entry and entry is None and option and minute >= pending_entry['minute'] + fill.delay_minutes:
-            if minute <= flatten:
+            if minute < flatten:
                 entry = dict(pending_entry, fill_minute=minute, price=fill.buy(option), bar_close=option.close)
                 engine.on_entry_filled(option.close_time, bar.close)
         elif pending_exit and exit_ is None and option and minute >= pending_exit['minute'] + fill.delay_minutes:
@@ -123,10 +123,8 @@ def simulate(data: CaseData, engine, params, fill=PRIMARY_FILL, until_minute=Non
         decision = engine.on_bar(bar)
         decisions.append((minute, decision.action, decision.reason))
         if entry is None and pending_entry is None:
-            if decision.action == 'ENTER':
+            if decision.action == 'ENTER' and minute < flatten:
                 pending_entry = {'minute': minute, 'reason': decision.reason}
-            elif minute >= must_enter:
-                pending_entry = {'minute': minute, 'reason': 'platform_must_enter'}
         elif entry is not None and pending_exit is None:
             if decision.action == 'EXIT':
                 pending_exit = {'minute': minute, 'reason': decision.reason}
@@ -134,12 +132,14 @@ def simulate(data: CaseData, engine, params, fill=PRIMARY_FILL, until_minute=Non
                 pending_exit = {'minute': minute, 'reason': 'platform_flatten'}
     trade = {'symbol': case.symbol, 'contract': case.contract, 'trade_date': case.trade_date,
              'direction': case.direction, 'entry': entry, 'exit': exit_, 'decisions': decisions,
+             'entry_signal': pending_entry, 'outcome': 'COMPLETED',
              'failure': None, 'net_return': None, 'net_pnl': None, 'hold_minutes': None,
              'best_net_return': None}
     if until_minute is not None:
         return trade
     if entry is None:
-        trade['failure'] = 'ENTRY_NOT_FILLED'
+        trade['outcome'] = 'ENTRY_NOT_FILLED' if pending_entry else 'NO_ENTRY_SIGNAL'
+        trade['failure'] = trade['outcome']
     elif exit_ is None:
         # The option never traded again after the exit decision: nothing could be sold, so
         # the 0DTE contract is settled at its intrinsic value at the close (usually zero).
@@ -148,6 +148,7 @@ def simulate(data: CaseData, engine, params, fill=PRIMARY_FILL, until_minute=Non
         exit_ = dict(pending_exit or {'minute': last_minute, 'reason': 'platform_flatten'},
                      fill_minute=last_minute, price=intrinsic, bar_close=None, settled_at_expiry=True)
         trade['exit'] = exit_
+        trade['outcome'] = 'EXIT_NOT_FILLED'
     if trade['failure'] is None and exit_ is not None:
         paid = entry['price'] * fill.multiplier
         sides = 1 if exit_.get('settled_at_expiry') else 2
@@ -257,11 +258,16 @@ def weighted_metrics(values, weights=None):
     }
 
 
+def case_value(trade, key='net_return'):
+    """Unentered cases retain zero economic contribution, never a fabricated fill."""
+    return 0.0 if trade['entry'] is None else trade[key]
+
+
 def summarize(trades, labels, hit_rate=0.5):
     scenarios = [l['scenario'] for l in labels]
     weights, gaps = mirror_weights(scenarios, hit_rate)
-    returns = [t['net_return'] for t in trades]
-    dollars = [t['net_pnl'] for t in trades]
+    returns = [case_value(t) for t in trades]
+    dollars = [case_value(t, 'net_pnl') for t in trades]
     by_scenario = {}
     for name in SCENARIOS:
         idx = [i for i, s in enumerate(scenarios) if s == name]
@@ -269,41 +275,46 @@ def summarize(trades, labels, hit_rate=0.5):
         captures = [min(max(t['net_return'] / t['best_net_return'], 0.0), 1.0) for t in sub
                     if t['net_return'] is not None and (t['best_net_return'] or 0) >= CAPTURE_MIN_BEST]
         by_scenario[name] = dict(weighted_metrics([returns[i] for i in idx]), label_zh=SCENARIO_ZH[name],
+                                 traded=sum(t['entry'] is not None for t in sub),
                                  median=statistics.median([returns[i] for i in idx if returns[i] is not None])
                                  if any(returns[i] is not None for i in idx) else None,
                                  upside_capture=statistics.mean(captures) if captures else None)
-    completed = sum(t['failure'] is None for t in trades)
+    completed = sum(t['outcome'] == 'COMPLETED' for t in trades)
+    holds = [t['hold_minutes'] for t in trades if t['hold_minutes'] is not None]
     return {
         'cases': len(trades),
         'completed': completed,
         'completion_rate': completed / len(trades) if trades else 0.0,
+        'completion_score': 100 * completed / len(trades) if trades else 0.0,
+        'outcomes': Counter(t['outcome'] for t in trades),
+        'traded': weighted_metrics([t['net_return'] for t in trades], weights),
+        'traded_raw': weighted_metrics([t['net_return'] for t in trades]),
         'failures': Counter(t['failure'] for t in trades if t['failure']),
         'balanced': weighted_metrics(returns, weights),
         'balanced_dollars': weighted_metrics(dollars, weights),
         'raw': weighted_metrics(returns),
-        'dollars_total': sum(d for d in dollars if d is not None) if completed else None,
+        'dollars_total': sum(d for d in dollars if d is not None) if trades else None,
         'coverage_gaps': gaps,
         'by_scenario': by_scenario,
         'with_direction': weighted_metrics([r for r, l in zip(returns, labels) if l['scenario'] in WITH_DIRECTION]),
-        'hold_minutes_median': statistics.median([t['hold_minutes'] for t in trades if t['hold_minutes'] is not None])
-        if completed else None,
+        'hold_minutes_median': statistics.median(holds) if holds else None,
         'entry_reasons': Counter(t['entry']['reason'] for t in trades if t['entry']),
         'exit_reasons': Counter(t['exit']['reason'] for t in trades if t['exit']),
     }
 
 
-def shuffle_null(datas, trades, labels, fill=PRIMARY_FILL, draws=NULL_DRAWS, seed=20260916):
+def shuffle_null(datas, trades, labels, fill=PRIMARY_FILL, draws=NULL_DRAWS, seed=20260916, params=None):
     """Same-schedule null: reassign the strategy's own (entry, exit) minutes across cases.
 
     Keeps the distribution of entry times and holding periods, destroys the link
     between a specific day's tape and the chosen minutes. p = share of draws whose
     balanced expectancy (payoff ratio) is at least the strategy's.
     """
-    schedule = [(t['entry']['minute'], t['exit']['minute']) for t in trades if t['failure'] is None]
+    schedule = [(t['entry']['minute'], t['exit']['minute']) if t['entry'] else None for t in trades]
     if len(schedule) < 2:
         return None
     weights, _ = mirror_weights([l['scenario'] for l in labels])
-    observed = weighted_metrics([t['net_return'] for t in trades], weights)
+    observed = weighted_metrics([case_value(t) for t in trades], weights)
     if observed['expectancy'] is None:
         return None  # direction-balanced metrics undefined for this dataset
     tapes = []
@@ -311,30 +322,36 @@ def shuffle_null(datas, trades, labels, fill=PRIMARY_FILL, draws=NULL_DRAWS, see
         options = sorted((session_minute(data.session, b.close_time), b) for b in data.option)
         tapes.append(options)
 
-    def replay(options, entry_minute, exit_minute):
-        buy = next(((m, b) for m, b in options if m >= entry_minute + fill.delay_minutes), None)
+    def replay(index, entry_minute, exit_minute):
+        data, options = datas[index], tapes[index]
+        flatten = flatten_minute(params or {'flatten_before_close_minutes': 15}, data.session)
+        buy = next(((m, b) for m, b in options if entry_minute + fill.delay_minutes <= m < flatten), None)
         if buy is None:
-            return None
+            return 0.0
         sell = next(((m, b) for m, b in options if m >= max(exit_minute, buy[0]) + fill.delay_minutes), None)
         if sell is None:
-            return None
+            sign = 1 if data.case.direction == 'LONG' else -1
+            sold = max(0.0, sign * (data.underlying[-1].close - data.case.strike))
+        else:
+            sold = fill.sell(sell[1])
         paid = fill.buy(buy[1]) * fill.multiplier
-        return ((fill.sell(sell[1]) - fill.buy(buy[1])) * fill.multiplier - 2 * fill.fee_per_contract) / paid
+        return ((sold - fill.buy(buy[1])) * fill.multiplier - (2 if sell else 1) * fill.fee_per_contract) / paid
 
     rng = random.Random(seed)
-    ge_expectancy = ge_payoff = valid = 0
+    ge_expectancy = ge_payoff = valid = valid_payoff = 0
     for _ in range(draws):
         rng.shuffle(schedule)
-        values = [replay(tapes[i], *schedule[i % len(schedule)]) for i in range(len(datas))]
+        values = [replay(i, *schedule[i]) if schedule[i] else 0.0 for i in range(len(datas))]
         m = weighted_metrics(values, weights)
         if m['expectancy'] is None:
             continue
         valid += 1
         ge_expectancy += m['expectancy'] >= observed['expectancy']
         if m['payoff_ratio'] is not None and observed['payoff_ratio'] is not None:
+            valid_payoff += 1
             ge_payoff += m['payoff_ratio'] >= observed['payoff_ratio']
     return {'draws': valid, 'p_expectancy': (ge_expectancy + 1) / (valid + 1),
-            'p_payoff_ratio': (ge_payoff + 1) / (valid + 1)}
+            'p_payoff_ratio': (ge_payoff + 1) / (valid_payoff + 1) if valid_payoff else None}
 
 
 def day_bootstrap(datas, labels, trades, bench, draws=BOOTSTRAP_DRAWS, seed=20260917):
@@ -367,6 +384,11 @@ def prefix_consistency(datas, trades, item, fill=PRIMARY_FILL):
     """Re-run each case truncated at its entry/exit decision minute; decisions must match."""
     mismatches = []
     for data, trade in zip(datas, trades):
+        if trade['entry'] is None:
+            for minute in range(60, len(data.underlying) + 1, 60):
+                cut = run_strategy(data, item, fill, until_minute=minute)['decisions']
+                if cut != [d for d in trade['decisions'] if d[0] <= minute]:
+                    mismatches.append({'contract': trade['contract'], 'leg': 'flat', 'minute': minute})
         for leg in ('entry', 'exit'):
             if not trade[leg] or (trade[leg]['reason'] or '').startswith('platform_'):
                 continue
@@ -383,7 +405,6 @@ def gates(summary, benchmark, robust):
     s, b = summary, benchmark
     against, bench_against = s['by_scenario']['trend_against'], b['by_scenario']['trend_against']
     checks = {
-        'G1_completion_100pct': s['completion_rate'] == 1.0,
         'G3_expectancy_beats_benchmark': _all([_gt(s['balanced']['expectancy'], b['balanced']['expectancy']),
                                                _gt(s['balanced_dollars']['expectancy'], b['balanced_dollars']['expectancy'])]),
         'G4_payoff_ratio_at_least_%g' % MIN_PAYOFF_RATIO: _ge(s['balanced']['payoff_ratio'], MIN_PAYOFF_RATIO),
@@ -433,8 +454,8 @@ def robustness(datas, labels, trades, bench, item, fill=PRIMARY_FILL):
     dates = sorted({d.case.trade_date for d in datas})
     halves = {}
     for name, days in (('first_half', dates[:len(dates) // 2]), ('second_half', dates[len(dates) // 2:])):
-        pairs = [(t['net_return'], b['net_return']) for d, t, b in zip(datas, trades, bench)
-                 if d.case.trade_date in days and b['net_return'] is not None]
+        pairs = [(case_value(t), case_value(b)) for d, t, b in zip(datas, trades, bench)
+                 if d.case.trade_date in days]
         strategy = _mean(x for x, _ in pairs) if pairs and all(x is not None for x, _ in pairs) else None
         halves[name] = {'days': [days[0], days[-1]] if days else None, 'cases': len(pairs),
                         'strategy_mean': strategy, 'benchmark_mean': _mean(y for _, y in pairs)}
@@ -458,7 +479,7 @@ def robustness(datas, labels, trades, bench, item, fill=PRIMARY_FILL):
         try:
             bal = summarize([run_strategy(d, variant, fill) for d in datas], labels)['balanced']
         except ValueError:
-            continue  # e.g. deadlines that do not fit the session
+            continue  # e.g. flatten_minute that do not fit the session
         neighbors.append({'param': name, 'from': value, 'to': moved, 'passed': _beats(bal, bench_balanced),
                           'expectancy': bal['expectancy'], 'payoff_ratio': bal['payoff_ratio']})
     return {
@@ -491,7 +512,7 @@ def _all(values):
 
 
 def verdict(checks, prefix_ok, coverage_ok, oos_sessions, both_sides_ok):
-    if checks['G1_completion_100pct'] is not True or not prefix_ok:
+    if not prefix_ok:
         return 'INVALID'
     if any(v is False for v in checks.values()):
         return 'REJECT'
@@ -508,7 +529,7 @@ def evaluate(dataset_dir, strategy_id=None, registry=None, null_draws=NULL_DRAWS
     params = item['config']['params']
     dataset = Dataset(dataset_dir)
     datas = [dataset.load(case) for case in dataset.cases]
-    labels = [label_case(d, deadlines(params, d.session)[1]) for d in datas]
+    labels = [label_case(d, flatten_minute(params, d.session)) for d in datas]
     trades = [run_strategy(d, item) for d in datas]
     bench = [run_benchmark(d, item) for d in datas]
     developed = item['config'].get('developed_on', {})
@@ -530,7 +551,7 @@ def evaluate(dataset_dir, strategy_id=None, registry=None, null_draws=NULL_DRAWS
         'direction_skill_0.6': {'strategy': summarize(trades, labels, 0.6)['balanced'],
                                 'benchmark': summarize(bench, labels, 0.6)['balanced']},
         'stress': {},
-        'shuffle_null': shuffle_null(datas, trades, labels, draws=null_draws) if null_draws else None,
+        'shuffle_null': shuffle_null(datas, trades, labels, draws=null_draws, params=params) if null_draws else None,
         'prefix_consistency': prefix_consistency(datas, trades, item),
         'bootstrap_by_day': day_bootstrap(datas, labels, trades, bench, draws=BOOTSTRAP_DRAWS if null_draws else 50),
         'market_shapes': _market_shapes(trades, bench, labels),
@@ -568,7 +589,7 @@ def evaluate(dataset_dir, strategy_id=None, registry=None, null_draws=NULL_DRAWS
 def _market_shapes(trades, bench, labels):
     groups = defaultdict(list)
     for t, b, l in zip(trades, bench, labels):
-        groups[(l['market_shape'], t['direction'])].append((t['net_return'], b['net_return']))
+        groups[(l['market_shape'], t['direction'])].append((case_value(t), case_value(b)))
     return {'%s|%s' % key: {'n': len(v), 'strategy_mean': _mean(x for x, _ in v), 'benchmark_mean': _mean(y for _, y in v)}
             for key, v in sorted(groups.items())}
 
@@ -605,7 +626,6 @@ def _num(x, fmt='%.2f'):
 
 
 GATE_TEXT = {
-    'G1_completion_100pct': 'G1 每张合约都完成了一买一卖',
     'G3_expectancy_beats_benchmark': 'G3 平均每笔收益好于对照组（按收益率和按美元都要好）',
     'G4_payoff_ratio_at_least_%g' % MIN_PAYOFF_RATIO: 'G4 盈亏比 ≥ %g' % MIN_PAYOFF_RATIO,
     'G5_trend_against_loss_smaller_than_benchmark': 'G5 方向错（逆势单边）时亏得比对照组少',
@@ -620,7 +640,7 @@ VERDICT_TEXT = {
     'ACCEPT': '达标，可以把策略状态改为 accepted',
     'PROVISIONAL': '能判断的门槛都过了，但数据还不够（有门槛无法判断、场景样本太少或样本外交易日不足），暂不能上线',
     'REJECT': '没达到标准，不能上线',
-    'INVALID': '实现有问题（没完成交易或偷看了未来数据），结果无效',
+    'INVALID': '实现有问题（前缀一致性未通过），结果无效',
 }
 
 
@@ -670,7 +690,7 @@ def render_markdown(report):
         '| 门槛 | 结果 |', '|---|---|',
     ]
     gate_rows = [(GATE_TEXT.get(k, k), v) for k, v in report['gates_in_sample'].items()]
-    gate_rows.insert(1, ('G2 没有偷看未来数据（截断到决策那一分钟重放，决策不变）', report['prefix_consistency']['passed']))
+    gate_rows.insert(0, ('G2 没有偷看未来数据（截断到决策那一分钟重放，决策不变）', report['prefix_consistency']['passed']))
     gate_text = {True: '通过', False: '**未通过**', None: '不适用（这份数据无法判断）'}
     lines += ['| %s | %s |' % (name, gate_text[ok]) for name, ok in gate_rows]
     lines += [
@@ -684,9 +704,14 @@ def render_markdown(report):
         '',
         '| 指标 | 说明 | 策略 | 对照组（09:35 买，拿到 15:45） |', '|---|---|---:|---:|',
     ]
-    rows = (('expectancy', '平均每笔收益', '所有笔收益的平均', _pct),
+    lines += [
+        '| G1 完成分（独立评分，不是门槛） | 完整买入并卖出 / 全部 case × 100 | %.1f / 100 | %.1f / 100 |' % (s['completion_score'], b['completion_score']),
+        '| 完成笔数 / 全部 case | 到期结算不算完成卖出 | %d / %d | %d / %d |' % (s['completed'], s['cases'], b['completed'], b['cases']),
+        '| 已入场平均收益 | 含到期结算；未入场不进入此项 | %s | %s |' % (_pct(s['traded']['expectancy']), _pct(b['traded']['expectancy'])),
+    ]
+    rows = (('expectancy', '每个 case 平均收益', '未入场贡献零，保留全部 case', _pct),
             ('payoff_ratio', '盈亏比', '平均赚的一笔 ÷ 平均亏的一笔', _num),
-            ('win_rate', '胜率', '赚钱的笔数占比', _share),
+            ('win_rate', '盈利 case 占比', '赚钱的 case 占全部 case 的比例', _share),
             ('average_win', '平均赚', '赚钱那些笔的平均收益', _share),
             ('average_loss', '平均亏', '亏钱那些笔的平均亏损', _share),
             ('profit_factor', '总赚 ÷ 总亏', '大于 1 才是整体赚钱', _num))
@@ -697,7 +722,7 @@ def render_markdown(report):
         '',
         '### 同一批合约直接对比（不加权）',
         '',
-        '策略和对照组交易的是完全相同的合约，方向构成一样，所以这张表不需要加权也是公平的比较；'
+        '策略和对照组使用完全相同的 case 集合，未入场贡献零，因此保留了相同的方向构成；'
         '但它的绝对数值会受这份数据里方向对错比例影响。%s' % (
             '**这份数据方向对错只有一边，上面「各半」指标算不出来，以这张表为准。**' if s['balanced']['expectancy'] is None else ''),
         '',
@@ -768,24 +793,29 @@ def render_markdown(report):
         lines.append('- **%s**：策略平均每笔 %s、盈亏比 %s；对照组平均每笔 %s。' % (
             stress_names.get(name, name), _pct(row['strategy']['expectancy']), _num(row['strategy']['payoff_ratio']),
             _pct(row['benchmark']['expectancy'])))
-    lines += ['', '## 5. 逐笔明细', '',
-              '| 标的 | 日期 | 合约 | 当天走势 | 买入 | 买入原因 | 卖出 | 卖出原因 | 策略收益 | 对照组收益 |',
-              '|---|---|---|---|---|---|---|---|---:|---:|']
+    lines += ['', '完成情况：' + '；'.join('%s %d' % (OUTCOME_ZH[k], s['outcomes'].get(k, 0)) for k in OUTCOME_ZH),
+              '', '未入场的收益率逐笔记为 —，总体比较贡献零；到期结算纳入盈亏但不计完成卖出。',
+              '', '## 5. 逐笔明细', '',
+              '| 标的 | 日期 | 合约 | 当天走势 | 买入 | 买入原因 | 卖出 | 卖出原因 | 策略收益 | 对照组收益 | 完成情况 |',
+              '|---|---|---|---|---|---|---|---|---:|---:|---|']
     for c in report['cases']:
-        lines.append('| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |' % (
+        lines.append('| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |' % (
             c['symbol'], c['trade_date'], 'CALL' if c['direction'] == 'LONG' else 'PUT', SCENARIO_ZH[c['scenario']],
             _hhmm(c['entry'] and c['entry']['fill_minute']), REASON_ZH.get(c['entry'] and c['entry']['reason'], c['entry'] and c['entry']['reason']),
             _hhmm(c['exit'] and c['exit']['fill_minute']), REASON_ZH.get(c['exit'] and c['exit']['reason'], c['exit'] and c['exit']['reason']),
-            _pct(c['net_return']), _pct(c['benchmark_net_return'])))
+            _pct(c['net_return']), _pct(c['benchmark_net_return']), OUTCOME_ZH[c['outcome']]))
     return '\n'.join(lines) + '\n'
+
+
+OUTCOME_ZH = {'COMPLETED': '完成买卖', 'NO_ENTRY_SIGNAL': '无入场信号',
+              'ENTRY_NOT_FILLED': '买入未成交', 'EXIT_NOT_FILLED': '卖出未成交（到期结算）'}
 
 
 REASON_ZH = {
     'trend_breakout': '顺势突破', 'reversal_reclaim': '反转收复', 'late_confirmation': '午后放宽确认',
-    'must_trade_deadline': '到点必须买', 'platform_must_enter': '平台强制买', 'friction_deadline': '虚值过深提前强制买',
     'invalidation_stop': '止损', 'breakeven_stop': '正股跌回买入价离场', 'trailing_stop': '从高点回撤离场',
     'no_progress': '迟迟不涨离场', 'scheduled_flatten': '收盘前强平', 'platform_flatten': '平台强平',
-    'charm_exit': '午后仍虚值离场', 'giveback_stop': '回吐过半离场',
+    'charm_exit': '午后仍虚值离场',
 }
 
 
@@ -801,7 +831,7 @@ def main(argv=None):
     out.mkdir(parents=True, exist_ok=True)
     (out / 'report.json').write_text(json.dumps(report, indent=2, ensure_ascii=False, allow_nan=False) + '\n')
     (out / 'REPORT.md').write_text(render_markdown(report))
-    print(json.dumps({'verdict': report['verdict'], 'balanced': report['summary']['balanced'],
+    print(json.dumps({'verdict': report['verdict'], 'completion_score': report['summary']['completion_score'], 'balanced': report['summary']['balanced'],
                       'benchmark': report['benchmark_open_hold']['balanced']}, indent=2, ensure_ascii=False))
     return 0 if report['verdict'] in ('ACCEPT', 'PROVISIONAL') else 1
 
