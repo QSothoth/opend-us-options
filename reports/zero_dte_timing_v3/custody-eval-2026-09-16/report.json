@@ -50,6 +50,93 @@
     ],
     "selections": {
       "unspecified": 10
+    },
+    "sides": {
+      "symbol_sessions": 10,
+      "both_sides": 0,
+      "ok": false,
+      "missing": [
+        {
+          "symbol": "US.AMD",
+          "trade_date": "2026-09-16",
+          "call_strikes": [
+            525.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.AMZN",
+          "trade_date": "2026-09-16",
+          "call_strikes": [
+            250.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.AVGO",
+          "trade_date": "2026-09-16",
+          "call_strikes": [
+            345.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.GOOGL",
+          "trade_date": "2026-09-16",
+          "call_strikes": [
+            347.5
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.INTC",
+          "trade_date": "2026-09-16",
+          "call_strikes": [
+            103.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.META",
+          "trade_date": "2026-09-16",
+          "call_strikes": [
+            680.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.MSFT",
+          "trade_date": "2026-09-16",
+          "call_strikes": [
+            495.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.MU",
+          "trade_date": "2026-09-16",
+          "call_strikes": [
+            930.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.NVDA",
+          "trade_date": "2026-09-16",
+          "call_strikes": [
+            215.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.TSLA",
+          "trade_date": "2026-09-16",
+          "call_strikes": [
+            365.0
+          ],
+          "put_strikes": []
+        }
+      ]
     }
   },
   "fill_model": {

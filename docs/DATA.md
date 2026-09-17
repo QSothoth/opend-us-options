@@ -35,6 +35,15 @@ Release 里可能同时有 parquet 副本；本项目只读 CSV。
 | `session_close` | V5 起必需 | 当日收盘时间（提前收盘日为 13:00） |
 | `selection` | V5 起必需 | 合约选择方式；V5 起必须是 `both_sides_atm_at_open` |
 
+### CALL 和 PUT 必须一起验证（统一要求）
+
+训练集和验证集都适用：
+
+- 每个 (标的, 交易日) 同时包含**同一行权价**的 CALL 和 PUT 两张 0DTE 合约（行权价取开盘第一根 1m 开盘价最近的挂牌行权价），各算一个 case；
+- 方向不得由当天结果挑选。两边都评测，当天无论涨跌，方向对和方向错的合约各占一半，结果与上游选方向的能力无关；这时「方向对错各半」的加权与简单平均完全一致；
+- 两边不全的数据集只能做诊断，评测报告会标出「两边不全」，结论最高 PROVISIONAL；
+- 发布前必须通过 `python3 -m custody check --dataset <目录>`：哈希全部一致、每个 case 行情完整、两边齐全，否则退出码非 0。
+
 读取时的强制检查（任何一项不满足直接报错）：
 
 1. 每个数据文件都有 SHA256：`CHECKSUMS.sha256`，或（验证集 Release 的布局）`manifest.json` 里 `series` 条目逐文件的 `sha256`；全部一致，且案例读取的文件必须在其中；
@@ -53,7 +62,7 @@ Release 里可能同时有 parquet 副本；本项目只读 CSV。
 | **V4** | `custody-train-0dte` | **当前唯一训练数据** |
 | V5+ | `custody-0dte-v5`、`custody-0dte-v6` …… | 由每日 freeze 累积后发布；两边都冻结 |
 | — | `eval-data-v1`、`eval-data-v2` | 只有正股 K 线的旧研究数据，不使用 |
-| 验证 | `custody-eval-2026-09-16` | **当前验证集**：只评测，绝不调参（见下） |
+| 验证 | `custody-eval-2026-09-16` | **当前验证集**：只评测，绝不调参；单边遗留，不满足两边要求（见下） |
 | — | `custody-eval-2026-09-14` | 3 个 case、2 个不是 0DTE，已退役 |
 
 ### V4 详情
@@ -71,6 +80,7 @@ Release 里可能同时有 parquet 副本；本项目只读 CSV。
 - zip SHA256 `58f0af996a33f042fd81751f3b68408266bd224be2530df10f44230e67165a31`；文件哈希在 `manifest.json` 的 `series` 里（共 40 个 csv/parquet）
 - 2026-09-16 一个交易日，10 张单一个股真 0DTE：INTC、AMD、TSLA、NVDA、MU、AVGO、AMZN、GOOGL、META、MSFT，全部是 CALL
 - 晚于所有策略的开发截止日（2026-09-14），对所有已注册策略都是样本外
+- **不满足「CALL 和 PUT 一起验证」**（`custody check` 失败：10 组里 0 组两边齐全）
 - **已知偏差**：方向仍按「全天期权成交量更大的一侧」选（10 张都选了 CALL），而当天这 10 张全部是「方向错」（逆势单边 8、先顺后逆 2），对照组平均 −99.3%。因此「方向对错各半」的指标、盈亏比、整体赚钱等门槛都无法判断，只能验证「方向错时亏得少不少」
 - 获取：`gh release download custody-eval-2026-09-16 --repo QSothoth/opend-us-options --dir data && unzip -q data/custody-eval-2026-09-16.zip -d data`
 
@@ -104,13 +114,25 @@ python3 -m custody freeze --dataset data/custody-0dte-work --date 2026-09-16 --s
 
 工作目录 `data/custody-0dte-work` **不是** Release，可以一直追加；它不能是解压出来的 V4 目录。
 
+### 生成验证集
+
+验证集和训练集用同一个命令、同样两边一起冻结，只是角色不同、交易日要晚于策略的开发截止日，并且绝不用来调参：
+
+```bash
+python3 -m custody freeze --dataset data/custody-eval-2026-09-17 --date 2026-09-17 --role validation/custody \
+  --symbols US.INTC,US.AMD,US.TSLA,US.NVDA,US.MU,US.AVGO,US.AMZN,US.GOOGL,US.META,US.MSFT
+python3 -m custody check --dataset data/custody-eval-2026-09-17
+```
+
+OpenD 保留过期周权的时间很短，最好当天收盘 20 分钟后就冻结；多天的验证集就对同一个目录每天追加一次。
+
 ## 5. 发布新 Release
 
-攒够一批交易日（建议至少 20 个新交易日，才够做样本外判定）后：
+攒够一批交易日（建议至少 20 个新交易日，才够做样本外判定），并且 `custody check` 通过后：
 
 ```bash
 cp -r data/custody-0dte-work data/custody-0dte-v5
-python3 -c "from custody.dataset import Dataset; d = Dataset('data/custody-0dte-v5'); print(len(d.cases), d.fingerprint)"
+python3 -m custody check --dataset data/custody-0dte-v5      # 必须 "ok": true（含 CALL/PUT 两边齐全）
 (cd data && zip -qr custody-0dte-v5.zip custody-0dte-v5 && sha256sum custody-0dte-v5.zip > custody-0dte-v5.zip.sha256)
 gh release create custody-0dte-v5 data/custody-0dte-v5.zip data/custody-0dte-v5.zip.sha256 \
   --repo QSothoth/opend-us-options --title "Custody 0DTE dataset V5 (both sides)" --notes "<窗口、标的、case 数、两个 SHA256>"

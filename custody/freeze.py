@@ -15,8 +15,10 @@ Per (symbol, session) it stores, in the Release layout of :mod:`custody.dataset`
 * ``selection = "both_sides_atm_at_open"``, ``prev_close`` and ``session_close``.
 
 Symbols without a same-day expiry that day are skipped and recorded in the manifest.
-The command never modifies an extracted Release in place: point it at a working copy
-and publish a new Release (``custody-0dte-vN``) when ready.
+The same command builds validation sets (``--dataset data/custody-eval-<date> --date <date>
+--symbols ...``). Training and validation Releases alike must pass ``custody check``
+(every symbol/session has the CALL and the PUT) before publication. The command never
+modifies an extracted Release in place: point it at a working copy.
 """
 from __future__ import annotations
 
@@ -34,7 +36,7 @@ from .models import ET
 from .opend import DEFAULT_HOST, DEFAULT_PORT, OpenDMarket, OpenDTradingCalendar
 
 DEFAULT_SYMBOLS = ('US.SPY', 'US.QQQ', 'US.IWM', 'US.AAPL', 'US.MSFT', 'US.NVDA', 'US.TSLA',
-                   'US.META', 'US.AMZN', 'US.GOOGL', 'US.AMD', 'US.MU')
+                   'US.META', 'US.AMZN', 'US.GOOGL', 'US.AMD', 'US.MU', 'US.INTC', 'US.AVGO')
 SELECTION = 'both_sides_atm_at_open'
 
 
@@ -76,8 +78,14 @@ def _code_for(chain_rows, strike, right):
     return None
 
 
-def freeze_session(market, calendar, dataset_dir, day, symbols=DEFAULT_SYMBOLS, now=None, limiter=None, log=print):
+ROLES = ('train/custody', 'validation/custody')
+
+
+def freeze_session(market, calendar, dataset_dir, day, symbols=DEFAULT_SYMBOLS, now=None, limiter=None, log=print,
+                   role='train/custody'):
     """Freeze one session into ``dataset_dir``. Returns a summary dict."""
+    if role not in ROLES:
+        raise ValueError('role must be one of %s' % (ROLES,))
     root = Path(dataset_dir)
     now = now or datetime.now(ET)
     limiter = limiter or RateLimiter()
@@ -89,8 +97,10 @@ def freeze_session(market, calendar, dataset_dir, day, symbols=DEFAULT_SYMBOLS, 
     root.mkdir(parents=True, exist_ok=True)
     cases = json.loads(cases_path.read_text())['cases'] if cases_path.exists() else []
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {
-        'dataset': root.name, 'role': 'train/custody', 'max_dte': 0, 'schema': 'custody-0dte/1',
+        'dataset': root.name, 'role': role, 'max_dte': 0, 'schema': 'custody-0dte/1',
         'selection_policy': SELECTION, 'sessions': [], 'skipped': []}
+    if manifest.get('role') != role:
+        raise ValueError('dataset %s already has role %s' % (root, manifest.get('role')))
     known = {(c['contract'], c['trade_date']) for c in cases}
     added, skipped = [], []
     for symbol in symbols:
@@ -137,7 +147,8 @@ def freeze_session(market, calendar, dataset_dir, day, symbols=DEFAULT_SYMBOLS, 
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + '\n')
     files = write_checksums(root)
     Dataset(root)  # re-verify the whole directory after writing
-    return {'trade_date': day, 'added_cases': added, 'skipped': skipped, 'files': files}
+    return {'trade_date': day, 'added_cases': added, 'skipped': skipped, 'files': files,
+            'both_sides': Dataset(root).sides_report()}
 
 
 def build_argument_parser():
@@ -145,6 +156,8 @@ def build_argument_parser():
     parser.add_argument('--dataset', required=True, help='working dataset directory (never an extracted Release)')
     parser.add_argument('--date', default=None, help='ET session date (default: today)')
     parser.add_argument('--symbols', default=','.join(DEFAULT_SYMBOLS))
+    parser.add_argument('--role', choices=ROLES, default='train/custody',
+                        help='train/custody for the growing training set, validation/custody for a held-out set')
     parser.add_argument('--host', default=DEFAULT_HOST)
     parser.add_argument('--port', type=int, default=DEFAULT_PORT)
     return parser
@@ -155,6 +168,6 @@ def main(argv=None):
     day = args.date or datetime.now(ET).date().isoformat()
     symbols = [s.strip().upper() for s in args.symbols.split(',') if s.strip()]
     with OpenDMarket(host=args.host, port=args.port) as market:
-        summary = freeze_session(market, OpenDTradingCalendar(market), args.dataset, day, symbols)
+        summary = freeze_session(market, OpenDTradingCalendar(market), args.dataset, day, symbols, role=args.role)
     print(json.dumps(summary, indent=2, ensure_ascii=False))
     return 0

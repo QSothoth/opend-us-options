@@ -59,10 +59,19 @@ class FreezeTests(unittest.TestCase):
             self.assertEqual(len(ds.load(ds.cases[1]).underlying), 390)
             manifest = json.loads((root / 'manifest.json').read_text())
             self.assertEqual((manifest['sessions'], manifest['case_count']), ([DAY], 2))
+            self.assertTrue(summary['both_sides']['ok'])
             again = freeze_session(market, Calendar(), root, DAY, ['US.SPY'], now=AFTER_CLOSE,
                                    limiter=RateLimiter(calls=1000), log=lambda *a: None)
             self.assertEqual(again['added_cases'], [])
+            with self.assertRaisesRegex(ValueError, 'already has role'):
+                freeze_session(market, Calendar(), root, DAY, ['US.SPY'], now=AFTER_CLOSE,
+                               limiter=RateLimiter(calls=1000), log=lambda *a: None, role='validation/custody')
             self.assertEqual(len(Dataset(root).cases), 2)
+
+    def test_default_universe_includes_the_validation_names(self):
+        from custody.freeze import DEFAULT_SYMBOLS
+        for symbol in ('US.INTC', 'US.AMD', 'US.TSLA', 'US.NVDA', 'US.MU', 'US.AVGO', 'US.AMZN', 'US.GOOGL', 'US.META', 'US.MSFT'):
+            self.assertIn(symbol, DEFAULT_SYMBOLS)
 
     def test_refuses_to_freeze_before_bars_are_final(self):
         with tempfile.TemporaryDirectory() as tmp:

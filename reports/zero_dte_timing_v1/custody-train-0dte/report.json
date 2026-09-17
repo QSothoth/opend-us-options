@@ -43,6 +43,301 @@
     ],
     "selections": {
       "unspecified": 36
+    },
+    "sides": {
+      "symbol_sessions": 36,
+      "both_sides": 0,
+      "ok": false,
+      "missing": [
+        {
+          "symbol": "US.AAPL",
+          "trade_date": "2026-08-21",
+          "call_strikes": [
+            312.5
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.AAPL",
+          "trade_date": "2026-08-28",
+          "call_strikes": [],
+          "put_strikes": [
+            317.5
+          ]
+        },
+        {
+          "symbol": "US.AAPL",
+          "trade_date": "2026-09-04",
+          "call_strikes": [
+            327.5
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.AAPL",
+          "trade_date": "2026-09-11",
+          "call_strikes": [],
+          "put_strikes": [
+            327.5
+          ]
+        },
+        {
+          "symbol": "US.AAPL",
+          "trade_date": "2026-09-14",
+          "call_strikes": [
+            335.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.AMD",
+          "trade_date": "2026-08-21",
+          "call_strikes": [
+            477.5
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.IWM",
+          "trade_date": "2026-08-21",
+          "call_strikes": [
+            300.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.IWM",
+          "trade_date": "2026-09-11",
+          "call_strikes": [
+            291.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.META",
+          "trade_date": "2026-08-21",
+          "call_strikes": [],
+          "put_strikes": [
+            547.5
+          ]
+        },
+        {
+          "symbol": "US.META",
+          "trade_date": "2026-08-28",
+          "call_strikes": [],
+          "put_strikes": [
+            572.5
+          ]
+        },
+        {
+          "symbol": "US.META",
+          "trade_date": "2026-09-04",
+          "call_strikes": [
+            612.5
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.META",
+          "trade_date": "2026-09-11",
+          "call_strikes": [
+            652.5
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.MSFT",
+          "trade_date": "2026-08-21",
+          "call_strikes": [],
+          "put_strikes": [
+            480.0
+          ]
+        },
+        {
+          "symbol": "US.MSFT",
+          "trade_date": "2026-08-28",
+          "call_strikes": [],
+          "put_strikes": [
+            505.0
+          ]
+        },
+        {
+          "symbol": "US.MSFT",
+          "trade_date": "2026-09-04",
+          "call_strikes": [
+            510.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.MSFT",
+          "trade_date": "2026-09-11",
+          "call_strikes": [
+            495.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.MU",
+          "trade_date": "2026-08-21",
+          "call_strikes": [
+            990.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.NVDA",
+          "trade_date": "2026-08-21",
+          "call_strikes": [
+            217.5
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.QQQ",
+          "trade_date": "2026-08-21",
+          "call_strikes": [
+            715.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.QQQ",
+          "trade_date": "2026-08-28",
+          "call_strikes": [
+            720.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.QQQ",
+          "trade_date": "2026-09-04",
+          "call_strikes": [
+            719.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.QQQ",
+          "trade_date": "2026-09-11",
+          "call_strikes": [],
+          "put_strikes": [
+            716.0
+          ]
+        },
+        {
+          "symbol": "US.QQQ",
+          "trade_date": "2026-09-14",
+          "call_strikes": [],
+          "put_strikes": [
+            703.0
+          ]
+        },
+        {
+          "symbol": "US.SPY",
+          "trade_date": "2026-08-17",
+          "call_strikes": [
+            776.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.SPY",
+          "trade_date": "2026-08-18",
+          "call_strikes": [
+            769.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.SPY",
+          "trade_date": "2026-08-19",
+          "call_strikes": [],
+          "put_strikes": [
+            770.0
+          ]
+        },
+        {
+          "symbol": "US.SPY",
+          "trade_date": "2026-08-20",
+          "call_strikes": [],
+          "put_strikes": [
+            766.0
+          ]
+        },
+        {
+          "symbol": "US.SPY",
+          "trade_date": "2026-08-21",
+          "call_strikes": [
+            766.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.SPY",
+          "trade_date": "2026-08-24",
+          "call_strikes": [
+            765.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.SPY",
+          "trade_date": "2026-08-25",
+          "call_strikes": [
+            766.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.SPY",
+          "trade_date": "2026-08-28",
+          "call_strikes": [
+            772.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.SPY",
+          "trade_date": "2026-08-31",
+          "call_strikes": [
+            767.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.SPY",
+          "trade_date": "2026-09-01",
+          "call_strikes": [
+            762.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.SPY",
+          "trade_date": "2026-09-09",
+          "call_strikes": [
+            764.0
+          ],
+          "put_strikes": []
+        },
+        {
+          "symbol": "US.SPY",
+          "trade_date": "2026-09-11",
+          "call_strikes": [],
+          "put_strikes": [
+            765.0
+          ]
+        },
+        {
+          "symbol": "US.TSLA",
+          "trade_date": "2026-08-21",
+          "call_strikes": [],
+          "put_strikes": [
+            350.0
+          ]
+        }
+      ]
     }
   },
   "fill_model": {

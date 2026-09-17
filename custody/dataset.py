@@ -213,6 +213,21 @@ class Dataset:
     def sessions(self):
         return sorted({c.trade_date for c in self.cases})
 
+    def sides_report(self):
+        """Both-sides requirement: every (symbol, trade_date) needs a CALL and a PUT on the same strike."""
+        groups = {}
+        for case in self.cases:
+            groups.setdefault((case.symbol, case.trade_date), []).append(case)
+        missing = []
+        for (symbol, day), cases in sorted(groups.items()):
+            calls = {c.strike for c in cases if c.direction == 'LONG'}
+            puts = {c.strike for c in cases if c.direction == 'SHORT'}
+            if not calls & puts:
+                missing.append({'symbol': symbol, 'trade_date': day, 'call_strikes': sorted(calls),
+                                'put_strikes': sorted(puts)})
+        return {'symbol_sessions': len(groups), 'both_sides': len(groups) - len(missing),
+                'ok': bool(groups) and not missing, 'missing': missing}
+
 
 # ---------------------------------------------------------------- writing
 def write_bars(path, bars):
@@ -243,3 +258,32 @@ def write_checksums(root):
             lines.append('%s  %s' % (sha256_file(path), path.relative_to(root).as_posix()))
     (root / 'CHECKSUMS.sha256').write_text('\n'.join(lines) + '\n')
     return len(lines)
+
+
+# ---------------------------------------------------------------- release check
+def check(root):
+    """Everything a Release must satisfy before publication (docs/DATA.md)."""
+    try:
+        dataset = Dataset(root)
+    except DatasetError as exc:
+        return {'root': str(root), 'ok': False, 'error': str(exc)}
+    failures = []
+    for case in dataset.cases:
+        try:
+            dataset.load(case)
+        except DatasetError as exc:
+            failures.append({'contract': case.contract, 'trade_date': case.trade_date, 'error': str(exc)})
+    sides = dataset.sides_report()
+    return {'dataset': dataset.name, 'pinned_by': dataset.pinned_by, 'checksums_verified': dataset.checksums_verified,
+            'cases': len(dataset.cases), 'sessions': dataset.sessions(), 'load_failures': failures,
+            'sides': sides, 'ok': not failures and sides['ok']}
+
+
+def main(argv=None):
+    import argparse
+    parser = argparse.ArgumentParser(prog='custody check', description=check.__doc__)
+    parser.add_argument('--dataset', required=True, help='extracted dataset directory')
+    args = parser.parse_args(argv)
+    result = check(args.dataset)
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    return 0 if result['ok'] else 1

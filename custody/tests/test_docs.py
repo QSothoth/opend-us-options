@@ -20,6 +20,12 @@ class DocsTests(unittest.TestCase):
                        '%d%%' % round(100 * ev.NEIGHBOR_SCALE), 'G7', 'G8', 'G9', 'G10', 'settled_at_expiry'):
             self.assertIn(needle, text)
 
+    def test_both_sides_rule_is_written_everywhere_it_applies(self):
+        for name in ('AGENTS.md', 'docs/DATA.md', 'docs/STANDARD.md'):
+            text = (ROOT / name).read_text()
+            self.assertIn('CALL 和 PUT', text, name)
+            self.assertIn('custody check', text, name)
+
     def test_every_registered_strategy_has_a_committed_report(self):
         for item in (i for i in Registry().list() if i['status'] != 'retired'):
             reports = list((ROOT / 'reports' / item['strategy_id']).glob('*/report.json'))

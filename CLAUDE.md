@@ -50,7 +50,7 @@ V4 固定值：zip SHA256 `65398673c6617ef0a013c1795936016404babe4a1d4fc1777e165
 - 不允许直接看 V4 的原始平均收益来比较策略，必须用评测标准里的**方向对称加权**；
 - V4 的「顺势单边」只有 2 个、「先顺后逆」只有 1 个，场景覆盖不足，任何策略在 V4 上最多只能得到 PROVISIONAL。
 
-**验证数据（只评测，绝不调参）**：`custody-eval-2026-09-16`（Release，2026-09-16 当天 10 张单一个股真 0DTE CALL，zip SHA256 `58f0af996a33f042fd81751f3b68408266bd224be2530df10f44230e67165a31`）。已知缺陷：方向同样按「全天成交量更大的一侧」选出，10 张全是 CALL 且当天全部方向错，只有一个交易日——「方向对错各半」指标算不出来，只能看「同批直接对比」和逆势时的亏损控制。
+**验证数据（只评测，绝不调参）**：`custody-eval-2026-09-16`（Release，2026-09-16 当天 10 张单一个股真 0DTE CALL，zip SHA256 `58f0af996a33f042fd81751f3b68408266bd224be2530df10f44230e67165a31`）。已知缺陷：方向同样按「全天成交量更大的一侧」选出，10 张全是 CALL 且当天全部方向错，只有一个交易日——「方向对错各半」指标算不出来，只能看「同批直接对比」和逆势时的亏损控制。它不满足 3.2 第 4 条（两边一起验证），是这条规范之前的遗留数据；下一份验证集必须两边齐全。
 
 **其他 Release 都不是训练数据，也不是评测数据，不要使用**：`eval-data-v1`、`eval-data-v2`（只有正股 K 线，旧的 underlying-proxy 研究遗留）；`custody-eval-2026-09-14`（3 个 case，其中 2 个不是 0DTE，已退役）。
 
@@ -59,7 +59,12 @@ V4 固定值：zip SHA256 `65398673c6617ef0a013c1795936016404babe4a1d4fc1777e165
 1. **只用真实 OpenD 数据。**合成数据只允许出现在单元测试里（`custody/tests/helpers.py`），永远不能用于评测或写进报告。
 2. **只收真 0DTE**：expiry == trade_date。
 3. **配对**：每个 case 必须有同日完整的正股 1m（常规交易时段每分钟一根）+ 该合约的 1m。
-4. **方向不得由当天结果决定**（全天收益、全天成交量、事后场景标签都不行）。V5 起每个 (标的, 交易日) 同时冻结平值 CALL 和 PUT 两边（`selection = both_sides_atm_at_open`）。
+4. **CALL 和 PUT 必须一起验证（统一要求，训练集和验证集都适用）**：
+   - 每个 (标的, 交易日) 必须同时包含**同一行权价**（开盘第一根 1m 开盘价最近的挂牌行权价）的 **CALL 和 PUT** 两张 0DTE 合约，各算一个 case；
+   - 方向不得由当天结果挑选（全天收益、全天成交量、事后场景标签都不行）——两边都评测，方向对和方向错天然各占一半；
+   - 用 `python3 -m custody freeze` 生成（训练集默认、验证集加 `--role validation/custody`），它总是两边一起冻结；
+   - **发布 Release 前必须 `python3 -m custody check --dataset <目录>` 通过**（校验哈希、完整行情、两边齐全）；
+   - 两边不全的数据集只能做诊断，评测结论最高 PROVISIONAL，永远不能 ACCEPT。V4 和 `custody-eval-2026-09-16` 是这条规范之前的单边遗留数据。
 5. **每个数据文件都必须有 SHA256 固定**（`CHECKSUMS.sha256`，或 `manifest.json` 的 `series` 里逐文件的 `sha256`），评测时自动校验；不一致或读到没有哈希的文件直接报错。
 6. **Release 不可变**：不要在解压出来的 Release 目录里改任何文件。新数据在工作目录里用 `custody freeze` 累积，攒够后发布新 Release，tag 命名 `custody-0dte-v5`、`custody-0dte-v6`……（流程见 `docs/DATA.md`）。
 7. **数据文件不进 git**：放在 `data/`（已 gitignore）。
@@ -90,7 +95,7 @@ V4 固定值：zip SHA256 `65398673c6617ef0a013c1795936016404babe4a1d4fc1777e165
 - **成交**：决策后至少 1 分钟、第一根有成交量的期权 1m K 线，按收盘价向不利方向让出该 K 线振幅的 25%，单边手续费 $0.65/张。
 - **主口径**：方向对称加权（消除数据集里方向对错比例的影响）；**主指标**：盈亏比。
 - **门槛**：G1 完成率 100%；G2 没有偷看未来数据；G3 平均每笔收益好于对照组；G4 盈亏比 ≥ 2.0；G5 逆势单边时亏得比对照组少；G6 方向正确时平均赚钱；G7 盈亏比高于对照组；G8 前后两半交易日都赢对照组；G9 去掉任意一天仍赢对照组；G10 参数上下浮动 25% 仍赢对照组；G11 整体赚钱（利润因子 > 1）。G3、G7 按收益率和按美元都要成立。
-- **结论等级**：INVALID（G1/G2 不过）/ REJECT（G3–G11 有不过）/ PROVISIONAL（没有不过的门槛，但有门槛因数据不足「不适用」、场景覆盖不足或样本外 < 20 个交易日）/ ACCEPT。数据算不出某个门槛时记「不适用」，不记「未通过」，也永远不能因此得到 ACCEPT。
+- **结论等级**：INVALID（G1/G2 不过）/ REJECT（G3–G11 有不过）/ PROVISIONAL（没有不过的门槛，但有门槛因数据不足「不适用」、数据集 CALL/PUT 两边不全、场景覆盖不足或样本外 < 20 个交易日）/ ACCEPT。数据算不出某个门槛时记「不适用」，不记「未通过」，也永远不能因此得到 ACCEPT。
 - **卖不出去的仓位**按收盘内在价值结算（`settled_at_expiry`），策略和对照组同一规则。
 - **禁止**：用正股收益 × 乘数代替期权收益；用合成数据评测；删掉失败的 case 再算；看完评测结果再改标准让策略通过。
 - 报告放在 `reports/<strategy_id>/<dataset>/`（`report.json` + `REPORT.md`），和策略版本一起提交。
@@ -117,7 +122,7 @@ custody/
   indicators.py           当天 1m 因果指标（VWAP / EMA / ATR / 开盘区间）
   engines/                策略引擎代码（zero_dte_timing.py）
   strategies/             注册的策略参数文件（不可变）+ index.json（哈希与状态）
-  dataset.py              数据集布局、校验、读取
+  dataset.py              数据集布局、校验、读取、发布前检查（custody check）
   evaluate.py             评测标准实现
   freeze.py               每日只读 OpenD 冻结（两边）
   service.py controller.py http.py models.py ports.py   运行时状态机与接口
@@ -139,12 +144,18 @@ mkdir -p data && gh release download custody-train-0dte --repo QSothoth/opend-us
 echo "65398673c6617ef0a013c1795936016404babe4a1d4fc1777e16502c2621c7d3  data/custody-train-0dte.zip" | sha256sum -c
 unzip -q data/custody-train-0dte.zip -d data
 
+# 发布 Release 前的检查（哈希、完整行情、CALL/PUT 两边齐全）
+python3 -m custody check --dataset data/custody-0dte-work
+
 # 评测（离线）
 python3 -m custody strategies
 python3 -m custody evaluate --dataset data/custody-train-0dte --out reports/zero_dte_timing_v3/custody-train-0dte
 
-# 每个交易日收盘 20 分钟后冻结当天数据（只读 OpenD，需要 futu-api）
+# 每个交易日收盘 20 分钟后冻结当天数据（只读 OpenD，需要 futu-api；CALL/PUT 两边一起）
 python3 -m custody freeze --dataset data/custody-0dte-work
+# 生成验证集（同样两边一起）
+python3 -m custody freeze --dataset data/custody-eval-2026-09-17 --date 2026-09-17 --role validation/custody \
+  --symbols US.INTC,US.AMD,US.TSLA,US.NVDA,US.MU,US.AVGO,US.AMZN,US.GOOGL,US.META,US.MSFT
 
 # 盘中观察一个任务（只读 OpenD，绝不下单）
 python3 -m custody dryrun --symbol US.QQQ --direction LONG --contract US.QQQ260916C705000

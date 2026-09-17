@@ -490,12 +490,13 @@ def _all(values):
     return True
 
 
-def verdict(checks, prefix_ok, coverage_ok, oos_sessions):
+def verdict(checks, prefix_ok, coverage_ok, oos_sessions, both_sides_ok):
     if checks['G1_completion_100pct'] is not True or not prefix_ok:
         return 'INVALID'
     if any(v is False for v in checks.values()):
         return 'REJECT'
-    if any(v is None for v in checks.values()) or not coverage_ok or oos_sessions < MIN_OOS_SESSIONS:
+    if (any(v is None for v in checks.values()) or not coverage_ok or not both_sides_ok
+            or oos_sessions < MIN_OOS_SESSIONS):
         return 'PROVISIONAL'
     return 'ACCEPT'
 
@@ -521,7 +522,8 @@ def evaluate(dataset_dir, strategy_id=None, registry=None, null_draws=NULL_DRAWS
         'dataset': {'name': dataset.name, 'checksums_sha256': dataset.fingerprint, 'checksums_verified': dataset.checksums_verified,
                     'cases': len(datas), 'sessions': len(dataset.sessions()),
                     'window': [dataset.sessions()[0], dataset.sessions()[-1]] if datas else None,
-                    'selections': Counter(d.case.selection or 'unspecified' for d in datas)},
+                    'selections': Counter(d.case.selection or 'unspecified' for d in datas),
+                    'sides': dataset.sides_report()},
         'fill_model': asdict(PRIMARY_FILL),
         'summary': summarize(trades, labels),
         'benchmark_open_hold': summarize(bench, labels),
@@ -558,7 +560,8 @@ def evaluate(dataset_dir, strategy_id=None, registry=None, null_draws=NULL_DRAWS
     report['coverage'] = {'cases_per_scenario': coverage, 'minimum': MIN_CASES_PER_SCENARIO, 'ok': coverage_ok}
     report['gates_in_sample'] = in_sample_checks
     report['out_of_sample'] = oos
-    report['verdict'] = verdict(decisive, report['prefix_consistency']['passed'], coverage_ok, oos_sessions)
+    report['verdict'] = verdict(decisive, report['prefix_consistency']['passed'], coverage_ok, oos_sessions,
+                                report['dataset']['sides']['ok'])
     return _plain(report)
 
 
@@ -644,9 +647,11 @@ def render_markdown(report):
         '收益 = 这一笔赚的钱 ÷ 买入时付的权利金。' % (100 * fill['slippage_fraction'], fill['fee_per_contract']),
         '2. **对照组**：同一张合约，用「不择时」的笨办法再算一遍——09:35 直接买入，拿到 15:45 卖出。'
         '择时策略存在的意义就是要比这个笨办法好；比不过，就说明择时没有用。',
-        '3. **为什么要「方向对错各半」来算平均**：这份数据集里方向错的合约 %d 张、方向对的 %d 张（其余是震荡）。'
-        '如果直接平均，哪个策略砍仓快哪个就显得好，比的其实是数据集而不是择时。'
-        '所以把「方向对的日子」和「方向错的日子」各按一半权重平均，相当于假设上游选方向一半对一半错。' % (wrong, right),
+        '3. **为什么 CALL 和 PUT 要一起验证、要「方向对错各半」来算平均**：每个标的每天应当同时评测同一行权价的 CALL 和 PUT，'
+        '这样当天无论涨跌，方向对和方向错的合约各占一半，结果和上游选方向的对错无关。%s'
+        '这份数据集里方向错的合约 %d 张、方向对的 %d 张（其余是震荡）。如果直接平均，哪个策略砍仓快哪个就显得好，比的其实是数据集而不是择时。'
+        '所以把「方向对的日子」和「方向错的日子」各按一半权重平均，相当于假设上游选方向一半对一半错。' % (
+            '本数据集两边齐全。' if report['dataset']['sides']['ok'] else '**本数据集两边不全，结论最高只能 PROVISIONAL。**', wrong, right),
     ]
     if example:
         lines.append('4. **举例**：%s %s %s —— 策略 %s 买、%s 卖（%s），收益 %s；对照组收益 %s。' % (
@@ -669,6 +674,9 @@ def render_markdown(report):
     gate_text = {True: '通过', False: '**未通过**', None: '不适用（这份数据无法判断）'}
     lines += ['| %s | %s |' % (name, gate_text[ok]) for name, ok in gate_rows]
     lines += [
+        '| 每个标的每天 CALL 和 PUT 两边都有（同一行权价） | %s |' % (
+            '满足（%d 组）' % report['dataset']['sides']['both_sides'] if report['dataset']['sides']['ok'] else
+            '**不满足**：%d 组里只有 %d 组两边齐全' % (report['dataset']['sides']['symbol_sessions'], report['dataset']['sides']['both_sides'])),
         '| 每种走势至少 %d 张合约 | %s |' % (MIN_CASES_PER_SCENARIO, '满足' if report['coverage']['ok'] else '**不足**'),
         '| 样本外交易日至少 %d 个 | %d 个 |' % (MIN_OOS_SESSIONS, (report['out_of_sample'] or {}).get('sessions', 0)),
         '',

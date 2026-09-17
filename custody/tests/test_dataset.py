@@ -109,6 +109,31 @@ class DatasetTests(unittest.TestCase):
         with self.assertRaisesRegex(DatasetError, 'checksum mismatch'):
             Dataset(self.root)
 
+    def test_both_sides_requirement_and_release_check(self):
+        from custody.dataset import check
+        import contextlib, io
+        from custody.__main__ import main
+        write_dataset(self.root, spy_cases())
+        self.assertEqual(Dataset(self.root).sides_report(), {'symbol_sessions': 1, 'both_sides': 1, 'ok': True, 'missing': []})
+        self.assertTrue(check(self.root)['ok'])
+        one_sided = Path(self.tmp.name) / 'one_sided'
+        write_dataset(one_sided, spy_cases()[:1])
+        report = Dataset(one_sided).sides_report()
+        self.assertEqual((report['ok'], report['missing'][0]['put_strikes']), (False, []))
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(main(['check', '--dataset', str(one_sided)]), 1)
+            self.assertEqual(main(['check', '--dataset', str(self.root)]), 0)
+        mismatched = Path(self.tmp.name) / 'mismatched'
+        cases = spy_cases()
+        other_put = 'US.SPY260914P101000'
+        cases[1].update(contract=other_put, option=option_bars(cases[1]['underlying'], 101, 'PUT', other_put))
+        write_dataset(mismatched, cases)
+        self.assertFalse(Dataset(mismatched).sides_report()['ok'])  # CALL and PUT must share the strike
+        broken = Path(self.tmp.name) / 'broken'
+        write_dataset(broken, spy_cases())
+        (broken / 'CHECKSUMS.sha256').write_text('0' * 64 + '  cases.json\n')
+        self.assertFalse(check(broken)['ok'])
+
     def test_duplicate_cases_are_refused(self):
         cases = spy_cases()
         write_dataset(self.root, [cases[0], dict(cases[0])])

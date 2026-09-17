@@ -156,14 +156,15 @@ class WeightingAndMetricsTests(unittest.TestCase):
 
     def test_verdict_levels(self):
         passing = {'G1_completion_100pct': True, 'G3': True, 'G4': True}
-        self.assertEqual(ev.verdict(passing, True, True, 25), 'ACCEPT')
-        self.assertEqual(ev.verdict(passing, True, True, 5), 'PROVISIONAL')
-        self.assertEqual(ev.verdict(passing, True, False, 25), 'PROVISIONAL')
-        self.assertEqual(ev.verdict(dict(passing, G4=False), True, True, 25), 'REJECT')
-        self.assertEqual(ev.verdict(dict(passing, G1_completion_100pct=False), True, True, 25), 'INVALID')
-        self.assertEqual(ev.verdict(passing, False, True, 25), 'INVALID')
-        self.assertEqual(ev.verdict(dict(passing, G4=None), True, True, 25), 'PROVISIONAL')   # cannot judge -> never ACCEPT
-        self.assertEqual(ev.verdict(dict(passing, G3=None, G4=False), True, True, 25), 'REJECT')
+        self.assertEqual(ev.verdict(passing, True, True, 25, True), 'ACCEPT')
+        self.assertEqual(ev.verdict(passing, True, True, 5, True), 'PROVISIONAL')
+        self.assertEqual(ev.verdict(passing, True, False, 25, True), 'PROVISIONAL')
+        self.assertEqual(ev.verdict(passing, True, True, 25, False), 'PROVISIONAL')  # one-sided data can never be ACCEPT
+        self.assertEqual(ev.verdict(dict(passing, G4=False), True, True, 25, True), 'REJECT')
+        self.assertEqual(ev.verdict(dict(passing, G1_completion_100pct=False), True, True, 25, True), 'INVALID')
+        self.assertEqual(ev.verdict(passing, False, True, 25, True), 'INVALID')
+        self.assertEqual(ev.verdict(dict(passing, G4=None), True, True, 25, True), 'PROVISIONAL')   # cannot judge -> never ACCEPT
+        self.assertEqual(ev.verdict(dict(passing, G3=None, G4=False), True, True, 25, True), 'REJECT')
 
     def test_tri_state_helpers(self):
         self.assertIsNone(ev._gt(None, 1.0))
@@ -188,6 +189,7 @@ class EndToEndTests(unittest.TestCase):
             write_dataset(Path(tmp) / 'ds', cases)
             report = ev.evaluate(Path(tmp) / 'ds', null_draws=20)
             self.assertEqual(report['dataset']['cases'], 4)
+            self.assertEqual((report['dataset']['sides']['ok'], report['dataset']['sides']['both_sides']), (True, 2))
             self.assertEqual(report['summary']['completion_rate'], 1.0)
             self.assertTrue(report['prefix_consistency']['passed'])
             self.assertIn(report['verdict'], ('REJECT', 'PROVISIONAL'))  # never ACCEPT without OOS sessions
