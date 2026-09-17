@@ -1,7 +1,0 @@
-{
-  "selection": "unchanged; exact maximization over searched feasible candidates",
-  "pruning": "primary dual payoff is an upper bound on worst-scenario dual payoff",
-  "feasible": "complete and positive USD/return in all 5 scenarios plus positive primary return in all 3 blocks",
-  "incumbent_before_results": "1aa4e1a5d47b9812",
-  "candidate_count": 31295
-}

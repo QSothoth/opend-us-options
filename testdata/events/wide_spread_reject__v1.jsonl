@@ -1,3 +1,0 @@
-{"ts":1718964000,"type":"signal","symbol":"US.SPY","direction":"LONG","status":"entry_signal","scenario_tag":"wide_spread_reject__v1"}
-{"ts":1718964000,"type":"option_snapshot","symbol":"US.SPY","scenario_tag":"wide_spread_reject__v1","side":"BUY","qty":1,"status":"snapshot","option_code":"US.SPY240621C541000","bid":0.0,"ask":0.72,"last":0.72,"spread":0.72,"strike":541.0,"option_type":"CALL","dte":0}
-{"ts":1718964001,"type":"reject","symbol":"US.SPY","scenario_tag":"wide_spread_reject__v1","side":"BUY","qty":1,"status":"rejected","reason":"wide_spread"}

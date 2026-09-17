@@ -1,9 +1,0 @@
-{
-  "passed": true,
-  "fresh_bank_matches_original_ablation": true,
-  "native5m_signals_and_next_open_fills": true,
-  "source_ablation": "no_late_tightening",
-  "case_id": "2c0ecc056bd3",
-  "new_parameters_searched": false,
-  "selection_used_all83": true
-}

@@ -1,9 +1,0 @@
-{
-  "scenario": "wide_spread_reject",
-  "variant": 1,
-  "symbol": "US.SPY",
-  "direction": "LONG",
-  "should_enter": false,
-  "should_exit_reason": "reject",
-  "notes": "Order rejected: v1 wide spread, v2 zero bid."
-}

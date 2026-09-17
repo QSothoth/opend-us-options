@@ -1,9 +1,0 @@
-{
-  "scenario": "no_entry_signal",
-  "variant": 1,
-  "symbol": "US.SPY",
-  "direction": "NONE",
-  "should_enter": false,
-  "should_exit_reason": "none",
-  "notes": "No directional or timing signal; no entry all day."
-}

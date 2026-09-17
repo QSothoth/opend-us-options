@@ -1,2 +1,0 @@
-futu-api>=9.0
-pandas>=2.0

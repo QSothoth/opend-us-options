@@ -1,9 +1,0 @@
-{
-  "scenario": "entry_then_eod_flatten",
-  "variant": 1,
-  "symbol": "US.SPY",
-  "direction": "LONG",
-  "should_enter": true,
-  "should_exit_reason": "eod",
-  "notes": "Clean entry then EOD flatten; full happy path."
-}

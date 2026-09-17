@@ -1,5 +1,0 @@
-{"ts":1718982000,"type":"signal","symbol":"US.SPY","direction":"LONG","status":"entry_signal","scenario_tag":"late_day_spike__v1"}
-{"ts":1718982000,"type":"option_snapshot","symbol":"US.SPY","scenario_tag":"late_day_spike__v1","side":"BUY","qty":1,"status":"snapshot","option_code":"US.SPY240621C542000","bid":0.46,"ask":0.51,"last":0.49,"spread":0.05,"strike":542.0,"option_type":"CALL","dte":0}
-{"ts":1718982001,"type":"order_ack","symbol":"US.SPY","scenario_tag":"late_day_spike__v1","side":"BUY","qty":1,"status":"accepted","option_code":"US.SPY240621C542000"}
-{"ts":1718982002,"type":"fill","symbol":"US.SPY","scenario_tag":"late_day_spike__v1","side":"BUY","qty":1,"price":0.51,"status":"filled","option_code":"US.SPY240621C542000"}
-{"ts":1718985600,"type":"flatten","symbol":"US.SPY","scenario_tag":"late_day_spike__v1","status":"eod","side":"SELL","price":0.46,"reason":"eod","option_code":"US.SPY240621C542000"}

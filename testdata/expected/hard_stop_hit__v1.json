@@ -1,9 +1,0 @@
-{
-  "scenario": "hard_stop_hit",
-  "variant": 1,
-  "symbol": "US.SPY",
-  "direction": "SHORT",
-  "should_enter": true,
-  "should_exit_reason": "stop",
-  "notes": "Entry then adverse reversal hits hard stop."
-}

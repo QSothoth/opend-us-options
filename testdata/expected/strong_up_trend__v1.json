@@ -1,9 +1,0 @@
-{
-  "scenario": "strong_up_trend",
-  "variant": 1,
-  "symbol": "US.SPY",
-  "direction": "LONG",
-  "should_enter": true,
-  "should_exit_reason": "eod",
-  "notes": "Steady uptrend; program enters LONG early and flattens at EOD."
-}
