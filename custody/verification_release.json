@@ -127,8 +127,8 @@
       "option"
     ],
     "success_metric": "option_pnl",
-    "trade_date": "2026-09-14",
-    "asset": "custody-eval-2026-09-14.zip",
+    "trade_date": "2026-09-16",
+    "asset": "custody-eval-2026-09-16.zip",
     "zip_sha256": "fd7c92bbada5cf854564a3f12b6db3d581ed34c8c524e525b15d78ef412a7160",
     "manifest": "manifest.json",
     "cases": "cases.json",
@@ -168,11 +168,13 @@
     "entrypoint": "python3 -m custody eval-session --slice <slice-dir>",
     "price_note": "Underlying and option series are 1m trade OHLCV, not NBBO. Offline quote() returns None unless the labelled option_bar_close plumbing mapping is opted in; live uses real quotes through the same provider boundary.",
     "research_release_unchanged": "eval-data-v2",
-    "data_tag": "custody-eval-2026-09-14",
-    "release": "https://github.com/QSothoth/opend-us-options/releases/tag/custody-eval-2026-09-14",
-    "sha256": "fd7c92bbada5cf854564a3f12b6db3d581ed34c8c524e525b15d78ef412a7160",
-    "case_count": 3,
-    "zero_dte_note": "Validation custody-eval-2026-09-14 still contains two non-0DTE cases: US.SKHY260918P175000 (DTE 4) and US.BABA260918C109000 (DTE 4); only US.QQQ260914C705000 is 0DTE. Flagged for supervisor: replace the two 4-DTE legs with same-day contracts before treating the validation slice as strictly 0DTE. Left unchanged here rather than silently rewritten."
+    "data_tag": "custody-eval-2026-09-16",
+    "release": "https://github.com/QSothoth/opend-us-options/releases/tag/custody-eval-2026-09-16",
+    "sha256": "58f0af996a33f042fd81751f3b68408266bd224be2530df10f44230e67165a31",
+    "case_count": 10,
+    "zero_dte_note": "Validation custody-eval-2026-09-14 still contains two non-0DTE cases: US.SKHY260918P175000 (DTE 4) and US.BABA260918C109000 (DTE 4); only US.QQQ260914C705000 is 0DTE. Flagged for supervisor: replace the two 4-DTE legs with same-day contracts before treating the validation slice as strictly 0DTE. Left unchanged here rather than silently rewritten.",
+    "max_dte": 0,
+    "note": "10 distinct single-name true-0DTE (INTC+AMD+TSLA+NVDA+MU+AVGO+AMZN+GOOGL+META+MSFT). Prior custody-eval-2026-09-14 kept as secondary (includes non-0DTE SKHY/BABA)."
   },
   "custody_train": {
     "role": "train/custody",
@@ -499,5 +501,11 @@
     "contract_selection": "nearest listed strike to the session first-bar underlying open; CALL for LONG, PUT for SHORT",
     "entrypoint": "python3 -m custody fetch-train-starter --out out/custody-train-2026-09-08_11",
     "status": "tiny real paired plumbing/measurement starter; NOT the canonical train set"
+  },
+  "custody_eval_2026_09_14_secondary": {
+    "data_tag": "custody-eval-2026-09-14",
+    "release": "https://github.com/QSothoth/opend-us-options/releases/tag/custody-eval-2026-09-14",
+    "role": "validation/secondary",
+    "note": "Earlier 3-case eval; includes non-0DTE SKHY/BABA. Prefer custody-eval-2026-09-16 for true-0DTE validation."
   }
 }
