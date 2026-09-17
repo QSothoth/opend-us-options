@@ -1,12 +1,10 @@
-"""Read-only OpenD adapters for the dryrun runner and the daily data freeze.
+"""Read-only OpenD market-data adapters for the runner and the daily data freeze.
 
 Hard guarantee
 --------------
 Everything here uses ``OpenQuoteContext`` only. This module never imports or
 calls ``OpenSecTradeContext``, ``unlock_trade``, ``place_order`` or any other
-broker mutation API. The dryrun runner combines it with
-``CustodyService(mode='dryrun')``, which refuses to dispatch orders, and a
-``Controller`` that is constructed without a broker.
+broker mutation API; orders go only through :mod:`custody.broker`.
 
 ``futu-api`` is imported lazily so unit tests can run without it and so this
 file can be inspected/source-scanned without side effects.
@@ -40,7 +38,7 @@ def _futu():
     try:
         import futu  # noqa: WPS433 - intentionally lazy
     except ImportError as exc:  # pragma: no cover - environment dependent
-        raise RuntimeError('futu-api is required for the OpenD dryrun path; pip install futu-api') from exc
+        raise RuntimeError('futu-api is required for OpenD commands; pip install futu-api') from exc
     return futu
 
 
@@ -135,7 +133,7 @@ class OpenDMarket:
             pass
 
     def trading_days(self, start, end, market='US'):
-        """OpenD exchange calendar. Used by the dryrun-only session calendar."""
+        """OpenD exchange calendar (read-only)."""
         ret, data = self.context.request_trading_days(market=market, start=str(start), end=str(end))
         if ret != 0:
             raise RuntimeError('request_trading_days failed: ' + str(data))
@@ -187,7 +185,7 @@ class OpenDMarket:
             raise RuntimeError('get_cur_kline failed for %s %s: %s' % (code, ktype, data))
         return _records(data)
 
-    # --- MarketDataProvider surface -------------------------------------------
+    # --- normalized bars ---------------------------------------------------------
     def history_bars(self, code, ktype, start, end, boundary=None):
         """Normalized completed :class:`Bar`s from OpenD history (read-only)."""
         interval = '1m' if str(ktype).upper() in ('K_1M', 'K1M') else str(ktype).lower()
@@ -228,12 +226,7 @@ class OpenDContractResolver:
 
 
 class OpenDTradingCalendar:
-    """Real OpenD trading calendar (WHOLE vs MORNING early close). Dryrun only.
-
-    It is still a valid calendar adapter for observation: the service mode is
-    ``dryrun`` and can never submit orders, so an early-close guess cannot cause
-    a live liquidation.
-    """
+    """Real OpenD trading calendar. Any day OpenD does not mark WHOLE closes at 13:00 ET."""
 
     def __init__(self, market, market_code='US'):
         self.market = market

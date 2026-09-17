@@ -1,5 +1,4 @@
 import hashlib
-import io
 import json
 import sqlite3
 import tempfile
@@ -10,7 +9,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from custody.controller import Controller
-from custody.http import create_app
 from custody.models import ET, Contract, Frame, JobRequest, OrderUpdate, Quote, Session
 from custody.registry import Registry
 from custody.service import CustodyService
@@ -39,15 +37,15 @@ class Adapter:
     def __init__(self):
         self.calls, self.cancels, self.events = [], [], {}
 
-    def submit(self, order):
+    def submit(self, order, now):
         self.calls.append(order)
-        return OrderUpdate(order['client_order_id'], 0, 'OPEN', 0, datetime.fromisoformat(order['created_at']))
+        return OrderUpdate(order['client_order_id'], 0, 'OPEN', 0, now)
 
     def cancel(self, target, key):
         self.cancels.append((target, key))
 
-    def lookup(self, key):
-        return self.events.get(key)
+    def lookup(self, order, now):
+        return self.events.get(order['client_order_id'])
 
 
 class ServiceTests(unittest.TestCase):
@@ -243,7 +241,7 @@ class ServiceTests(unittest.TestCase):
         self.service.on_frame(j['id'], self.frame(), T, self.quote())
 
         class Timeout(Adapter):
-            def submit(self, order):
+            def submit(self, order, now):
                 self.calls.append(order)
                 raise TimeoutError()
         adapter = Timeout()
@@ -300,7 +298,7 @@ class ServiceTests(unittest.TestCase):
     def test_duplicate_and_inconsistent_fill(self):
         j, adapter, key = self.entry()
         self.fill(key)
-        self.fill(key)
+        self.fill(key, when=T + timedelta(seconds=5))  # the same broker state polled again later
         self.assertEqual(self.service.get_job(j['id'])['position_qty'], 2)
         with self.assertRaises(ValueError):
             self.fill(key, 1, 'PARTIAL')
@@ -333,7 +331,7 @@ class ServiceTests(unittest.TestCase):
     def test_broker_lookup_failure_does_not_skip_flatten_cancel(self):
         j, adapter, key = self.entry()
 
-        def broken(_key):
+        def broken(_order, _now):
             raise TimeoutError()
         adapter.lookup = broken
         end = datetime.fromisoformat(j['flatten_at'])
@@ -349,27 +347,6 @@ class ServiceTests(unittest.TestCase):
             account = 'other'
         with self.assertRaisesRegex(ValueError, 'binding'):
             Controller(self.service, Other())
-
-    def test_authenticated_minimal_http(self):
-        token = 'test-only-bearer-token-123'
-        app = create_app(self.service, token, lambda: T)
-        status = []
-
-        def call(payload, auth, path='/v1/jobs', method='POST'):
-            body = json.dumps(payload).encode()
-            return app({'REQUEST_METHOD': method, 'PATH_INFO': path, 'CONTENT_TYPE': 'application/json',
-                        'CONTENT_LENGTH': str(len(body)), 'wsgi.input': io.BytesIO(body), 'HTTP_AUTHORIZATION': auth},
-                       lambda s, h: status.append(s))
-        call(self.request, '')
-        self.assertEqual(status[-1], '401 Unauthorized')
-        created = json.loads(call(self.request, 'Bearer ' + token)[0])
-        self.assertEqual((status[-1], created['state'], created['strategy_status']), ('200 OK', 'IDLE', 'candidate'))
-        listed = json.loads(call({}, 'Bearer ' + token, '/v1/strategies', 'GET')[0])
-        self.assertIn(SID, [s['strategy_id'] for s in listed['strategies']])
-        call(dict(self.request, direction='SHORT', contract=PUT), 'Bearer ' + token)
-        self.assertEqual(status[-1], '200 OK')
-        call(dict(self.request, max_qty=5), 'Bearer ' + token)
-        self.assertEqual(status[-1], '422 Unprocessable Entity')
 
 
 if __name__ == '__main__':

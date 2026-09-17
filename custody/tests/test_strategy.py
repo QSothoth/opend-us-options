@@ -15,7 +15,7 @@ from custody.strategy import Decision, build_strategy, flatten_minute, session_m
 PARAMS = BASE_PARAMS
 
 
-def run(closes, direction='LONG', params=PARAMS, fill=True, strike=None):
+def run(closes, direction='LONG', params=PARAMS, fill=True, strike=100.0):
     """Feed bars; report the entry fill at the next bar close (like the evaluator)."""
     s = session()
     engine = ZeroDteTiming(params, direction, s, strike)
@@ -157,7 +157,7 @@ class ExitScenarioTests(unittest.TestCase):
 
     def test_fill_contract(self):
         s = session()
-        engine = ZeroDteTiming(PARAMS, 'LONG', s)
+        engine = ZeroDteTiming(PARAMS, 'LONG', s, 100.0)
         bars = path_bars(piecewise([(1, 100.0), (390, 100.0)]))
         with self.assertRaises(ValueError):
             engine.on_entry_filled(bars[0].close_time, 100.0)  # nothing seen yet
@@ -165,7 +165,7 @@ class ExitScenarioTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             engine.on_entry_filled(bars[0].close_time, 100.0)
         trend = path_bars(piecewise([(1, 100.0), (390, 110.0)]))
-        engine = ZeroDteTiming(PARAMS, 'LONG', s)
+        engine = ZeroDteTiming(PARAMS, 'LONG', s, 100.0)
         for bar in trend:
             if engine.on_bar(bar).action == 'ENTER':
                 engine.on_entry_filled(bar.close_time, bar.close)
@@ -176,16 +176,14 @@ class ExitScenarioTests(unittest.TestCase):
 
 
 class ContractAwareRuleTests(unittest.TestCase):
-    def test_rules_that_need_the_strike_refuse_to_run_without_it(self):
-        for extra in ({'charm_exit_before_close_minutes': 90},
-                      {'protection_needs_moneyness': 1}, {'otm_stop_shrink': 0.25}):
-            with self.assertRaisesRegex(ValueError, 'strike', msg=str(extra)):
-                ZeroDteTiming({**PARAMS, **extra}, 'LONG', session())
-            ZeroDteTiming({**PARAMS, **extra}, 'LONG', session(), 100.0)
+    def test_engine_requires_the_contract_strike(self):
+        for bad in (None, 0, True):
+            with self.assertRaisesRegex(ValueError, 'strike', msg=str(bad)):
+                ZeroDteTiming(PARAMS, 'LONG', session(), bad)
 
     def test_out_of_the_money_entries_get_a_tighter_stop(self):
         def risk(extra):
-            engine = ZeroDteTiming({**PARAMS, 'relax_after_minutes': 0, **extra}, 'LONG', session(), 120.0)
+            engine = ZeroDteTiming({**PARAMS, **extra}, 'LONG', session(), 120.0)
             for bar in path_bars(piecewise([(1, 100), (390, 110)])):
                 if engine.on_bar(bar).action == 'ENTER':
                     return engine.risk_distance / engine.entry_atr, engine._otm_z(engine.ind.minute)
@@ -220,12 +218,11 @@ class DeterminismTests(unittest.TestCase):
 
 class OptionalRuleTests(unittest.TestCase):
     def test_optional_parameters_validate(self):
-        engine = ZeroDteTiming(PARAMS, 'LONG', session())
+        engine = ZeroDteTiming(PARAMS, 'LONG', session(), 100.0)
         self.assertEqual(engine.p['persist_minutes'], 0)
         for bad in ({'persist_minutes': -1}, {'relax_after_minutes': 5}):
             with self.assertRaises(ValueError, msg=str(bad)):
                 validate_params({**PARAMS, **bad})
-        validate_params({**PARAMS, 'relax_after_minutes': 0})
 
     def test_persistence_rejects_a_fresh_breakout_until_the_vwap_side_has_held(self):
         closes = piecewise([(1, 100.0), (15, 100.0), (390, 110.0)])
@@ -234,10 +231,6 @@ class OptionalRuleTests(unittest.TestCase):
         self.assertEqual(reason, 'trend_breakout')
         self.assertGreaterEqual(held, quick + 15)
 
-    def test_disabled_relaxation_leaves_only_confirmation(self):
-        closes = piecewise([(1, 100.0), (5, 100.0), (60, 98.5), (150, 99.8), (160, 99.6), (390, 99.7)])
-        reasons = {r for _, a, r in run(closes, params={**PARAMS, 'relax_after_minutes': 0}) if a == 'ENTER'}
-        self.assertNotIn('late_confirmation', reasons)
 
 
 

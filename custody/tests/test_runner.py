@@ -1,5 +1,7 @@
 import ast
+import contextlib
 import io
+import json
 import os
 import sys
 import tempfile
@@ -15,7 +17,7 @@ from helpers import DAY, path_bars, piecewise, session  # noqa: E402
 
 from custody.controller import Controller  # noqa: E402
 from custody.dataset import parse_option_code  # noqa: E402
-from custody.dryrun import (DryRunRunner, SameDayHistorySource, StrategyFrameSource, _push_notify,  # noqa: E402
+from custody.runner import (Runner, SameDayHistorySource, StrategyFrameSource, _push_notify,  # noqa: E402
                             bar_boundary, build_argument_parser)
 from custody.marketdata import normalize_bar_rows  # noqa: E402
 from custody.models import ET, Contract, Frame, Quote, Session  # noqa: E402
@@ -78,7 +80,7 @@ def make_dryrun(path):
 
 def runner_for(service, job, frame_source, simulate=False, mark=700.0, events=None):
     events = events if events is not None else []
-    return DryRunRunner(service, FakeMarket(quote(), mark), job['id'], frame_source=frame_source, wxpusher_spt='',
+    return Runner(service, FakeMarket(quote(), mark), job['id'], frame_source=frame_source, wxpusher_spt='',
                         simulate_fills=simulate, logger=lambda event, **f: events.append({'event': event, **f})), events
 
 
@@ -100,7 +102,7 @@ class DryRunSafetyTests(unittest.TestCase):
             def __init__(self):
                 self.calls = []
 
-            def submit(self, intent):
+            def submit(self, intent, now):
                 self.calls.append(intent)
                 raise AssertionError('must never submit')
 
@@ -117,6 +119,8 @@ class DryRunSafetyTests(unittest.TestCase):
         paper = CustodyService(Path(self.tmp.name) / 'paper.sqlite', 'paper', Catalog(), Calendar(), mode='paper')
         with self.assertRaisesRegex(ValueError, 'dryrun'):
             Controller(paper)
+        with self.assertRaisesRegex(ValueError, 'dryrun'):
+            Runner(paper, FakeMarket(), 'job', simulate_fills=True)
 
     def test_intent_only_mode_logs_and_keeps_intents_local(self):
         service, job = make_dryrun(self.path)
@@ -126,10 +130,10 @@ class DryRunSafetyTests(unittest.TestCase):
         state = runner.tick(T)
         self.assertEqual(state['state'], 'ENTRY')
         self.assertEqual([(o['side'], o['status'], o['cumulative_qty']) for o in state['orders']], [('BUY_OPEN', 'CREATED', 0)])
-        intents = [e for e in events if e['event'] == 'order_intent']
-        self.assertEqual((len(intents), intents[0]['dryrun'], intents[0]['submitted']), (1, True, False))
+        intents = [e for e in events if e['event'] == 'order']
+        self.assertEqual((len(intents), intents[0]['mode'], intents[0]['status']), (1, 'dryrun', 'CREATED'))
         runner.tick(T + timedelta(seconds=2))
-        self.assertEqual(len([e for e in events if e['event'] == 'order_intent']), 1)
+        self.assertEqual(len([e for e in events if e['event'] == 'order']), 1)
         self.assertEqual(calls, [])
 
     def test_simulated_fills_walk_the_full_lifecycle_without_dispatch(self):
@@ -172,10 +176,21 @@ class DryRunSafetyTests(unittest.TestCase):
         self.assertEqual(runner.run(ticks=2), 2)
         self.assertEqual([e['event'] for e in events].count('step_error'), 2)
 
-    def test_runtime_sources_reference_no_trade_api(self):
+    def test_run_ends_when_the_job_is_done(self):
+        service, job = make_dryrun(self.path)
+        runner, events = runner_for(service, job, FakeFrameSource())
+        service.stop_job(job['id'], T)
+        self.assertEqual(runner.run(ticks=5), 1)
+        self.assertEqual(events[-1]['event'], 'done')
+
+    def test_only_the_broker_references_the_trade_api(self):
         forbidden = {'OpenSecTradeContext', 'place_order', 'unlock_trade', 'modify_order'}
-        for name in ('opend.py', 'dryrun.py', 'freeze.py'):
-            tree = ast.parse((Path(__file__).resolve().parents[1] / name).read_text())
+        package = Path(__file__).resolve().parents[1]
+        for path in package.rglob('*.py'):
+            if 'tests' in path.relative_to(package).parts or path.name == 'broker.py':
+                continue
+            name = path.name
+            tree = ast.parse(path.read_text())
             used = set()
             for node in ast.walk(tree):
                 if isinstance(node, ast.Attribute):
@@ -260,27 +275,27 @@ class WxPusherNotifyTests(unittest.TestCase):
     def test_spt_builds_expected_url(self):
         response = mock.MagicMock()
         response.__enter__.return_value.read.return_value = b'{"code":1000}'
-        with mock.patch('custody.dryrun.urllib.request.urlopen', return_value=response) as urlopen:
+        with mock.patch('custody.runner.urllib.request.urlopen', return_value=response) as urlopen:
             _push_notify('dryrun BUY_OPEN X', 'limit=1.05', wxpusher_spt=self.SPT)
         url = urlopen.call_args.args[0]
         self.assertTrue(url.startswith('https://wxpusher.zjiecode.com/api/send/message/%s/' % self.SPT))
         self.assertEqual(urllib.parse.unquote(url.split(self.SPT + '/', 1)[1]), 'dryrun BUY_OPEN X\nlimit=1.05')
 
     def test_missing_spt_or_network_error_never_raises(self):
-        with mock.patch('custody.dryrun.urllib.request.urlopen') as urlopen:
+        with mock.patch('custody.runner.urllib.request.urlopen') as urlopen:
             _push_notify('t', 'b', wxpusher_spt=None)
             _push_notify('t', 'b', wxpusher_spt='')
         urlopen.assert_not_called()
-        with mock.patch('custody.dryrun.urllib.request.urlopen', side_effect=urllib.error.URLError('down')):
+        with mock.patch('custody.runner.urllib.request.urlopen', side_effect=urllib.error.URLError('down')):
             _push_notify('t', 'b', wxpusher_spt=self.SPT)
 
     def test_runner_reads_env_spt(self):
         with tempfile.TemporaryDirectory() as tmp:
             service, job = make_dryrun(Path(tmp) / 'push.sqlite')
             with mock.patch.dict(os.environ, {'CUSTODY_WXPUSHER_SPT': self.SPT}):
-                runner = DryRunRunner(service, FakeMarket(quote(), 700.0), job['id'],
+                runner = Runner(service, FakeMarket(quote(), 700.0), job['id'],
                                       frame_source=FakeFrameSource(frame(service)), logger=lambda *a, **k: None)
-            with mock.patch('custody.dryrun.urllib.request.urlopen', side_effect=urllib.error.URLError('down')) as urlopen:
+            with mock.patch('custody.runner.urllib.request.urlopen', side_effect=urllib.error.URLError('down')) as urlopen:
                 self.assertIsNotNone(runner.tick(T))
             urlopen.assert_called_once()
 
@@ -343,21 +358,46 @@ class OpenDAdapterTests(unittest.TestCase):
 
 
 class CliTests(unittest.TestCase):
-    def test_dryrun_cli_defaults(self):
-        args = build_argument_parser().parse_args(['--symbol', 'US.QQQ', '--direction', 'SHORT', '--contract', CONTRACT])
-        self.assertEqual((args.strategy, args.host, args.port, args.max_qty, args.intent_only), (None, '127.0.0.1', 11111, 1, False))
+    ARGS = ['--symbol', 'US.QQQ', '--direction', 'SHORT', '--contract', CONTRACT]
+
+    def test_dryrun_and_run_arguments(self):
+        args = build_argument_parser('dryrun').parse_args(self.ARGS)
+        self.assertEqual((args.strategy, args.host, args.port, args.max_qty, args.intent_only, args.db),
+                         (None, None, None, 1, False, None))
+        run = build_argument_parser('run').parse_args(self.ARGS + ['--mode', 'paper', '--acc-id', '281756'])
+        self.assertEqual((run.mode, run.acc_id, run.security_firm), ('paper', 281756, 'FUTUSECURITIES'))
+        with contextlib.redirect_stderr(io.StringIO()):
+            for missing in (['--mode', 'paper'], ['--acc-id', '1'], ['--mode', 'dryrun', '--acc-id', '1']):
+                with self.assertRaises(SystemExit):
+                    build_argument_parser('run').parse_args(self.ARGS + missing)
+
+    def test_status_and_stop_work_on_a_runtime_database(self):
+        from custody.__main__ import main
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'dryrun.sqlite'
+            _, job = make_dryrun(path)
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                self.assertEqual(main(['status', '--db', str(path)]), 0)
+                self.assertEqual(main(['stop', '--db', str(path), '--job', job['id']]), 0)
+            listed, stopped = [json.loads(line) for line in out.getvalue().splitlines()]
+            self.assertEqual((listed['job_id'], listed['state']), (job['id'], 'IDLE'))
+            self.assertEqual((stopped['state'], stopped['exit_reason']), ('DONE', 'operator_stop'))
+            with self.assertRaises(SystemExit):
+                main(['status', '--db', str(path), '--job', 'missing'])
+            with self.assertRaisesRegex(ValueError, 'no custody database'):
+                main(['status', '--db', str(Path(tmp) / 'none.sqlite')])
 
     def test_module_cli_help(self):
-        import contextlib
         from custody.__main__ import main
         out = io.StringIO()
         with contextlib.redirect_stdout(out), self.assertRaises(SystemExit) as caught:
-            main(['dryrun', '--help'])
+            main(['run', '--help'])
         self.assertEqual(caught.exception.code, 0)
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
             self.assertEqual(main([]), 0)
-        self.assertIn('evaluate', out.getvalue())
+        self.assertTrue(all(name in out.getvalue() for name in ('evaluate', 'dryrun', 'run', 'status', 'stop')))
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(main(['baseline']), 2)
 

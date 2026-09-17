@@ -1,19 +1,15 @@
-"""Resident OpenD dryrun worker for one custody job (never submits an order).
+"""Resident OpenD worker for one custody job, plus the operator commands.
 
-The runner reads real OpenD quotes and same-day 1m bars through the read-only
-:class:`~custody.opend.OpenDMarket`, replays the registered strategy on every
-completed minute and advances the job with a broker-less
-:class:`~custody.controller.Controller`. ``CustodyService.dispatch_next`` refuses to
-dispatch in dryrun, so the reachable outcomes are persisted, logged order intents.
+* ``custody dryrun`` - real quotes and same-day 1m bars, no broker at all.
+  ``CustodyService.dispatch_next`` refuses to dispatch in dryrun; intents are logged
+  and, unless ``--intent-only``, marked filled locally at the live quote.
+* ``custody run --mode paper|live`` - the same loop with
+  :class:`custody.broker.OpenDBroker`: orders go to an OpenD SIMULATE (paper) or
+  REAL (live, ``accepted`` strategies only) account.
+* ``custody status`` / ``custody stop`` - read a runtime database or request an exit
+  from another shell; a running worker executes the stop on its next poll.
 
-By default intents are marked filled locally at the live quote (ask for buys, bid
-for sells) so the whole day - entry, stop/trail, flatten - can be observed. Those
-fills are labelled ``simulated`` and never leave the process. ``--intent-only``
-keeps every intent at CREATED instead.
-
-Entry point::
-
-    python3 -m custody dryrun --symbol US.QQQ --direction LONG --contract US.QQQ260916C705000
+Offline historical evaluation is ``custody evaluate`` (:mod:`custody.evaluate`).
 """
 from __future__ import annotations
 
@@ -27,12 +23,12 @@ from datetime import datetime, timedelta
 
 from .controller import Controller
 from .models import ET, Frame, OrderUpdate, instant, symbol as normalize_symbol
-from .opend import DEFAULT_HOST, DEFAULT_PORT, OpenDContractResolver, OpenDMarket, OpenDTradingCalendar
+from .opend import OpenDContractResolver, OpenDMarket, OpenDTradingCalendar
 from .registry import Registry
-from .service import CustodyService
+from .service import ACTIVE, CustodyService
 from .strategy import build_strategy
 
-__all__ = ['DryRunRunner', 'StrategyFrameSource', 'SameDayHistorySource', 'bar_boundary', 'main']
+SECURITY_FIRMS = ('FUTUSECURITIES', 'FUTUINC', 'FUTUSG', 'FUTUAU', 'FUTUCA', 'FUTUMY', 'FUTUJP')
 
 
 def bar_boundary(now):
@@ -63,7 +59,7 @@ def _push_notify(title, body, *, wxpusher_spt=None):
             str(wxpusher_spt).strip(), urllib.parse.quote(text[:900]))
         with urllib.request.urlopen(url, timeout=8) as resp:
             resp.read()
-    except Exception:  # noqa: BLE001 - a push must never break the dryrun loop
+    except Exception:  # noqa: BLE001 - a push must never break the worker loop
         pass
 
 
@@ -151,13 +147,18 @@ class StrategyFrameSource:
         return self._frame
 
 
-class DryRunRunner:
-    """Resident loop: poll market data, advance the controller, log intents."""
+class Runner:
+    """Resident loop: poll market data, advance the controller, log every order change.
 
-    def __init__(self, service, market, job_id, frame_source=None, interval=5.0, logger=None,
-                 wxpusher_spt=None, simulate_fills=True):
-        if service.mode != 'dryrun':
-            raise ValueError('DryRunRunner requires CustodyService(mode=dryrun)')
+    Without a broker the service must be in dryrun mode (the controller enforces it);
+    only then may ``simulate_fills`` mark intents filled locally.
+    """
+
+    def __init__(self, service, market, job_id, broker=None, frame_source=None, interval=5.0, logger=None,
+                 wxpusher_spt=None, simulate_fills=False):
+        if simulate_fills and service.mode != 'dryrun':
+            raise ValueError('simulated fills exist only in dryrun')
+        self.controller = Controller(service, broker)
         self.service, self.market, self.job_id = service, market, job_id
         self.frame_source = frame_source
         self.interval = float(interval)
@@ -166,8 +167,7 @@ class DryRunRunner:
             wxpusher_spt = os.environ.get('CUSTODY_WXPUSHER_SPT')
         self.wxpusher_spt = (wxpusher_spt or '').strip() or None
         self.simulate_fills = bool(simulate_fills)
-        self.controller = Controller(service)  # deliberately no broker
-        self._seen_intents = set()
+        self._seen = {}
 
     def tick(self, now=None):
         now = instant(now) if now is not None else datetime.now(ET)
@@ -185,18 +185,19 @@ class DryRunRunner:
         if self.frame_source is not None:
             try:
                 frame = self.frame_source.frame(job, now)
-            except Exception as exc:  # noqa: BLE001 - data gaps are non-fatal in dryrun
+            except Exception as exc:  # noqa: BLE001 - data gaps are non-fatal
                 self.log('frame_error', symbol=underlying, error=repr(exc))
         try:
             state = self.controller.step(self.job_id, now, quote, frame)
-        except ValueError as exc:
+        except Exception as exc:  # noqa: BLE001 - the worker must keep managing an open position
             self.log('step_error', job_id=self.job_id, error=repr(exc))
             return None
-        self._log_new_intents(state)
+        self._log_orders(state)
         if self.simulate_fills:
             state = self._simulate_fills(state, now, mark)
-        self.log('tick', state=state['state'], underlying_mark=mark, action=frame and frame.action,
-                 reason=frame and frame.reason, position_qty=state['position_qty'], attention=state['attention'],
+        self.log('tick', mode=self.service.mode, state=state['state'], underlying_mark=mark,
+                 action=frame and frame.action, reason=frame and frame.reason, position_qty=state['position_qty'],
+                 attention=state['attention'],
                  quote=None if quote is None else {'bid': quote.bid, 'ask': quote.ask, 'as_of': quote.as_of.isoformat()})
         return state
 
@@ -211,85 +212,139 @@ class DryRunRunner:
                      price=order['limit_price'], underlying_mark=mark, submitted=False)
         return state
 
-    def _log_new_intents(self, state):
+    def _log_orders(self, state):
         for order in state['orders']:
-            key = order['client_order_id']
-            if key in self._seen_intents:
+            key, seen = order['client_order_id'], (order['status'], order['cumulative_qty'])
+            if self._seen.get(key) == seen:
                 continue
-            self._seen_intents.add(key)
-            self.log('order_intent', client_order_id=key, side=order['side'], kind=order['kind'],
+            self._seen[key] = seen
+            self.log('order', mode=self.service.mode, client_order_id=key, side=order['side'], kind=order['kind'],
                      contract=order['contract'], quantity=order['quantity'], limit_price=order['limit_price'],
-                     reason=order['reason'], created_at=order['created_at'], dryrun=True, submitted=False)
+                     status=order['status'], filled=order['cumulative_qty'],
+                     average_price=order.get('average_option_price'), reason=order['reason'])
             if self.wxpusher_spt:
-                _push_notify('dryrun %s %s' % (order['side'], order['contract']),
-                             '%s qty=%s limit=%s\nreason=%s\nsubmitted=false\nid=%s' % (
-                                 order['kind'], order['quantity'], order['limit_price'], order['reason'], key),
+                _push_notify('%s %s %s %s' % (self.service.mode, order['side'], order['status'], order['contract']),
+                             '%s qty=%s filled=%s limit=%s\nreason=%s\nid=%s' % (
+                                 order['kind'], order['quantity'], order['cumulative_qty'], order['limit_price'],
+                                 order['reason'], key),
                              wxpusher_spt=self.wxpusher_spt)
 
     def run(self, ticks=None):
+        """Poll until the job is DONE (or ``ticks``). Ctrl-C only stops polling: broker orders stay as they are."""
         executed = 0
         try:
             while ticks is None or executed < ticks:
-                self.tick(datetime.now(ET))
+                state = self.tick(datetime.now(ET))
                 executed += 1
+                if state is not None and state['state'] == 'DONE':
+                    self.log('done', job_id=self.job_id, attention=state['attention'])
+                    break
                 if ticks is None or executed < ticks:
                     time.sleep(self.interval)
         except KeyboardInterrupt:
-            self.log('stopped', reason='keyboard_interrupt')
+            job = self.service.get_job(self.job_id)
+            self.log('stopped', reason='keyboard_interrupt', state=job['state'], position_qty=job['position_qty'],
+                     open_orders=[o['client_order_id'] for o in job['orders'] if o['status'] in ACTIVE])
         return executed
 
 
-def build_argument_parser():
-    parser = argparse.ArgumentParser(prog='custody dryrun',
-                                     description='Watch one 0DTE custody job on read-only OpenD; never submits orders.')
+HELP = {
+    'dryrun': 'Watch one 0DTE job on read-only OpenD with simulated fills; never sends an order.',
+    'run': 'Trade one 0DTE job through OpenD: paper = SIMULATE account, live = REAL money.',
+    'status': 'Show the jobs of a runtime database.',
+    'stop': 'Request the exit of a job (cancel the entry, sell the position); the running worker executes it.',
+}
+
+
+def build_argument_parser(command):
+    parser = argparse.ArgumentParser(prog='custody ' + command, description=HELP[command])
+    if command in ('status', 'stop'):
+        parser.add_argument('--db', required=True, help='runtime SQLite database of dryrun / run')
+        parser.add_argument('--job', required=command == 'stop', help='job id (status: every job when omitted)')
+        return parser
+    if command == 'run':
+        parser.add_argument('--mode', choices=['paper', 'live'], required=True,
+                            help='paper: OpenD SIMULATE account; live: REAL money, accepted strategies only')
+        parser.add_argument('--acc-id', type=int, required=True, help='OpenD US trading account id')
+        parser.add_argument('--security-firm', choices=SECURITY_FIRMS, default='FUTUSECURITIES')
+    else:
+        parser.add_argument('--account', default='opend-dryrun')
+        parser.add_argument('--intent-only', action='store_true', help='do not mark intents as simulated fills')
     parser.add_argument('--strategy', default=None, help='registered strategy_id (default: registry default)')
     parser.add_argument('--symbol', required=True, help='underlying, e.g. US.QQQ')
     parser.add_argument('--direction', choices=['LONG', 'SHORT'], required=True)
     parser.add_argument('--contract', required=True, help='exact same-day option code, e.g. US.QQQ260916C705000')
     parser.add_argument('--max-qty', type=int, default=1)
-    parser.add_argument('--db', default='/tmp/custody-dryrun.sqlite', help='durable SQLite path')
-    parser.add_argument('--account', default='opend-dryrun')
-    parser.add_argument('--host', default=DEFAULT_HOST)
-    parser.add_argument('--port', type=int, default=DEFAULT_PORT)
+    parser.add_argument('--db', default=None, help='durable SQLite path (default: custody-<mode>.sqlite)')
+    parser.add_argument('--host', default=None, help='OpenD host (default: FUTU_HOST or 127.0.0.1)')
+    parser.add_argument('--port', type=int, default=None, help='OpenD port (default: FUTU_PORT or 11111)')
     parser.add_argument('--interval', type=float, default=5.0, help='seconds between polls')
-    parser.add_argument('--ticks', type=int, default=None, help='stop after N ticks (default: run forever)')
-    parser.add_argument('--once', action='store_true', help='run a single tick')
+    parser.add_argument('--ticks', type=int, default=None, help='stop after N polls (default: until the job is done)')
+    parser.add_argument('--once', action='store_true', help='run a single poll')
     parser.add_argument('--no-subscribe', action='store_true', help='snapshot/history polling only')
-    parser.add_argument('--intent-only', action='store_true', help='do not mark intents as simulated fills')
-    parser.add_argument('--wxpusher-spt', default=None, help='WxPusher SPT for order_intent pushes (or CUSTODY_WXPUSHER_SPT)')
+    parser.add_argument('--wxpusher-spt', default=None, help='WxPusher SPT for order pushes (or CUSTODY_WXPUSHER_SPT)')
     return parser
 
 
-def main(argv=None):
-    args = build_argument_parser().parse_args(argv)
+def _summary(job):
+    return {'job_id': job['id'], 'mode': job['mode'], 'contract': job['request']['contract'],
+            'trade_date': job['request']['trade_date'], 'state': job['state'], 'position_qty': job['position_qty'],
+            'attention': job['attention'], 'entry_reason': job['entry_reason'], 'exit_reason': job['exit_reason']}
+
+
+def _operate(command, args):
+    jobs = [(job_id, service) for job_id, service in CustodyService.jobs_in(args.db) if args.job in (None, job_id)]
+    if args.job and not jobs:
+        raise SystemExit('job not found: %s' % args.job)
+    if command == 'stop':
+        job_id, service = jobs[0]
+        print(json.dumps(_summary(service.stop_job(job_id, datetime.now(ET))), ensure_ascii=False))
+    elif args.job:
+        print(json.dumps(jobs[0][1].get_job(args.job), indent=2, ensure_ascii=False))
+    else:
+        for job_id, service in jobs:
+            print(json.dumps(_summary(service.get_job(job_id)), ensure_ascii=False))
+    return 0
+
+
+def main(command, argv=None):
+    args = build_argument_parser(command).parse_args(argv)
+    if command in ('status', 'stop'):
+        return _operate(command, args)
+    mode = args.mode if command == 'run' else 'dryrun'
     market = OpenDMarket(host=args.host, port=args.port)
-    subscribed = False
+    broker, subscribed = None, False
     try:
         registry = Registry()
         calendar = OpenDTradingCalendar(market)
-        service = CustodyService(args.db, args.account, OpenDContractResolver(market), calendar,
-                                 registry=registry, mode='dryrun')
+        if command == 'run':
+            from .broker import OpenDBroker
+            broker = OpenDBroker.connect(market, mode, args.acc_id, args.security_firm)
+        service = CustodyService(args.db or 'custody-%s.sqlite' % mode, broker.account if broker else args.account,
+                                 OpenDContractResolver(market), calendar, registry=registry, mode=mode)
         job = service.create_job({'strategy_id': args.strategy or registry.default_id, 'symbol': args.symbol,
                                   'direction': args.direction, 'contract': args.contract,
                                   'max_qty': args.max_qty}, datetime.now(ET))
-        underlying = args.symbol if args.symbol.upper().startswith('US.') else 'US.' + args.symbol.upper()
+        underlying = 'US.' + normalize_symbol(args.symbol)
         if not args.no_subscribe:
             try:
                 market.subscribe([underlying, args.contract])
                 subscribed = True
             except Exception as exc:  # noqa: BLE001 - polling still works
                 _json_logger('subscribe_error', error=repr(exc))
-        runner = DryRunRunner(service, market, job['id'],
-                              frame_source=StrategyFrameSource(SameDayHistorySource(market, calendar, underlying)),
-                              interval=args.interval, wxpusher_spt=args.wxpusher_spt,
-                              simulate_fills=not args.intent_only)
-        _json_logger('dryrun_start', job_id=job['id'], mode=service.mode, strategy_id=job['strategy']['strategy_id'],
-                     strategy_status=job['strategy']['status'], symbol=underlying, direction=args.direction,
-                     contract=args.contract, state=job['state'],
-                     flatten_at=job['flatten_at'], orders_never_submitted=True, simulated_fills=not args.intent_only)
+        runner = Runner(service, market, job['id'], broker=broker,
+                        frame_source=StrategyFrameSource(SameDayHistorySource(market, calendar, underlying)),
+                        interval=args.interval, wxpusher_spt=args.wxpusher_spt,
+                        simulate_fills=command == 'dryrun' and not args.intent_only)
+        _json_logger('start', command=command, mode=mode, account=service.account, db=service.path, job_id=job['id'],
+                     strategy_id=job['strategy']['strategy_id'], strategy_status=job['strategy']['status'],
+                     symbol=underlying, direction=args.direction, contract=args.contract, state=job['state'],
+                     flatten_at=job['flatten_at'], orders_to=broker.env if broker else None)
         runner.run(ticks=1 if args.once else args.ticks)
         return 0
     finally:
         if subscribed:
             market.unsubscribe_all()
+        if broker is not None:
+            broker.close()
         market.close()

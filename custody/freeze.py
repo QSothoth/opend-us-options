@@ -33,7 +33,7 @@ from pathlib import Path
 from .dataset import Dataset, DatasetError, parse_option_code, write_bars, write_checksums
 from .marketdata import _num, normalize_daily_rows
 from .models import ET
-from .opend import DEFAULT_HOST, DEFAULT_PORT, OpenDMarket, OpenDTradingCalendar
+from .opend import OpenDMarket, OpenDTradingCalendar
 
 DEFAULT_SYMBOLS = ('US.SPY', 'US.QQQ', 'US.IWM', 'US.AAPL', 'US.MSFT', 'US.NVDA', 'US.TSLA',
                    'US.META', 'US.AMZN', 'US.GOOGL', 'US.AMD', 'US.MU', 'US.INTC', 'US.AVGO')
@@ -158,8 +158,8 @@ def build_argument_parser():
     parser.add_argument('--symbols', default=','.join(DEFAULT_SYMBOLS))
     parser.add_argument('--role', choices=ROLES, default='train/custody',
                         help='train/custody for the growing training set, validation/custody for a held-out set')
-    parser.add_argument('--host', default=DEFAULT_HOST)
-    parser.add_argument('--port', type=int, default=DEFAULT_PORT)
+    parser.add_argument('--host', default=None, help='OpenD host (default: FUTU_HOST or 127.0.0.1)')
+    parser.add_argument('--port', type=int, default=None, help='OpenD port (default: FUTU_PORT or 11111)')
     return parser
 
 

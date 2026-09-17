@@ -23,9 +23,10 @@ Guarantees
   Flatten does not depend on bars arriving. Missing quotes or unknown order status
   leave the job in EXIT with an attention flag, never a false DONE.
 """
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from dataclasses import asdict, dataclass
 from datetime import timedelta
+from pathlib import Path
 import hashlib
 import json
 import sqlite3
@@ -93,6 +94,20 @@ class CustodyService:
             db.execute('CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, job_id TEXT NOT NULL REFERENCES jobs(id), body TEXT NOT NULL)')
             db.execute('CREATE TABLE IF NOT EXISTS order_events (order_id TEXT NOT NULL, sequence INTEGER NOT NULL, '
                        'job_id TEXT NOT NULL, body TEXT NOT NULL, PRIMARY KEY(order_id, sequence))')
+
+    @classmethod
+    def jobs_in(cls, db_path):
+        """``(job_id, service)`` for every job of a runtime database, each service bound to its account/mode."""
+        if not Path(db_path).is_file():
+            raise ValueError('no custody database at %s' % db_path)
+        with closing(sqlite3.connect(db_path)) as db:
+            rows = db.execute('SELECT j.id, j.account, m.mode FROM jobs j JOIN service_modes m USING (account) '
+                              'ORDER BY j.rowid').fetchall()
+        services = {}
+        for _, account, mode in rows:
+            if (account, mode) not in services:
+                services[account, mode] = cls(db_path, account, None, None, mode=mode)
+        return [(job_id, services[account, mode]) for job_id, account, mode in rows]
 
     # ------------------------------------------------------------ storage
     @contextmanager
@@ -258,7 +273,9 @@ class CustodyService:
                 body['first_fill_at'] = instant(event.first_fill_at).isoformat()
             body = encode(body)
             if event.sequence == order['sequence']:
-                if body != order['last_update']:
+                # Polling observes the same state again later; only the broker facts must agree.
+                last = json.loads(order['last_update'])
+                if any(last[k] != getattr(event, k) for k in ('status', 'cumulative_qty', 'average_option_price')):
                     raise ValueError('conflicting duplicate event')
                 duplicate = True
             elif event.sequence < order['sequence']:
@@ -348,7 +365,7 @@ class CustodyService:
                     order['status'] = 'ACKED'
                     self._store_order(db, order)
             else:
-                event = adapter.submit(json.loads(encode(order)))
+                event = adapter.submit(json.loads(encode(order)), now)
                 if not isinstance(event, OrderUpdate) or event.client_order_id != order['client_order_id']:
                     raise ValueError('invalid broker acknowledgment')
                 self.apply_update(event, now)

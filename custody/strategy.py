@@ -68,7 +68,7 @@ def engines():
     return ENGINES
 
 
-def build_strategy(item: dict, direction: str, session: Session, strike: float | None = None):
+def build_strategy(item: dict, direction: str, session: Session, strike: float):
     """Instantiate the registered engine for one job/case (strike of the exact contract)."""
     if direction not in ('LONG', 'SHORT'):
         raise ValueError('direction must be LONG or SHORT')

@@ -17,12 +17,11 @@ After the opening range (``opening_minutes``) enter on the first completed bar w
 * the close breaks the highest signed high of the previous ``momentum_lookback`` bars.
 
 Reason ``reversal_reclaim`` when the day first moved against us by more than the
-opening-range height, otherwise ``trend_breakout``. From ``relax_after_minutes``
-(0 disables) a fresh breakout on either the VWAP side or the EMA trend is enough
-(``late_confirmation``).
+opening-range height, otherwise ``trend_breakout``. Entry never loosens with the
+clock (AGENTS.md: no fixed-time entry logic).
 
-Optional exit rules
--------------------
+Optional exit rules (they need the contract strike)
+---------------------------------------------------
 * ``charm_exit_before_close_minutes``: that close to the close, an out-of-the-money
   position that is not yet protected by a trail is sold (``charm_exit``);
 * ``protection_needs_moneyness`` = 1: the trail only counts as protection once the
@@ -57,7 +56,6 @@ SCHEMA = {
     'momentum_lookback': (int, 1, 30),
     'vwap_buffer_atr': (float, 0.0, 5.0),
     'trend_buffer_atr': (float, 0.0, 5.0),
-    'relax_after_minutes': (int, 0, 390),
     'stop_lookback': (int, 1, 60),
     'stop_min_atr': (float, 0.1, 10.0),
     'stop_max_atr': (float, 0.1, 20.0),
@@ -71,12 +69,12 @@ SCHEMA = {
 # Optional signal and exit parameters.
 OPTIONAL = {
     'persist_minutes': ((int, 0, 120), 0),          # confirmation needs N consecutive closes on the VWAP side
+    'relax_after_minutes': ((int, 0, 0), 0),        # retired clock-based entry relaxation; only 0 (registered v4)
     'charm_exit_before_close_minutes': ((int, 16, 389), None),  # late exit for unprotected out-of-the-money positions
     'protection_needs_moneyness': ((int, 0, 1), 0),  # 1: a trail only protects once the option is at/in the money
     'otm_stop_shrink': ((float, 0.05, 0.9), None),   # stop distance x max(0.5, 1 - shrink * OTM z at entry)
 }
 OTM_STOP_FLOOR = 0.5
-STRIKE_RULES = ('charm_exit_before_close_minutes', 'protection_needs_moneyness', 'otm_stop_shrink')
 
 
 def validate_params(params):
@@ -106,20 +104,16 @@ def validate_params(params):
         out[name] = value
     if out['ema_fast'] >= out['ema_slow'] or out['stop_min_atr'] > out['stop_max_atr']:
         raise ValueError('inconsistent EMA or stop parameters')
-    if out['relax_after_minutes'] and out['relax_after_minutes'] <= out['opening_minutes']:
-        raise ValueError('relax_after_minutes must follow the opening range (or be 0 to disable)')
     return out
 
 
 class ZeroDteTiming:
     validate = staticmethod(validate_params)
 
-    def __init__(self, params, direction, session, strike=None):
+    def __init__(self, params, direction, session, strike):
         self.p = validate_params(params)
-        if strike is not None and (isinstance(strike, bool) or not strike > 0):
+        if isinstance(strike, bool) or not isinstance(strike, (int, float)) or not strike > 0:
             raise ValueError('strike must be positive')
-        if strike is None and any(self.p[name] not in (None, 0) for name in STRIKE_RULES):
-            raise ValueError('these rules need the contract strike: ' + ', '.join(STRIKE_RULES))
         self.strike = strike
         if direction not in ('LONG', 'SHORT'):
             raise ValueError('direction must be LONG or SHORT')
@@ -127,8 +121,6 @@ class ZeroDteTiming:
         self.session = session
         self.flatten_minute = flatten_minute(self.p, session)
         self.session_minutes = int((session.closes - session.opens).total_seconds() // 60)
-        if self.p['relax_after_minutes'] and self.p['relax_after_minutes'] >= self.flatten_minute:
-            raise ValueError('relax_after_minutes must precede flatten')
         self.ind = SessionIndicators(self.p['ema_fast'], self.p['ema_slow'], self.p['atr_period'],
                                      self.p['opening_minutes'],
                                      history=max(self.p['momentum_lookback'], self.p['stop_lookback']) + 2)
@@ -215,14 +207,11 @@ class ZeroDteTiming:
         vwap_side = close >= s * ind.vwap + p['vwap_buffer_atr'] * atr
         trend = (s * (ind.ema_fast - ind.ema_slow) >= p['trend_buffer_atr'] * atr
                  and s * (ind.ema_fast - ind.prev_ema_fast) > 0)
-        if vwap_side and trend:
-            opening_range = ind.or_high - ind.or_low
-            if s * ind.session_open - min(s * ind.high, s * ind.low) > opening_range:
-                return 'reversal_reclaim'
-            return 'trend_breakout'
-        if p['relax_after_minutes'] and minute >= p['relax_after_minutes'] and (vwap_side or trend):
-            return 'late_confirmation'
-        return None
+        if not (vwap_side and trend):
+            return None
+        if s * ind.session_open - min(s * ind.high, s * ind.low) > ind.or_high - ind.or_low:
+            return 'reversal_reclaim'
+        return 'trend_breakout'
 
     def _manage(self, minute):
         p, close = self.p, self.sign * self.ind.close

@@ -111,7 +111,7 @@ def default_session(day, close=None):
 class Dataset:
     """Verified read access to one dataset directory."""
 
-    def __init__(self, root, verify=True):
+    def __init__(self, root):
         self.root = Path(root).resolve()
         try:
             self.manifest = json.loads((self.root / 'manifest.json').read_text())
@@ -120,7 +120,7 @@ class Dataset:
             raise DatasetError('missing or unreadable manifest.json/cases.json under %s' % self.root) from exc
         self.name = self.manifest.get('dataset') or self.root.name
         self._pinned = set()
-        self.checksums_verified = self.verify_checksums() if verify else 0
+        self.checksums_verified = self.verify_checksums()
         checksums = self.root / 'CHECKSUMS.sha256'
         pin_file = checksums if checksums.exists() else self.root / 'manifest.json'
         self.fingerprint = sha256_file(pin_file)
@@ -191,7 +191,7 @@ class Dataset:
             path = self.root / kind / (code + '.csv')
             if not path.is_file():
                 raise DatasetError('missing %s series %s' % (kind, code))
-            if self._pinned and path.resolve() not in self._pinned:
+            if path.resolve() not in self._pinned:
                 raise DatasetError('data file is not pinned by a checksum: %s/%s.csv' % (kind, code))
             self._tapes[key] = _bars_from_csv(path, code)
         return self._tapes[key]

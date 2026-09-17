@@ -303,7 +303,7 @@ def summarize(trades, labels, hit_rate=0.5):
     }
 
 
-def shuffle_null(datas, trades, labels, fill=PRIMARY_FILL, draws=NULL_DRAWS, seed=20260916, params=None):
+def shuffle_null(datas, trades, labels, params, fill=PRIMARY_FILL, draws=NULL_DRAWS, seed=20260916):
     """Same-schedule null: reassign the strategy's own (entry, exit) minutes across cases.
 
     Keeps the distribution of entry times and holding periods, destroys the link
@@ -324,7 +324,7 @@ def shuffle_null(datas, trades, labels, fill=PRIMARY_FILL, draws=NULL_DRAWS, see
 
     def replay(index, entry_minute, exit_minute):
         data, options = datas[index], tapes[index]
-        flatten = flatten_minute(params or {'flatten_before_close_minutes': 15}, data.session)
+        flatten = flatten_minute(params, data.session)
         buy = next(((m, b) for m, b in options if entry_minute + fill.delay_minutes <= m < flatten), None)
         if buy is None:
             return 0.0
@@ -812,7 +812,7 @@ OUTCOME_ZH = {'COMPLETED': '完成买卖', 'NO_ENTRY_SIGNAL': '无入场信号',
 
 
 REASON_ZH = {
-    'trend_breakout': '顺势突破', 'reversal_reclaim': '反转收复', 'late_confirmation': '午后放宽确认',
+    'trend_breakout': '顺势突破', 'reversal_reclaim': '反转收复',
     'invalidation_stop': '止损', 'breakeven_stop': '正股跌回买入价离场', 'trailing_stop': '从高点回撤离场',
     'no_progress': '迟迟不涨离场', 'scheduled_flatten': '收盘前强平', 'platform_flatten': '平台强平',
     'charm_exit': '午后仍虚值离场',

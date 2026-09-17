@@ -1,25 +1,26 @@
 # 运行时（RUNTIME）
 
-实现：`custody/service.py`（状态机）、`custody/controller.py`（单步推进）、`custody/http.py`（控制 API）、
-`custody/dryrun.py`（只读 OpenD 常驻观察）、`custody/opend.py`（只读行情适配器）。
+实现：`custody/service.py`（状态机）、`custody/controller.py`（单步推进）、`custody/runner.py`（常驻进程与命令行）、
+`custody/broker.py`（OpenD 下单）、`custody/opend.py`（只读行情）。
 
-本仓库**没有真实券商下单连接**，也不允许加入（[项目规范](../AGENTS.md#运行与安全)）。
+四种用法的行情来源和订单去向完全不同：
+
+| 命令 | 行情 | 订单 | 用途 |
+|---|---|---|---|
+| `custody evaluate` | 已冻结的历史数据集 | 离线成交模型 | 评测策略，见 [STANDARD](STANDARD.md) |
+| `custody dryrun` | OpenD 实时，只读 | 不发单，本地模拟成交 | 盘中观察信号 |
+| `custody run --mode paper` | OpenD 实时 | 发到 OpenD 模拟账户（SIMULATE） | 演练真实下单流程 |
+| `custody run --mode live` | OpenD 实时 | 发到真实账户（REAL），只接受 `accepted` 策略 | 实盘 |
 
 ## 1. 一个任务（job）
 
-请求（`POST /v1/jobs` 或 `CustodyService.create_job`，JSON Schema 见 `custody/job_request.schema.json`）：
+`dryrun` / `run` 启动时用命令行参数建任务：`--symbol`、`--direction`、`--contract` 必填，`--strategy` 缺省为默认策略，`--max-qty` 缺省 1，交易日是美东今天。
 
-```json
-{"strategy_id": "zero_dte_timing_v4", "symbol": "SPY", "direction": "LONG", "contract": "US.SPY260916C600000", "max_qty": 1}
-```
-
-- 必填前四项；`max_qty` 默认 1；`trade_date` 默认美东今天，且必须是今天。
 - 合约必须当天到期、与标的一致、LONG 对应 CALL / SHORT 对应 PUT。
-- 同一账户 + 同一合约 + 同一交易日只能有一个任务：这张合约当天只买一次、卖一次。完全相同的请求幂等返回同一任务；同一合约换参数（数量、策略）会被拒绝。
-- 同一标的可以同时有多个任务，例如一张 CALL 做多、一张 PUT 做空，各自独立计时、各自一笔。
+- 同一账户 + 同一合约 + 同一交易日只能有一个任务：这张合约当天只买一次、卖一次。重跑同一条命令会接着处理同一个任务；同一合约换参数（数量、策略）会被拒绝。
+- 同一标的可以同时有多个任务，例如一张 CALL 做多、一张 PUT 做空，各开一个进程，各自独立计时、各自一笔。
 - 到达强平时刻就不能再建任务或买入。
-- `live` 模式只接受状态为 `accepted` 的策略。
-- 模式（`paper` / `live` / `dryrun`）绑定在数据库上，不能由请求切换。
+- 任务、订单和模式（`dryrun` / `paper` / `live`，按账户绑定）保存在 SQLite，缺省为当前目录的 `custody-<模式>.sqlite`。放在持久目录，当天不要删除或换库，否则会丢失这张合约已经下过单的记录。数据库 schema 为 v4，旧库被拒绝，不自动迁移。
 
 ## 2. 状态机
 
@@ -36,7 +37,7 @@
 | 卖单 30 秒未成交 | 发撤单改价，撤单确认后只对剩余数量重新卖出 |
 | 没有有效报价 | 停在 EXIT 并标记 `EXIT_WAITING_VALID_QUOTE`，不会假装已平仓 |
 
-其他保证：意图先落库再做券商 I/O；提交超时记为 `UNKNOWN`，不会盲目重发；重启后任务和待发意图都保留；
+其他保证：意图先落库再做券商 I/O；提交结果不明记为 `UNKNOWN`，不会盲目重发；重启后任务和待发意图都保留；
 策略帧必须是当天已完成的整分钟 K 线、不超过 15 秒、不能倒序。
 
 默认执行参数（`ExecutionPolicy`）：报价最长 5 秒、帧最长 15 秒、入场 / 出场超时 30 秒、最大相对点差 30%。
@@ -54,26 +55,45 @@
 
 ```bash
 contract='<今天到期的 CALL 合约代码>'
-python3 -m custody dryrun --symbol US.QQQ --direction LONG --contract "$contract" \
-  --db /tmp/custody-dryrun.sqlite
+python3 -m custody dryrun --symbol US.QQQ --direction LONG --contract "$contract"
 ```
 
-可选参数：`--strategy <id>`、`--intent-only`、`--once`。推送凭据用环境变量 `CUSTODY_WXPUSHER_SPT`。
+可选参数：`--strategy <id>`、`--db <路径>`、`--intent-only`、`--once`。推送凭据用环境变量 `CUSTODY_WXPUSHER_SPT`。
 
-- 只用 `OpenQuoteContext`；服务处于 `dryrun` 模式时 `dispatch_next` 直接拒绝，控制器也没有券商对象。
+- 没有券商对象：服务处于 `dryrun` 模式时 `dispatch_next` 直接拒绝。日志、推送、自动退出和 Ctrl-C 行为与 run 相同（见下节）。
 - 默认把每个意图在本地按当时报价标记为**模拟成交**（日志事件 `simulated_fill`，`submitted=false`），这样能看到完整的入场、止损 / 跟踪、强平过程；`--intent-only` 则意图永远不会成交：未成交的买入意图按状态机超时撤销并重试，便于只看信号时点。
-- 每个新意图记日志 `order_intent`；配置了 WxPusher SPT 时推送到手机（失败不影响循环）。
-- 行情或 K 线暂时缺失只记日志（`frame_error` / `quote_error`），循环继续。
-- 数据库 schema 为 v4；旧库被拒绝，不自动迁移。旧任务先结束、旧库保留审计，再用新的 `--db` 路径启动，不能切库重复处理同一合约当天任务。
 
-## 5. 控制 API
+## 5. run
 
-`custody.http.create_app(service, token)` 返回一个 WSGI 应用（导入时不启动监听）：
+先在 OpenD 登录有美股期权交易权限的账户，并用 `--mode paper` 在模拟账户上完整跑通一天：
 
-- `POST /v1/jobs` 建任务；`GET /v1/jobs/{id}` 查状态；`POST /v1/jobs/{id}/stop` 人工停止（撤单或平仓，不会假装已平）；`GET /v1/strategies` 列出策略。
-- 全部需要 `Authorization: Bearer <token>`（至少 20 个字符）；未知字段、重复字段一律拒绝。
+```bash
+python3 -m custody run --mode paper --acc-id <模拟账户 acc_id> \
+  --symbol US.QQQ --direction LONG --contract "$contract"
+```
 
-## 6. 执行接口的边界
+- `--acc-id` 必须是 OpenD 里对应环境（paper = SIMULATE，live = REAL）的美股账户，不匹配时报错并列出可用账户。券商主体用 `--security-firm`，缺省 `FUTUSECURITIES`（moomoo 美国为 `FUTUINC`）。
+- live 需要解锁交易：设置环境变量 `FUTU_TRADE_PASSWORD` 或 `FUTU_TRADE_PASSWORD_MD5`，或事先在 OpenD 界面解锁。密码不走命令行参数。
+- 订单是美股限价单（`NORMAL`、当日有效、只在常规时段），买入价 = ask，卖出价 = bid。每单的 `remark` 写入客户端订单号；订单号由账户、合约和交易日确定，提交前先在 OpenD 订单列表里查找，已有就沿用，所以超时、重启或换库后同一订单号都不会重复下单。
+- 卖出前查询持仓，只卖账户实际持有的多头数量，不会卖出开仓。持仓查询失败时本次卖单记为被拒、下一轮重试；持仓少于要卖的数量时不发单、标记 `RECONCILE_ORDER_STATUS`，按下一条的 2 分钟规则再试。
+- `place_order` 失败时订单记为 `UNKNOWN`，不重发，之后每轮按客户端订单号查找。找到就按真实状态继续；意图创建 2 分钟后刷新订单列表仍找不到，才判定没有下单（`REJECTED`），允许重新入场或重新卖出。
+- 订单状态靠每轮轮询 OpenD 订单列表获得。成交时间和入场时的正股价格按发现成交的那一轮记录，最多晚一个轮询间隔（缺省 5 秒）。
+- 每次订单状态或成交数量变化记日志 `order`；配置了 WxPusher SPT 时推送到手机（失败不影响循环）。行情或 K 线暂时缺失只记日志（`quote_error` / `frame_error`），循环继续。
+- 任务结束（`DONE`）后进程自动退出。Ctrl-C 只停止轮询：OpenD 上的挂单和持仓保持不变，日志 `stopped` 列出未完成订单和持仓；重跑同一条命令即可接着管理。
+- 强平时刻取自 OpenD 交易日历：不是全天交易（`WHOLE`）的日子按 13:00 收盘计算。
 
-`custody/ports.py` 的 `Broker` 是状态机与测试替身使用的执行契约；上文的提交、撤单和对账描述该契约，不代表已连接券商。
-`paper` / `live` 是现有服务的模式和校验分支，不能据此启动真实交易。仓库禁止加入真实券商适配器。
+## 6. 查看与人工停止
+
+```bash
+python3 -m custody status --db custody-paper.sqlite                  # 全部任务概要
+python3 -m custody status --db custody-paper.sqlite --job <job_id>   # 单个任务，含订单
+python3 -m custody stop   --db custody-paper.sqlite --job <job_id>   # 人工停止
+```
+
+`stop` 只在数据库里请求退出（撤掉未成交的买单，再卖出持仓，不会假装已平仓），由正在运行的 `dryrun` / `run` 进程在下一轮执行。进程没有运行时，重跑同一条启动命令来执行退出。
+
+## 7. 执行边界
+
+- 只有 `custody/broker.py` 使用 OpenD 交易接口；其他模块不得引用 `OpenSecTradeContext`、`place_order`、`unlock_trade`、`modify_order`（测试扫描）。
+- `dryrun` 模式的服务拒绝发单，控制器也不带券商对象；模拟成交只允许在 dryrun 使用。
+- `live` 只接受状态为 `accepted` 的策略（见 [STANDARD](STANDARD.md)）。

@@ -27,7 +27,7 @@ class Controller:
             for order in job['orders']:
                 if order['kind'] == 'LIMIT' and order['status'] in ACTIVE - {'CREATED'}:
                     try:
-                        update = self.broker.lookup(order['client_order_id'])
+                        update = self.broker.lookup(order, now)
                         if update is not None:
                             self.service.apply_update(update, now)
                         else:

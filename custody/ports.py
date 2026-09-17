@@ -1,4 +1,4 @@
-"""Trusted deployment adapters. No concrete market-data or live-order client."""
+"""Trusted deployment adapters. The OpenD implementations live in custody.opend and custody.broker."""
 from typing import Protocol
 from .models import Contract, Session, OrderUpdate
 
@@ -19,12 +19,12 @@ class Broker(Protocol):
     account: str
     mode: str
 
-    def submit(self, intent: dict) -> OrderUpdate:
-        """Map stable client ID and LIMIT OPEN/CLOSE intent to broker semantics.
+    def submit(self, intent: dict, now) -> OrderUpdate:
+        """Send one LIMIT OPEN/CLOSE intent; the stable client ID must be recoverable from the broker.
 
-        Must enforce account funds, order limits and close-only owned quantity.
-        Persist client-ID/broker-ID mapping; rejection must be authoritative.
-        A transport timeout is UNKNOWN, never a guarantee of rejection.
+        An id the broker already holds returns that order instead of a new one. Must enforce
+        close-only owned quantity. A returned rejection must be authoritative (nothing was
+        sent); an unknown outcome must raise, never be reported as rejected.
         """
         ...
 
@@ -32,6 +32,9 @@ class Broker(Protocol):
         """Acknowledges cancel request ONLY; deliver original order terminal update separately."""
         ...
 
-    def lookup(self, client_order_id: str) -> OrderUpdate | None:
-        """Reconcile after restart/timeout; None does not authorize resubmission."""
+    def lookup(self, order: dict, now) -> OrderUpdate | None:
+        """Current state of a dispatched order; None does not authorize resubmission.
+
+        Re-observing an unchanged order must repeat its sequence and broker facts.
+        """
         ...

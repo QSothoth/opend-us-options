@@ -1,9 +1,7 @@
-"""Shared market-data types for the dataset, the daily freeze and the live dryrun path.
+"""Shared market-data types for the dataset, the daily freeze and the runner.
 
 * :class:`Bar` - a normalized 1m (or daily) trade bar with an aware close time;
-* :func:`normalize_bar_rows` / :func:`normalize_daily_rows` - OpenD rows to bars;
-* :class:`MarketDataProvider` - the read-only surface the live adapter
-  (:class:`custody.opend.OpenDMarket`) implements.
+* :func:`normalize_bar_rows` / :func:`normalize_daily_rows` - OpenD rows to bars.
 
 Honesty rule: 1m history is trade OHLCV for both the underlying and the option.
 Option bid/ask exists only live; nothing here fabricates a spread. This module has
@@ -14,11 +12,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 import math
-from typing import Protocol, runtime_checkable
 
-from .models import ET, Quote, instant
+from .models import ET, instant
 
-__all__ = ['Bar', 'MarketDataProvider', 'normalize_bar_rows', 'normalize_daily_rows']
+__all__ = ['Bar', 'normalize_bar_rows', 'normalize_daily_rows']
 
 
 def _num(value):
@@ -132,23 +129,3 @@ def normalize_daily_rows(rows):
     dedup = {bar['date']: bar for bar in out}
     return [dedup[key] for key in sorted(dedup)]
 
-
-@runtime_checkable
-class MarketDataProvider(Protocol):
-    """Read-only market surface used by the dryrun runner and the daily freeze."""
-
-    def quote(self, contract: str, now=None) -> Quote | None:
-        """Fresh option bid/ask, or ``None`` when no honest quote is available."""
-        ...
-
-    def underlying_mark(self, symbol: str, now=None) -> float | None:
-        """Fresh underlying last price, or ``None`` when unavailable."""
-        ...
-
-    def history_bars(self, code: str, ktype: str, start, end, boundary=None) -> list[Bar]:
-        """Completed history bars for ``code`` in ``[start, end]``."""
-        ...
-
-    def current_bars(self, code: str, count: int, ktype: str, boundary=None) -> list[Bar]:
-        """Most recent ``count`` bars from the subscribed stream."""
-        ...
