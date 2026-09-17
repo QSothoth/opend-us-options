@@ -86,6 +86,29 @@ class DatasetTests(unittest.TestCase):
         with self.assertRaisesRegex(DatasetError, 'no traded option bars'):
             ds2.load(ds2.cases[0])
 
+    def test_manifest_series_checksums_pin_files_like_the_validation_releases(self):
+        import hashlib
+        write_dataset(self.root, spy_cases())
+        (self.root / 'CHECKSUMS.sha256').unlink()
+        series = []
+        for kind, code in (('underlying', 'US.SPY'), ('option', CALL), ('option', PUT)):
+            rel = '%s/%s.csv' % (kind, code)
+            series.append({'code': code, 'kind': kind, 'csv': rel,
+                           'sha256': {'csv': hashlib.sha256((self.root / rel).read_bytes()).hexdigest()}})
+        manifest = {'dataset': 'manifest-pinned', 'series': series}
+        (self.root / 'manifest.json').write_text(json.dumps(manifest))
+        ds = Dataset(self.root)
+        self.assertEqual((ds.checksums_verified, ds.pinned_by), (3, 'manifest.json'))
+        self.assertEqual(len(ds.load(ds.cases[1]).underlying), 390)
+        (self.root / 'manifest.json').write_text(json.dumps(dict(manifest, series=series[:2])))
+        ds = Dataset(self.root)
+        with self.assertRaisesRegex(DatasetError, 'not pinned'):
+            ds.load(ds.cases[1])
+        series[0]['sha256']['csv'] = '0' * 64
+        (self.root / 'manifest.json').write_text(json.dumps(dict(manifest, series=series)))
+        with self.assertRaisesRegex(DatasetError, 'checksum mismatch'):
+            Dataset(self.root)
+
     def test_duplicate_cases_are_refused(self):
         cases = spy_cases()
         write_dataset(self.root, [cases[0], dict(cases[0])])

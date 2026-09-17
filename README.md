@@ -33,6 +33,7 @@ python3 -m custody dryrun --symbol US.QQQ --direction LONG --contract US.QQQ2609
 ## 当前状态
 
 - 当前策略 `zero_dte_timing_v3`（`candidate`）：V4 上按方向对错各半，平均每笔 +0.8%、盈亏比 4.33、利润因子 1.03；对照组（09:35 买入拿到 15:45）为 −37.9%、2.31、0.44。过 11 个门槛中的 10 个，参数上下浮动 25% 的 44 组全部仍赢对照组。结论仍是 **REJECT**：去掉 2026-09-11 这一天就输给对照组；六轮 19 个候选的挑选过程做留一天交叉验证，样本外估计为 −23.9% / 5.43，好于对照组但整体仍不赚钱。详见 [报告](reports/zero_dte_timing_v3/custody-train-0dte/REPORT.md) 和 [策略说明](docs/STRATEGY.md)。
+- 样本外验证集 `custody-eval-2026-09-16`（10 张 CALL，当天全部方向错）：v3 平均每笔 −24.9%（美元合计 −$267），对照组 −99.3%（−$2,276）；方向错时的亏损控制成立，盈亏比类门槛因数据只有一边而不适用，结论 PROVISIONAL。见 [报告](reports/zero_dte_timing_v3/custody-eval-2026-09-16/REPORT.md)。
 - `zero_dte_timing_v1`、`zero_dte_timing_v2` 已退役（`retired`）。
 - 下一步是每天 freeze 两边数据，攒够样本外交易日后再评测，而不是继续在 V4 上调参。
 - 没有真实券商下单连接；`dryrun` 绝不下单。

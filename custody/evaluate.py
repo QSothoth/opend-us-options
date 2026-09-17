@@ -281,6 +281,7 @@ def summarize(trades, labels, hit_rate=0.5):
         'balanced': weighted_metrics(returns, weights),
         'balanced_dollars': weighted_metrics(dollars, weights),
         'raw': weighted_metrics(returns),
+        'dollars_total': sum(d for d in dollars if d is not None) if completed else None,
         'coverage_gaps': gaps,
         'by_scenario': by_scenario,
         'with_direction': weighted_metrics([r for r, l in zip(returns, labels) if l['scenario'] in WITH_DIRECTION]),
@@ -303,6 +304,8 @@ def shuffle_null(datas, trades, labels, fill=PRIMARY_FILL, draws=NULL_DRAWS, see
         return None
     weights, _ = mirror_weights([l['scenario'] for l in labels])
     observed = weighted_metrics([t['net_return'] for t in trades], weights)
+    if observed['expectancy'] is None:
+        return None  # direction-balanced metrics undefined for this dataset
     tapes = []
     for data in datas:
         options = sorted((session_minute(data.session, b.close_time), b) for b in data.option)
@@ -381,13 +384,13 @@ def gates(summary, benchmark, robust):
     against, bench_against = s['by_scenario']['trend_against'], b['by_scenario']['trend_against']
     checks = {
         'G1_completion_100pct': s['completion_rate'] == 1.0,
-        'G3_expectancy_beats_benchmark': (_gt(s['balanced']['expectancy'], b['balanced']['expectancy'])
-                                          and _gt(s['balanced_dollars']['expectancy'], b['balanced_dollars']['expectancy'])),
+        'G3_expectancy_beats_benchmark': _all([_gt(s['balanced']['expectancy'], b['balanced']['expectancy']),
+                                               _gt(s['balanced_dollars']['expectancy'], b['balanced_dollars']['expectancy'])]),
         'G4_payoff_ratio_at_least_%g' % MIN_PAYOFF_RATIO: _ge(s['balanced']['payoff_ratio'], MIN_PAYOFF_RATIO),
         'G5_trend_against_loss_smaller_than_benchmark': _gt(against['expectancy'], bench_against['expectancy']),
         'G6_with_direction_expectancy_positive': _gt(s['with_direction']['expectancy'], 0.0),
-        'G7_payoff_ratio_beats_benchmark': (_gt(s['balanced']['payoff_ratio'], b['balanced']['payoff_ratio'])
-                                            and _gt(s['balanced_dollars']['payoff_ratio'], b['balanced_dollars']['payoff_ratio'])),
+        'G7_payoff_ratio_beats_benchmark': _all([_gt(s['balanced']['payoff_ratio'], b['balanced']['payoff_ratio']),
+                                                 _gt(s['balanced_dollars']['payoff_ratio'], b['balanced_dollars']['payoff_ratio'])]),
         'G8_both_halves_beat_benchmark': robust['halves']['passed'],
         'G9_leave_one_day_out_stable': robust['leave_one_day_out']['passed'],
         'G10_parameter_neighbors_beat_benchmark': robust['neighbors']['passed'],
@@ -397,8 +400,8 @@ def gates(summary, benchmark, robust):
 
 
 def _beats(strategy_balanced, benchmark_balanced):
-    return (_gt(strategy_balanced['expectancy'], benchmark_balanced['expectancy'])
-            and _gt(strategy_balanced['payoff_ratio'], benchmark_balanced['payoff_ratio']))
+    return _all([_gt(strategy_balanced['expectancy'], benchmark_balanced['expectancy']),
+                 _gt(strategy_balanced['payoff_ratio'], benchmark_balanced['payoff_ratio'])])
 
 
 def neighbor_params(params, engine_validate, scale=NEIGHBOR_SCALE):
@@ -435,7 +438,8 @@ def robustness(datas, labels, trades, bench, item, fill=PRIMARY_FILL):
         strategy = _mean(x for x, _ in pairs) if pairs and all(x is not None for x, _ in pairs) else None
         halves[name] = {'days': [days[0], days[-1]] if days else None, 'cases': len(pairs),
                         'strategy_mean': strategy, 'benchmark_mean': _mean(y for _, y in pairs)}
-    halves['passed'] = all(_gt(h['strategy_mean'], h['benchmark_mean']) for h in halves.values() if isinstance(h, dict))
+    halves['passed'] = (None if len(dates) < 2 else
+                        _all(_gt(h['strategy_mean'], h['benchmark_mean']) for h in halves.values() if isinstance(h, dict)))
     lodo = []
     for day in dates:
         keep = [i for i, d in enumerate(datas) if d.case.trade_date != day]
@@ -459,27 +463,39 @@ def robustness(datas, labels, trades, bench, item, fill=PRIMARY_FILL):
                           'expectancy': bal['expectancy'], 'payoff_ratio': bal['payoff_ratio']})
     return {
         'halves': halves,
-        'leave_one_day_out': {'passed': all(r['passed'] for r in lodo), 'failed_days': [r['dropped'] for r in lodo if not r['passed']],
+        'leave_one_day_out': {'passed': None if len(dates) < 2 else _all(r['passed'] for r in lodo),
+                              'failed_days': [r['dropped'] for r in lodo if r['passed'] is False],
                               'runs': lodo},
-        'neighbors': {'passed': all(r['passed'] for r in neighbors), 'count': len(neighbors),
-                      'failed': [r for r in neighbors if not r['passed']], 'runs': neighbors},
+        'neighbors': {'passed': _all(r['passed'] for r in neighbors), 'count': len(neighbors),
+                      'failed': [r for r in neighbors if r['passed'] is False], 'runs': neighbors},
     }
 
 
 def _gt(a, b):
-    return a is not None and b is not None and a > b
+    """True / False, or None when a side is undefined (the data cannot judge this gate)."""
+    return None if a is None or b is None else a > b
 
 
 def _ge(a, b):
-    return a is not None and b is not None and a >= b
+    return None if a is None or b is None else a >= b
+
+
+def _all(values):
+    """Tri-state AND: False if anything failed, None if something could not be judged."""
+    values = list(values)
+    if any(v is False for v in values):
+        return False
+    if not values or any(v is None for v in values):
+        return None
+    return True
 
 
 def verdict(checks, prefix_ok, coverage_ok, oos_sessions):
-    if not checks['G1_completion_100pct'] or not prefix_ok:
+    if checks['G1_completion_100pct'] is not True or not prefix_ok:
         return 'INVALID'
-    if not all(checks.values()):
+    if any(v is False for v in checks.values()):
         return 'REJECT'
-    if not coverage_ok or oos_sessions < MIN_OOS_SESSIONS:
+    if any(v is None for v in checks.values()) or not coverage_ok or oos_sessions < MIN_OOS_SESSIONS:
         return 'PROVISIONAL'
     return 'ACCEPT'
 
@@ -573,6 +589,10 @@ def _pct(x):
     return '—' if x is None else '%+.1f%%' % (100 * x)
 
 
+def _money(x):
+    return '—' if x is None else '%+.0f 美元' % x
+
+
 def _share(x):
     return '—' if x is None else '%.1f%%' % (100 * x)
 
@@ -595,7 +615,7 @@ GATE_TEXT = {
 }
 VERDICT_TEXT = {
     'ACCEPT': '达标，可以把策略状态改为 accepted',
-    'PROVISIONAL': '门槛都过了，但数据还不够（场景样本太少或样本外交易日不足），暂不能上线',
+    'PROVISIONAL': '能判断的门槛都过了，但数据还不够（有门槛无法判断、场景样本太少或样本外交易日不足），暂不能上线',
     'REJECT': '没达到标准，不能上线',
     'INVALID': '实现有问题（没完成交易或偷看了未来数据），结果无效',
 }
@@ -646,7 +666,8 @@ def render_markdown(report):
     ]
     gate_rows = [(GATE_TEXT.get(k, k), v) for k, v in report['gates_in_sample'].items()]
     gate_rows.insert(1, ('G2 没有偷看未来数据（截断到决策那一分钟重放，决策不变）', report['prefix_consistency']['passed']))
-    lines += ['| %s | %s |' % (name, '通过' if ok else '**未通过**') for name, ok in gate_rows]
+    gate_text = {True: '通过', False: '**未通过**', None: '不适用（这份数据无法判断）'}
+    lines += ['| %s | %s |' % (name, gate_text[ok]) for name, ok in gate_rows]
     lines += [
         '| 每种走势至少 %d 张合约 | %s |' % (MIN_CASES_PER_SCENARIO, '满足' if report['coverage']['ok'] else '**不足**'),
         '| 样本外交易日至少 %d 个 | %d 个 |' % (MIN_OOS_SESSIONS, (report['out_of_sample'] or {}).get('sessions', 0)),
@@ -666,6 +687,19 @@ def render_markdown(report):
     lines += [
         '| 中位持仓 | 分钟 | %s | %s |' % (_num(s['hold_minutes_median'], '%.0f'), _num(b['hold_minutes_median'], '%.0f')),
         '',
+        '### 同一批合约直接对比（不加权）',
+        '',
+        '策略和对照组交易的是完全相同的合约，方向构成一样，所以这张表不需要加权也是公平的比较；'
+        '但它的绝对数值会受这份数据里方向对错比例影响。%s' % (
+            '**这份数据方向对错只有一边，上面「各半」指标算不出来，以这张表为准。**' if s['balanced']['expectancy'] is None else ''),
+        '',
+        '| 指标 | 策略 | 对照组 |', '|---|---:|---:|',
+    ]
+    for key, name, _meaning, fmt in rows:
+        lines.append('| %s | %s | %s |' % (name, fmt(s['raw'][key]), fmt(b['raw'][key])))
+    lines += [
+        '| 美元合计（每张合约） | %s | %s |' % (_money(s['dollars_total']), _money(b['dollars_total'])),
+        '',
         '## 3. 分走势看（按当天实际走势事后分类，策略运行时看不到）',
         '',
         '走势是相对这张合约的方向说的：对 CALL，「顺势单边」= 当天一路涨；对 PUT，「顺势单边」= 当天一路跌。',
@@ -683,13 +717,15 @@ def render_markdown(report):
         '',
         '## 4. 结果靠不靠得住',
         '',
-        '- **随机时点对照**：把策略的买卖时间随机换到别的合约上，重复 %s 次。随机时间的平均收益不比策略差的比例 p = %s，盈亏比 p = %s。'
-        'p 越小越说明择时真的用上了当天走势；p 大于 0.1 基本等于没有择时能力。' % (
-            null['draws'] if null else 0, _num(null and null['p_expectancy'], '%.2f'), _num(null and null['p_payoff_ratio'], '%.2f')),
-        '- **按交易日重抽样 %d 次的 95%% 区间**：策略平均每笔 %s ~ %s，盈亏比 %s ~ %s；策略减对照组的平均收益 %s ~ %s（区间跨过 0 说明还不能确定比对照组好）。' % (
-            report['bootstrap_by_day']['draws'], *[_pct(x) for x in (report['bootstrap_by_day']['strategy_expectancy'] or [None, None])],
+        ('- **随机时点对照**：把策略的买卖时间随机换到别的合约上，重复 %s 次。随机时间的平均收益不比策略差的比例 p = %s，盈亏比 p = %s。'
+         'p 越小越说明择时真的用上了当天走势；p 大于 0.1 基本等于没有择时能力。' % (
+             null['draws'], _num(null['p_expectancy'], '%.2f'), _num(null['p_payoff_ratio'], '%.2f'))
+         if null else '- **随机时点对照**：无法计算（这份数据算不出方向对错各半的指标）。'),
+        ('- **按交易日重抽样 %d 次的 95%% 区间**：策略平均每笔 %s ~ %s，盈亏比 %s ~ %s；策略减对照组的平均收益 %s ~ %s（区间跨过 0 说明还不能确定比对照组好）。' % (
+            report['bootstrap_by_day']['draws'], *[_pct(x) for x in report['bootstrap_by_day']['strategy_expectancy']],
             *[_num(x) for x in (report['bootstrap_by_day']['strategy_payoff_ratio'] or [None, None])],
-            *[_pct(x) for x in (report['bootstrap_by_day']['expectancy_minus_benchmark'] or [None, None])]),
+            *[_pct(x) for x in report['bootstrap_by_day']['expectancy_minus_benchmark']])
+         if report['bootstrap_by_day']['strategy_expectancy'] else '- **按交易日重抽样**：无法计算（交易日太少或方向对错只有一边）。'),
         '- **假设上游方向对 60%%**：策略平均每笔 %s、盈亏比 %s；对照组平均每笔 %s。' % (
             _pct(report['direction_skill_0.6']['strategy']['expectancy']),
             _num(report['direction_skill_0.6']['strategy']['payoff_ratio']),
@@ -701,14 +737,24 @@ def render_markdown(report):
         ' → '.join(halves['first_half']['days'] or ['—']), _pct(halves['first_half']['strategy_mean']),
         _pct(halves['first_half']['benchmark_mean']), ' → '.join(halves['second_half']['days'] or ['—']),
         _pct(halves['second_half']['strategy_mean']), _pct(halves['second_half']['benchmark_mean'])))
-    failed_days = robust['leave_one_day_out']['failed_days']
-    lines.append('- **去掉任意一天**：共 %d 次，%s。' % (
-        len(robust['leave_one_day_out']['runs']), '全部仍赢对照组' if not failed_days else '去掉这些天后输给对照组：' + '、'.join(failed_days)))
+    lodo = robust['leave_one_day_out']
+    if lodo['passed'] is None and not lodo['failed_days']:
+        lodo_text = '无法判断（交易日太少，或去掉一天后方向对错两边样本不全）'
+    elif not lodo['failed_days']:
+        lodo_text = '全部仍赢对照组'
+    else:
+        lodo_text = '去掉这些天后输给对照组：' + '、'.join(lodo['failed_days'])
+    lines.append('- **去掉任意一天**：共 %d 次，%s。' % (len(lodo['runs']), lodo_text))
     failed = robust['neighbors']['failed']
-    lines.append('- **参数上下浮动 25%%**：共 %d 组，%s。' % (
-        robust['neighbors']['count'], '全部仍赢对照组' if not failed else '输给对照组的：' + '；'.join(
+    if robust['neighbors']['passed'] is None and not failed:
+        neighbor_text = '无法判断（这份数据算不出方向对错各半的指标）'
+    elif not failed:
+        neighbor_text = '全部仍赢对照组'
+    else:
+        neighbor_text = '输给对照组的：' + '；'.join(
             '%s %s→%s（平均 %s，盈亏比 %s）' % (r['param'], r['from'], r['to'], _pct(r['expectancy']), _num(r['payoff_ratio']))
-            for r in failed)))
+            for r in failed)
+    lines.append('- **参数上下浮动 25%%**：共 %d 组，%s。' % (robust['neighbors']['count'], neighbor_text))
     stress_names = {'slippage_0': '不算滑点', 'slippage_0.5': '滑点加倍（让出振幅 50%）', 'delay_2m': '成交再晚 1 分钟'}
     for name, row in report['stress'].items():
         lines.append('- **%s**：策略平均每笔 %s、盈亏比 %s；对照组平均每笔 %s。' % (

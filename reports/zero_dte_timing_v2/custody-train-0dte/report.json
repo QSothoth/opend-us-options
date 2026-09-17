@@ -86,6 +86,7 @@
       "payoff_ratio": 2.19404,
       "profit_factor": 0.274255
     },
+    "dollars_total": -445.8,
     "coverage_gaps": [],
     "by_scenario": {
       "trend_with": {
@@ -204,6 +205,7 @@
       "payoff_ratio": 1.24842,
       "profit_factor": 0.073436
     },
+    "dollars_total": -5761.9,
     "coverage_gaps": [],
     "by_scenario": {
       "trend_with": {

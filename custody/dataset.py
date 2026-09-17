@@ -6,6 +6,7 @@ A dataset is a directory (usually an extracted GitHub Release) with this layout:
       manifest.json          dataset name, role, window, ...
       cases.json             {"cases": [ ...one entry per option contract... ]}
       CHECKSUMS.sha256       "<sha256>  <relative path>" for every data file
+                             (or: manifest.json "series" entries with a per-file "sha256" map)
       underlying/<SYMBOL>.csv    underlying 1m bars, any number of sessions
       option/<CONTRACT>.csv      option 1m bars
 
@@ -118,9 +119,12 @@ class Dataset:
         except (OSError, KeyError, ValueError) as exc:
             raise DatasetError('missing or unreadable manifest.json/cases.json under %s' % self.root) from exc
         self.name = self.manifest.get('dataset') or self.root.name
+        self._pinned = set()
         self.checksums_verified = self.verify_checksums() if verify else 0
         checksums = self.root / 'CHECKSUMS.sha256'
-        self.fingerprint = sha256_file(checksums) if checksums.exists() else None
+        pin_file = checksums if checksums.exists() else self.root / 'manifest.json'
+        self.fingerprint = sha256_file(pin_file)
+        self.pinned_by = pin_file.name
         self.cases = [self._case(item) for item in raw_cases]
         keys = [c.key for c in self.cases]
         if len(set(keys)) != len(keys):
@@ -129,23 +133,36 @@ class Dataset:
 
     # ------------------------------------------------------------ verification
     def verify_checksums(self):
+        """Verify every pinned data file; remember which files are pinned.
+
+        Pins come from ``CHECKSUMS.sha256`` or, when that file is absent, from the
+        per-file ``sha256`` maps of ``manifest.json`` ``series`` entries (the layout of
+        the custody validation Releases). A case may only read pinned files.
+        """
         path = self.root / 'CHECKSUMS.sha256'
-        if not path.exists():
-            raise DatasetError('CHECKSUMS.sha256 missing: a dataset must pin every data file')
-        checked = 0
-        for line in path.read_text().splitlines():
-            if not line.strip():
-                continue
-            digest, name = line.split(maxsplit=1)
-            target = (self.root / name.strip().lstrip('*')).resolve()
+        pins = []
+        if path.exists():
+            for line in path.read_text().splitlines():
+                if line.strip():
+                    digest, name = line.split(maxsplit=1)
+                    pins.append((name.strip().lstrip('*'), digest))
+        else:
+            for item in self.manifest.get('series') or []:
+                for fmt, digest in (item.get('sha256') or {}).items():
+                    name = item.get(fmt, fmt)
+                    pins.append((name, digest))
+            if not pins:
+                raise DatasetError('no checksums: add CHECKSUMS.sha256 or manifest series sha256 for every data file')
+        for name, digest in pins:
+            target = (self.root / name).resolve()
             if not target.is_relative_to(self.root) or not target.is_file():
                 raise DatasetError('checksum entry points outside the dataset or is missing: ' + name)
             if sha256_file(target) != digest:
                 raise DatasetError('checksum mismatch: ' + name)
-            checked += 1
-        if not checked:
+            self._pinned.add(target)
+        if not pins:
             raise DatasetError('CHECKSUMS.sha256 lists no files')
-        return checked
+        return len(pins)
 
     def _case(self, item):
         try:
@@ -174,6 +191,8 @@ class Dataset:
             path = self.root / kind / (code + '.csv')
             if not path.is_file():
                 raise DatasetError('missing %s series %s' % (kind, code))
+            if self._pinned and path.resolve() not in self._pinned:
+                raise DatasetError('data file is not pinned by a checksum: %s/%s.csv' % (kind, code))
             self._tapes[key] = _bars_from_csv(path, code)
         return self._tapes[key]
 

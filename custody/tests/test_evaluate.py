@@ -162,6 +162,16 @@ class WeightingAndMetricsTests(unittest.TestCase):
         self.assertEqual(ev.verdict(dict(passing, G4=False), True, True, 25), 'REJECT')
         self.assertEqual(ev.verdict(dict(passing, G1_completion_100pct=False), True, True, 25), 'INVALID')
         self.assertEqual(ev.verdict(passing, False, True, 25), 'INVALID')
+        self.assertEqual(ev.verdict(dict(passing, G4=None), True, True, 25), 'PROVISIONAL')   # cannot judge -> never ACCEPT
+        self.assertEqual(ev.verdict(dict(passing, G3=None, G4=False), True, True, 25), 'REJECT')
+
+    def test_tri_state_helpers(self):
+        self.assertIsNone(ev._gt(None, 1.0))
+        self.assertFalse(ev._gt(0.5, 1.0))
+        self.assertIsNone(ev._all([True, None]))
+        self.assertFalse(ev._all([None, False]))
+        self.assertIsNone(ev._all([]))
+        self.assertTrue(ev._all([True, True]))
 
 
 class EndToEndTests(unittest.TestCase):
