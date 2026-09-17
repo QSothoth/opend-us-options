@@ -30,7 +30,7 @@ from collections import deque
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from .dataset import Dataset, DatasetError, parse_option_code, write_bars, write_checksums
+from .dataset import Dataset, DatasetError, ROLES, parse_option_code, write_bars, write_checksums
 from .marketdata import _num, normalize_daily_rows
 from .models import ET
 from .opend import OpenDMarket, OpenDTradingCalendar
@@ -76,9 +76,6 @@ def _code_for(chain_rows, strike, right):
         if parsed_right == right and abs(parsed_strike - strike) < 1e-6:
             return code
     return None
-
-
-ROLES = ('train/custody', 'validation/custody')
 
 
 def freeze_session(market, calendar, dataset_dir, day, symbols=DEFAULT_SYMBOLS, now=None, limiter=None, log=print,

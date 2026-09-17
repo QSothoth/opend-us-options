@@ -44,6 +44,22 @@ Release 里可能同时有 parquet 副本；本项目只读 CSV。
 - 两边不全的数据集只能做诊断，评测报告会标出「两边不全」，结论最高 PROVISIONAL；
 - 发布前必须通过 `python3 -m custody check --dataset <目录>`：哈希全部一致、每个 case 行情完整、两边齐全，否则退出码非 0。
 
+### 训练集必须排除验证集（硬隔离）
+
+验证集是留出集，绝不参与拟合；训练集绝不能包含任何验证交易日或验证的 `(标的, 交易日)` 会话：
+
+- 训练集 manifest 角色为 `train/custody`，验证集为 `validation/custody`，两者不可相同；
+- `set(训练 trade_date) ∩ set(验证 trade_date) == ∅`；
+- `set(训练 (symbol, trade_date)) ∩ set(验证 (symbol, trade_date)) == ∅`。
+
+发布训练集前，除单数据集检查外还必须运行隔离检查（任一角色不对、或任何日期/会话重叠都会使退出码非 0，从而阻止发布）：
+
+```bash
+python3 -m custody check --dataset <训练目录> --validation <验证目录>
+```
+
+单侧 `custody check` 只保证一个目录自身合法；`--validation` 才会把「训练不得混入留出验证日」变成发布前的自动门槛。脚本可用 `custody.dataset.isolation_report` 复用同一判定。
+
 读取时的强制检查（元数据和哈希在打开目录时检查，行情在加载 case 时检查；失败直接报错）：
 
 1. 每个数据文件都有 SHA256：`CHECKSUMS.sha256`，或（验证集 Release 的布局）`manifest.json` 里 `series` 条目逐文件的 `sha256`；全部一致，且案例读取的文件必须在其中；
@@ -56,30 +72,29 @@ Release 里可能同时有 parquet 副本；本项目只读 CSV。
 
 ## 3. 可用数据集
 
-| 名称 | 用途 |
-|---|---|
-| `custody-train-0dte`（V4） | 当前唯一训练数据 |
-| `custody-eval-2026-09-16` | 验证数据，只评测，绝不调参 |
+| 名称 | 角色 | 用途 |
+|---|---|---|
+| `custody-train-0dte` | `train/custody` | 当前训练数据（双边 0DTE） |
+| `custody-eval-2026-09-16` | `validation/custody` | 留出验证，只评测，绝不调参 |
 
-只使用此处登记的数据集。新数据按下文流程冻结并发布，训练集 tag 从 `custody-0dte-v5` 起递增。
+只使用此处登记的数据集。新数据按下文流程冻结并发布，训练集 tag 从 `custody-0dte-v5` 起递增。本地 canonical 目录在 `/workspace/pi-jobs/custody-train-0dte/out/` 与 `/workspace/pi-jobs/custody-eval-2026-09-16/out/`；GitHub Release 可能落后于本地扩展。
 
-### V4 详情
+### 训练集 custody-train-0dte（双边，本地扩展）
 
-- zip SHA256 `65398673c6617ef0a013c1795936016404babe4a1d4fc1777e16502c2621c7d3`
-- `CHECKSUMS.sha256` 的 SHA256 `deb7432fb8417fa05c88535248a3af816cd1227f1ef374c4f430ffb363e926db`，共 94 个文件
-- 14 个交易日（2026-08-17 → 2026-09-14），36 个 case：SPY 12、QQQ 5、IWM 2、AAPL 5、MSFT 4、META 4、NVDA 1、TSLA 1、AMD 1、MU 1
-- 合约：开盘第一根 K 线价格最近的挂牌行权价；每个 (标的, 交易日) 只保留了一边
-- **已知偏差**：保留哪一边是按「全天期权成交量更大」决定的（收盘后才知道）。下跌日开盘平值 CALL 会变成便宜的虚值、成交张数暴增，所以量大的一侧多数是亏钱的一侧：36 个里只有 6 个方向与当天开盘→15:45 走势一致，开盘买入持有到 15:45 的平均收益 −78%、中位 −97%
-- 按评测标准的场景分布：逆势单边 19、先逆后顺 8、震荡 6、顺势单边 2、先顺后逆 1；没有昨收
-- 结论：V4 只能配合方向对称加权使用，且场景覆盖不足，任何策略在 V4 上最多 PROVISIONAL
+- 角色 `train/custody`；zip SHA256 `e043bf002d2a807816ff62651029402ef2692bb4f0257a51321d0c0b26e3e8df`（本地 canonical），`CHECKSUMS.sha256` 的 SHA256 `8d8c7092be679092e6e95b1fb23a07b1f038de9f756f388b7af8a44d5db104ab`
+- **126 个 case / 20 个交易日**（2026-08-18 → 2026-09-15），全部真 0DTE（`expiry == trade_date`）
+- **63 LONG+CALL / 63 SHORT+PUT**；63 个 `(标的, 交易日)` 全部同一行权价两边齐全，`custody check` 通过
+- 13 个标的（case 数）：SPY 40、QQQ 14、AAPL 10、IWM 10、META 10、MSFT 10、AMD 6、NVDA 6、TSLA 6、MU 4、AMZN 4、AVGO 4、GOOGL 2
+- 来源：OpenD 期权历史缓存 82 个 case + 可用订阅 K_1M 流的 44 个 case（2026-09-10 / 09-11 / 09-14 / 09-15）；每 case 都带 `prev_close`、`session_close`、`selection = both_sides_atm_at_open`
+- 跳过的交易日：2026-08-17（历史 `NN_ProtoRet_SvrFailed`）、2026-09-16（留出验证，禁止进入训练）；另有 26 个单一名股会话因过期链不可查、且当日无对应到期合约而跳过（见 `manifest.skipped`）
+- 交割口径：期权历史配额 60/60 用尽，非缓存合约无法再拉；缺口日改用只读订阅流的当日 K 线（已用同合约历史 ↔ 流对比验证逐 bar 一致）
 
 ### 验证集 custody-eval-2026-09-16
 
-- zip SHA256 `58f0af996a33f042fd81751f3b68408266bd224be2530df10f44230e67165a31`；文件哈希在 `manifest.json` 的 `series` 里（共 40 个 csv/parquet）
-- 2026-09-16 一个交易日，10 张单一个股真 0DTE：INTC、AMD、TSLA、NVDA、MU、AVGO、AMZN、GOOGL、META、MSFT，全部是 CALL
-- 当前策略开发截止为 2026-09-16，这份数据不属于它的样本外
-- **不满足「CALL 和 PUT 一起验证」**（`custody check` 失败：10 组里 0 组两边齐全）
-- **已知偏差**：方向仍按「全天期权成交量更大的一侧」选（10 张都选了 CALL），而当天这 10 张全部是「方向错」（逆势单边 8、先顺后逆 2），对照组平均 −99.3%。因此「方向对错各半」的指标、盈亏比、整体赚钱等门槛都无法判断，只能验证「方向错时亏得少不少」
+- 角色 `validation/custody`；zip SHA256 `ac041ab60de15d755194cfb1400f1acfbfaf4661c9144e90dd1e45e95ed2ac11`（本地 canonical）
+- 2026-09-16 一个交易日，10 张单一个股真 0DTE 的 CALL+PUT 两边：INTC、AMD、TSLA、NVDA、MU、AVGO、AMZN、GOOGL、META、MSFT，共 20 个 case（10 LONG/CALL、10 SHORT/PUT）
+- 文件哈希在 `manifest.json` 的 `series` 里
+- 与训练集无任何交易日或 `(标的, 交易日)` 重叠；`custody check --dataset <训练> --validation <验证>` 通过
 
 ### 下载并校验
 
@@ -107,7 +122,7 @@ echo "58f0af996a33f042fd81751f3b68408266bd224be2530df10f44230e67165a31  data/cus
 unzip -q data/custody-eval-2026-09-16.zip -d data
 ```
 
-这两个遗留数据集均不能通过发布检查的两边要求，但允许离线诊断评测；不要修改它们来让检查通过。
+下载的 Release 可能与上面的本地 canonical 双边切片不同；以 `custody check` 输出和各数据集 manifest 的 `role` 为准。
 
 ## 4. 每日冻结（V5 起的数据来源）
 

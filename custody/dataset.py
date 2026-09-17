@@ -44,6 +44,11 @@ class DatasetError(ValueError):
     """The directory is not a valid 0DTE custody dataset."""
 
 
+# Dataset roles. Training and held-out validation slices never share the same
+# role, and a train/custody slice must never contain a validation trade date.
+ROLES = ('train/custody', 'validation/custody')
+
+
 def parse_option_code(code):
     """Return (underlying, expiry ISO date, right, strike) for a Futu US option code."""
     match = OPTION_CODE.match(str(code).strip().upper())
@@ -261,8 +266,45 @@ def write_checksums(root):
 
 
 # ---------------------------------------------------------------- release check
-def check(root):
-    """Everything a Release must satisfy before publication (docs/DATA.md)."""
+def isolation_report(reference, validation):
+    """Prove a train slice and its held-out validation slice are disjoint.
+
+    Fails when the two roles are not exactly one ``train/custody`` and one
+    ``validation/custody``, when any trade date is shared, or when any
+    ``(symbol, trade_date)`` session is shared. Validation must never be used
+    for fitting, so a leak is a release blocker (docs/DATA.md).
+    """
+    try:
+        train, held = Dataset(reference), Dataset(validation)
+    except DatasetError as exc:
+        return {'ok': False, 'errors': [str(exc)], 'reference': str(reference), 'validation': str(validation)}
+    errors = []
+    train_role, held_role = train.manifest.get('role'), held.manifest.get('role')
+    if {train_role, held_role} != set(ROLES):
+        errors.append('expected roles %s, got %r and %r' % (list(ROLES), train_role, held_role))
+    train_dates, held_dates = set(train.sessions()), set(held.sessions())
+    train_sessions = {(c.symbol, c.trade_date) for c in train.cases}
+    held_sessions = {(c.symbol, c.trade_date) for c in held.cases}
+    date_overlap = sorted(train_dates & held_dates)
+    session_overlap = sorted(train_sessions & held_sessions)
+    if date_overlap:
+        errors.append('train and validation share trade dates: ' + ', '.join(date_overlap))
+    if session_overlap:
+        errors.append('train and validation share (symbol, trade_date) sessions: '
+                      + ', '.join('%s|%s' % key for key in session_overlap))
+    return {'ok': not errors, 'errors': errors, 'reference': train.name, 'validation': held.name,
+            'reference_role': train_role, 'validation_role': held_role,
+            'reference_dates': sorted(train_dates), 'validation_dates': sorted(held_dates),
+            'date_overlap': date_overlap, 'session_overlap': session_overlap}
+
+
+def check(root, validation=None):
+    """Everything a Release must satisfy before publication (docs/DATA.md).
+
+    With ``validation`` given it additionally proves the held-out slice is
+    disjoint (roles, trade dates and sessions), so a release cannot publish a
+    leak.
+    """
     try:
         dataset = Dataset(root)
     except DatasetError as exc:
@@ -274,16 +316,22 @@ def check(root):
         except DatasetError as exc:
             failures.append({'contract': case.contract, 'trade_date': case.trade_date, 'error': str(exc)})
     sides = dataset.sides_report()
-    return {'dataset': dataset.name, 'pinned_by': dataset.pinned_by, 'checksums_verified': dataset.checksums_verified,
-            'cases': len(dataset.cases), 'sessions': dataset.sessions(), 'load_failures': failures,
-            'sides': sides, 'ok': not failures and sides['ok']}
+    report = {'dataset': dataset.name, 'pinned_by': dataset.pinned_by, 'checksums_verified': dataset.checksums_verified,
+              'cases': len(dataset.cases), 'sessions': dataset.sessions(), 'load_failures': failures,
+              'sides': sides, 'ok': not failures and sides['ok']}
+    if validation:
+        report['isolation'] = isolation_report(root, validation)
+        report['ok'] = report['ok'] and report['isolation']['ok']
+    return report
 
 
 def main(argv=None):
     import argparse
     parser = argparse.ArgumentParser(prog='custody check', description=check.__doc__)
     parser.add_argument('--dataset', required=True, help='extracted dataset directory')
+    parser.add_argument('--validation', default=None,
+                        help='held-out dataset; fail on a role mismatch, shared trade date or shared session')
     args = parser.parse_args(argv)
-    result = check(args.dataset)
+    result = check(args.dataset, args.validation)
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result['ok'] else 1

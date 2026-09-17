@@ -134,6 +134,47 @@ class DatasetTests(unittest.TestCase):
         (broken / 'CHECKSUMS.sha256').write_text('0' * 64 + '  cases.json\n')
         self.assertFalse(check(broken)['ok'])
 
+    def test_isolation_report_blocks_role_and_date_leak(self):
+        from custody.dataset import isolation_report
+
+        def relabel(root, role, name):
+            manifest = json.loads((root / 'manifest.json').read_text())
+            manifest.update(role=role, dataset=name)
+            (root / 'manifest.json').write_text(json.dumps(manifest))
+            write_checksums(root)
+
+        def shifted(day):
+            cases = spy_cases()
+            codes = ('US.SPY260915C100000', 'US.SPY260915P100000')
+            for case, code in zip(cases, codes):
+                case.update(contract=code, trade_date=day,
+                            option=option_bars(case['underlying'], 100, 'CALL' if case is cases[0] else 'PUT',
+                                               code, day=day))
+            return cases
+
+        train = Path(self.tmp.name) / 'train'
+        write_dataset(train, spy_cases())
+        relabel(train, 'train/custody', 'train')
+        held = Path(self.tmp.name) / 'held'
+        write_dataset(held, shifted('2026-09-15'))
+        relabel(held, 'validation/custody', 'held')
+        report = isolation_report(train, held)
+        self.assertTrue(report['ok'], report)
+        self.assertEqual(report['date_overlap'], [])
+
+        # same trade date -> leak; also a copy that keeps the train role is rejected.
+        leak = Path(self.tmp.name) / 'leak'
+        write_dataset(leak, spy_cases())
+        relabel(leak, 'validation/custody', 'leak')
+        bad = isolation_report(train, leak)
+        self.assertFalse(bad['ok'])
+        self.assertEqual(bad['date_overlap'], [DAY])
+        self.assertTrue(any('share trade dates' in e for e in bad['errors']))
+        wrong_role = Path(self.tmp.name) / 'wrong_role'
+        write_dataset(wrong_role, shifted('2026-09-15'))
+        relabel(wrong_role, 'train/custody', 'wrong_role')
+        self.assertFalse(isolation_report(train, wrong_role)['ok'])
+
     def test_duplicate_cases_are_refused(self):
         cases = spy_cases()
         write_dataset(self.root, [cases[0], dict(cases[0])])
