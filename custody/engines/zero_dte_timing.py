@@ -26,6 +26,8 @@ Optional entry filter (off by default): ``max_vwap_atr`` - no entry while the cl
 more than this many ATR beyond VWAP. A buyer should not chase a move that has already
 run away from VWAP: a stop of at most ``stop_max_atr`` ATR would then sit above VWAP,
 inside an ordinary pullback, and the premium already pays for the finished move.
+``min_breakout_volume_ratio`` requires current volume to reach a multiple of the
+prior breakout window's mean volume. It defaults to off.
 
 Optional exit rules (they need the contract strike)
 ---------------------------------------------------
@@ -92,6 +94,7 @@ OPTIONAL = {
     'take_profit_premium': ((float, 0.05, 20.0), None),     # sell once the estimated premium return reaches this
     'min_premium_atr': ((float, 0.1, 100.0), None),  # no entry while the estimated premium is below N x 1m ATR
     'max_vwap_atr': ((float, 0.1, 20.0), None),      # no entry while the close is more than N ATR beyond VWAP
+    'min_breakout_volume_ratio': ((float, 0.1, 5.0), None),  # current volume / prior breakout window mean
 }
 OTM_STOP_FLOOR = 0.5
 
@@ -233,6 +236,10 @@ class ZeroDteTiming:
         prior = ind.prior_bars(p['momentum_lookback'])
         if len(prior) < p['momentum_lookback'] or close <= max(self._hi(b) for b in prior):
             return None
+        if p['min_breakout_volume_ratio'] is not None:
+            mean_volume = sum(b.volume for b in prior) / len(prior)
+            if mean_volume <= 0 or bar.volume <= 0 or bar.volume < p['min_breakout_volume_ratio'] * mean_volume:
+                return None
         if self.vwap_side_bars < p['persist_minutes']:
             return None
         vwap_side = close >= s * ind.vwap + p['vwap_buffer_atr'] * atr

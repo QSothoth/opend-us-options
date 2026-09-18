@@ -36,6 +36,7 @@ python3 -m custody evaluate --strategy zero_dte_timing_v6.1 \
 - v6.1 用较短的确认入场和 1–2 ATR 紧止损；最新 [V5 训练数据报告](reports/zero_dte_timing_v6.1/custody-0dte-v5/REPORT.md) 与 [验证数据报告](reports/zero_dte_timing_v6.1/custody-eval-2026-09-16-v2/REPORT.md) 同时展示完成分和收益。研究记录见 [策略说明](docs/STRATEGY.md)。
 - 并行候选 v6.2（非默认）在 v6.1 上加两条入场过滤：不追离开 VWAP 超过 2 ATR 的行情、估算权利金至少 5 个 1m ATR。[训练集报告](reports/zero_dte_timing_v6.2/custody-0dte-v5/REPORT.md) 方向对称平均 −1.8%、盈亏比 3.47，仍因整体亏钱（G11）REJECT；使用时需显式传 `--strategy zero_dte_timing_v6.2`。
 - 比较版本看 [综合分](docs/STANDARD.md)（盈亏比、利润因子、方向对 / 不利时的表现加权到 0–100，不买入按 0 收益计入，结论仍只看门槛）：训练集 v6.2 63.2、v6.1 40.9、对照组 28.5（上游方向对 60% 时 67.8 / 44.5 / 34.2）；完成分另看，v6.2 只有 45.2（v6.1 84.9）。
+- 新研究候选 v6.3（非默认）在 v6.2 上增加突破量能确认和 10 分钟无进展退出。[训练报告](reports/zero_dte_timing_v6.3/custody-0dte-v5/REPORT.md) 综合分 69.9、盈亏比 4.43、平均收益 −0.33%，但利润因子 0.96，仍为 REJECT；[选择交叉验证](reports/zero_dte_timing_v6.3/custody-0dte-v5/selection.json) 综合分 61.9，低于 v6.2 的 63.2，尚未证明稳定改善。仅供显式指定 `--strategy zero_dte_timing_v6.3` 研究使用。
 - 下一步每天冻结同一行权价的 CALL / PUT，积累样本外交易日；验证集不得用于调参。
 - `custody run` 通过 OpenD 下单：`--mode paper` 用模拟账户，`--mode live` 只接受 accepted 策略；dryrun 只读行情、记录模拟成交。
 

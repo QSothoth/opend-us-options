@@ -1,6 +1,7 @@
 import json
 import sys
 import unittest
+from dataclasses import replace
 from datetime import time, timedelta
 from pathlib import Path
 
@@ -224,6 +225,21 @@ class OptionalRuleTests(unittest.TestCase):
             with self.assertRaises(ValueError, msg=str(bad)):
                 validate_params({**PARAMS, **bad})
 
+    def test_entry_filter_parameters_validate(self):
+        name = 'min_breakout_volume_ratio'
+        self.assertIsNone(validate_params(PARAMS)[name])
+        for value in (None, 0.1, 5.0):
+            self.assertEqual(validate_params({**PARAMS, name: value})[name], value)
+        for value in (True, False, float('nan'), float('inf'), -float('inf'), '1.0', 0.09, 5.01):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                validate_params({**PARAMS, name: value})
+
+    def test_disabled_entry_filters_preserve_decisions(self):
+        closes = piecewise([(1, 100), (15, 100), (60, 103), (90, 101), (390, 105)])
+        disabled = {**PARAMS, 'min_breakout_volume_ratio': None}
+        for direction, path in (('LONG', closes), ('SHORT', [200 - c for c in closes])):
+            self.assertEqual(run(path, direction), run(path, direction, disabled))
+
     def test_bachelier_and_session_sigma(self):
         self.assertAlmostEqual(bachelier(0.0, 1.0), 1 / (2 * 3.141592653589793) ** 0.5)
         self.assertEqual(bachelier(2.0, 0.0), 2.0)
@@ -289,6 +305,30 @@ class OptionalRuleTests(unittest.TestCase):
             with self.assertRaises(ValueError, msg=str(bad)):
                 validate_params({**PARAMS, 'max_vwap_atr': bad})
 
+
+class BreakoutFilterTests(unittest.TestCase):
+    def breakout_action(self, direction, extra, prior_volume=100.0, **last):
+        bars = path_bars([100.0] * 15 + [103.0], volume=10000.0)
+        # Only the five immediately preceding bars belong to the volume reference.
+        bars[10:15] = [replace(bar, volume=prior_volume) for bar in bars[10:15]]
+        bars[-1] = replace(bars[-1], **{'open': 100.0, 'low': 100.0, 'high': 104.0,
+                                      'close': 103.0, 'volume': 200.0, **last})
+        if direction == 'SHORT':
+            bars = [replace(bar, open=200 - bar.open, high=200 - bar.low,
+                            low=200 - bar.high, close=200 - bar.close) for bar in bars]
+        engine = ZeroDteTiming({**PARAMS, **extra}, direction, session(), 100.0)
+        actions = [engine.on_bar(bar).action for bar in bars]
+        self.assertEqual(actions[:-1], ['WAIT'] * 15)
+        return actions[-1]
+
+    def test_volume_uses_only_prior_window_and_accepts_equality(self):
+        for direction in ('LONG', 'SHORT'):
+            for prior, current, expected in ((100, 200, 'ENTER'), (100, 199, 'WAIT'),
+                                             (100, 0, 'WAIT'), (0, 200, 'WAIT')):
+                with self.subTest(direction=direction, prior=prior, current=current):
+                    self.assertEqual(self.breakout_action(direction, {}, prior, volume=current), 'ENTER')
+                    self.assertEqual(self.breakout_action(direction, {'min_breakout_volume_ratio': 2.0},
+                                                          prior, volume=current), expected)
 
 
 if __name__ == '__main__':

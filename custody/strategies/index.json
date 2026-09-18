@@ -11,6 +11,11 @@
       "file": "zero_dte_timing_v6.2.json",
       "sha256": "c35072f93626067f7fa2d1f922a4fa42cce992591e54c9dc5b5623a07b0abcc2",
       "status": "candidate"
+    },
+    "zero_dte_timing_v6.3": {
+      "file": "zero_dte_timing_v6.3.json",
+      "sha256": "29f1fde47b3fdd755a6591c3e61f1a168cdc859db642c04edb840d0441543a3c",
+      "status": "candidate"
     }
   }
 }
