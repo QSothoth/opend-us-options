@@ -20,6 +20,8 @@ class DocsTests(unittest.TestCase):
                        str(ev.SPLIT_MINUTE), str(ev.LABEL_BAND), str(ev.NULL_DRAWS),
                        '%d%%' % round(100 * ev.NEIGHBOR_SCALE), 'G7', 'G8', 'G9', 'G10', 'settled_at_expiry'):
             self.assertIn(needle, text)
+        for key, (name, scale, _) in ev.SCORE_TEXT.items():   # composite score: same items, scales and weights
+            self.assertIn('| %s | %s | %d |' % (name, scale, ev.SCORE_WEIGHTS[key]), text)
 
     def test_both_sides_rule_is_written_everywhere_it_applies(self):
         for name in ('AGENTS.md', 'docs/DATA.md', 'docs/STANDARD.md'):

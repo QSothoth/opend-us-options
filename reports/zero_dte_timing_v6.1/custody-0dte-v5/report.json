@@ -197,6 +197,15 @@
       "payoff_ratio": 2.840085,
       "profit_factor": 1.341151
     },
+    "not_with_direction": {
+      "n": 73,
+      "expectancy": -0.253871,
+      "win_rate": 0.027397,
+      "average_win": 0.165726,
+      "average_loss": 0.36277,
+      "payoff_ratio": 0.456835,
+      "profit_factor": 0.017571
+    },
     "hold_minutes_median": 31,
     "entry_reasons": {
       "trend_breakout": 87,
@@ -344,6 +353,15 @@
       "payoff_ratio": 2.861238,
       "profit_factor": 3.457329
     },
+    "not_with_direction": {
+      "n": 73,
+      "expectancy": -0.827043,
+      "win_rate": 0.041096,
+      "average_win": 0.628993,
+      "average_loss": 0.889445,
+      "payoff_ratio": 0.707175,
+      "profit_factor": 0.030307
+    },
     "hold_minutes_median": 370.0,
     "entry_reasons": {
       "benchmark_open": 126
@@ -478,6 +496,14 @@
     "expectancy_minus_benchmark": [
       0.017543,
       0.27225
+    ],
+    "strategy_score": [
+      25.746974,
+      61.644734
+    ],
+    "score_minus_benchmark": [
+      -1.904256,
+      37.423672
     ]
   },
   "market_shapes": {
@@ -5448,6 +5474,114 @@
         }
       ]
     }
+  },
+  "score": {
+    "strategy": {
+      "score": 40.88369,
+      "components": {
+        "payoff_ratio": {
+          "value": 2.33304,
+          "utility": 0.611106,
+          "weight": 2
+        },
+        "profit_factor": {
+          "value": 0.503725,
+          "utility": 0.005354,
+          "weight": 1
+        },
+        "with_direction": {
+          "value": 0.070491,
+          "utility": 0.070491,
+          "weight": 1
+        },
+        "not_with_direction": {
+          "value": -0.253871,
+          "utility": 0.746129,
+          "weight": 1
+        }
+      },
+      "missing": []
+    },
+    "benchmark": {
+      "score": 28.494856,
+      "components": {
+        "payoff_ratio": {
+          "value": 1.601245,
+          "utility": 0.339597,
+          "weight": 2
+        },
+        "profit_factor": {
+          "value": 0.545105,
+          "utility": 0.062303,
+          "weight": 1
+        },
+        "with_direction": {
+          "value": 0.510289,
+          "utility": 0.510289,
+          "weight": 1
+        },
+        "not_with_direction": {
+          "value": -0.827043,
+          "utility": 0.172957,
+          "weight": 1
+        }
+      },
+      "missing": []
+    },
+    "strategy_hit_0.6": {
+      "score": 44.540532,
+      "components": {
+        "payoff_ratio": {
+          "value": 2.412191,
+          "utility": 0.635172,
+          "weight": 2
+        },
+        "profit_factor": {
+          "value": 0.60715,
+          "utility": 0.140063,
+          "weight": 1
+        },
+        "with_direction": {
+          "value": 0.070491,
+          "utility": 0.070491,
+          "weight": 1
+        },
+        "not_with_direction": {
+          "value": -0.253871,
+          "utility": 0.746129,
+          "weight": 1
+        }
+      },
+      "missing": []
+    },
+    "benchmark_hit_0.6": {
+      "score": 34.248079,
+      "components": {
+        "payoff_ratio": {
+          "value": 1.693768,
+          "utility": 0.380118,
+          "weight": 2
+        },
+        "profit_factor": {
+          "value": 0.725901,
+          "utility": 0.268922,
+          "weight": 1
+        },
+        "with_direction": {
+          "value": 0.510289,
+          "utility": 0.510289,
+          "weight": 1
+        },
+        "not_with_direction": {
+          "value": -0.827043,
+          "utility": 0.172957,
+          "weight": 1
+        }
+      },
+      "missing": []
+    },
+    "out_of_sample": null,
+    "out_of_sample_benchmark": null
   },
   "coverage": {
     "cases_per_scenario": {

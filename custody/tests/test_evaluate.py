@@ -178,6 +178,29 @@ class WeightingAndMetricsTests(unittest.TestCase):
         self.assertAlmostEqual(m['profit_factor'], 1.0)
         self.assertIsNone(ev.weighted_metrics([0.2, 0.3])['payoff_ratio'])
 
+    def test_composite_score_anchors_weights_and_edge_cases(self):
+        def summary(pr, pf, with_, not_with, completion, win=0.5, loss=0.25):
+            return {'cases': 10, 'completion_score': completion,
+                    'balanced': {'n': 10, 'payoff_ratio': pr, 'profit_factor': pf, 'average_win': win, 'average_loss': loss},
+                    'with_direction': {'expectancy': with_}, 'not_with_direction': {'expectancy': not_with}}
+        self.assertEqual(ev.SCORE_WEIGHTS['payoff_ratio'], 2)          # the primary metric counts twice
+        self.assertEqual(sum(ev.SCORE_WEIGHTS.values()), 5)
+        self.assertNotIn('completion', ev.SCORE_WEIGHTS)                # not buying is a zero return, not a second penalty
+        mid = ev.composite_score(summary(2.0, 1.0, 0.5, -0.5, 50.0))
+        self.assertAlmostEqual(mid['score'], 50.0)                     # every anchor midpoint (G4, G11) -> 50
+        self.assertAlmostEqual(ev.composite_score(summary(8.0, 5.0, 1.5, 0.2, 100.0))['score'], 100.0)   # capped
+        doubled = ev.composite_score(summary(4.0, 1.0, 0.5, -0.5, 50.0))
+        self.assertAlmostEqual(doubled['score'] - mid['score'], 100 * 2 * 0.5 / 5)   # log scale: 2 -> 4 is +0.5
+        # never won anything: the ratios score 0; staying flat only earns the loss-control part
+        flat = ev.composite_score(summary(None, None, 0.0, 0.0, 0.0, win=None, loss=None))
+        self.assertAlmostEqual(flat['score'], 100 / 5)
+        perfect = ev.composite_score(summary(None, None, 1.0, 0.0, 50.0, loss=None))['components']
+        self.assertEqual((perfect['payoff_ratio']['utility'], perfect['profit_factor']['utility']), (1.0, 1.0))
+        # a metric the data cannot define is left out and the weights renormalise
+        gap = ev.composite_score(summary(2.0, 1.0, None, -0.5, 50.0))
+        self.assertEqual(gap['missing'], ['with_direction'])
+        self.assertAlmostEqual(gap['score'], 50.0)
+
     def test_parameter_neighbours_move_each_number_both_ways_and_skip_invalid(self):
         from custody.engines.zero_dte_timing import validate_params
         from helpers import BASE_PARAMS
@@ -231,8 +254,17 @@ class EndToEndTests(unittest.TestCase):
             self.assertEqual(set(report['summary']['by_scenario']), set(ev.SCENARIOS))
             # 2026-09-17 is after the strategy's development cutoff: one out-of-sample session.
             self.assertEqual(report['out_of_sample']['sessions'], 1)
+            for side in ('strategy', 'benchmark', 'strategy_hit_0.6', 'benchmark_hit_0.6'):
+                self.assertTrue(0 <= report['score'][side]['score'] <= 100)
+            # the 60% score takes its ratios from the 60% mirror weights; the day-type averages do not move
+            skilled, plain = report['score']['strategy_hit_0.6']['components'], report['score']['strategy']['components']
+            self.assertEqual(skilled['payoff_ratio']['value'], report['direction_skill_0.6']['strategy']['payoff_ratio'])
+            for key in ('with_direction', 'not_with_direction'):
+                self.assertEqual((skilled[key]['value'], skilled[key]['weight']), (plain[key]['value'], plain[key]['weight']))
+            self.assertIsNotNone(report['score']['out_of_sample'])
             markdown = ev.render_markdown(report)
-            for section in ('## 先看这里', '对照组', '## 1. 过没过门槛', '## 2. 总体', '## 3. 分走势看', '## 4. 结果靠不靠得住', '## 5. 逐笔明细'):
+            for section in ('## 先看这里', '**综合分：', '### 综合分怎么来的', '对照组', '## 1. 过没过门槛', '## 2. 总体',
+                            '## 3. 分走势看', '## 4. 结果靠不靠得住', '## 5. 逐笔明细'):
                 self.assertIn(section, markdown)
             self.assertEqual(ev.evaluate(Path(tmp) / 'ds', null_draws=20), report)  # deterministic
 

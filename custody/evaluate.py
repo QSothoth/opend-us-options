@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import random
 import statistics
 from collections import Counter, defaultdict
@@ -36,6 +37,7 @@ SCENARIO_ZH = {'trend_with': '顺势单边', 'reversal_with': '先逆后顺', 'c
                'reversal_against': '先顺后逆', 'trend_against': '逆势单边'}
 MIRROR_PAIRS = (('trend_with', 'trend_against'), ('reversal_with', 'reversal_against'))
 WITH_DIRECTION = ('trend_with', 'reversal_with')
+NOT_WITH_DIRECTION = ('trend_against', 'reversal_against', 'chop')
 SPLIT_MINUTE = 60            # first hour vs the rest of the day
 LABEL_BAND = 0.25            # fraction of the day range that counts as a move
 GAP_THRESHOLD = 0.002        # |open / prev_close - 1| that counts as a gap
@@ -47,6 +49,11 @@ NULL_DRAWS = 1000
 BOOTSTRAP_DRAWS = 1000        # trading-day bootstrap for the direction-balanced metrics (report only)
 NEIGHBOR_SCALE = 0.25          # parameter neighbours: each numeric parameter x0.75 and x1.25
 CAPTURE_MIN_BEST = 0.20      # upside capture counts cases whose best reachable exit was >= +20%
+# Composite score used to compare versions (docs/STANDARD.md section 10); the verdict still comes from the gates.
+# Weights are shares: the primary metric counts twice, every other compared metric once. A case without an
+# entry counts as a zero return in every item; completion is shown on its own (G1) and not scored again.
+SCORE_WEIGHTS = {'payoff_ratio': 2, 'profit_factor': 1, 'with_direction': 1, 'not_with_direction': 1}
+SKILLED_HIT_RATE = 0.6       # upstream direction right 60% of the time: reported next to the 50/50 main view
 
 
 @dataclass(frozen=True)
@@ -297,10 +304,53 @@ def summarize(trades, labels, hit_rate=0.5):
         'coverage_gaps': gaps,
         'by_scenario': by_scenario,
         'with_direction': weighted_metrics([r for r, l in zip(returns, labels) if l['scenario'] in WITH_DIRECTION]),
+        'not_with_direction': weighted_metrics([r for r, l in zip(returns, labels) if l['scenario'] in NOT_WITH_DIRECTION]),
         'hold_minutes_median': statistics.median(holds) if holds else None,
         'entry_reasons': Counter(t['entry']['reason'] for t in trades if t['entry']),
         'exit_reasons': Counter(t['exit']['reason'] for t in trades if t['exit']),
     }
+
+
+def _unit(x):
+    return min(max(x, 0.0), 1.0)
+
+
+def score_components(summary):
+    """Each compared metric on 0..1 through a fixed value function anchored on the gates (never on the candidates).
+
+    payoff ratio 1 -> 0, 2 (G4) -> 0.5, 4 -> 1 and profit factor 0.5 -> 0, 1 (G11) -> 0.5, 2 -> 1 on a log scale;
+    with-direction mean 0 (G6) -> 0, +100% -> 1; not-with-direction mean -100% -> 0, 0 -> 1. Unentered cases are
+    zero returns in both means and neither a win nor a loss in the ratios.
+    A metric the data cannot define is None and is left out of the weighted mean.
+    """
+    bal = summary['balanced']
+    if bal['average_win'] is None:            # nothing was ever won (includes zero trades)
+        payoff = profit = 0.0 if bal['n'] else None
+    else:
+        payoff = 1.0 if bal['payoff_ratio'] is None else _unit(math.log2(bal['payoff_ratio']) / 2)
+        profit = 1.0 if bal['profit_factor'] is None else _unit(0.5 + math.log2(bal['profit_factor']) / 2)
+    with_, not_with = summary['with_direction']['expectancy'], summary['not_with_direction']['expectancy']
+    return {
+        'payoff_ratio': {'value': bal['payoff_ratio'], 'utility': payoff},
+        'profit_factor': {'value': bal['profit_factor'], 'utility': profit},
+        'with_direction': {'value': with_, 'utility': None if with_ is None else _unit(with_)},
+        'not_with_direction': {'value': not_with, 'utility': None if not_with is None else _unit(1 + not_with)},
+    }
+
+
+def composite_score(summary):
+    """Weighted mean of the component utilities x 100 (docs/STANDARD.md section 10).
+
+    The ratios come from the summary's mirror-weighted metrics, so a summary made at another upstream hit rate
+    scores that hit rate. The two scenario items are averages within a day type and keep their weights: a better
+    upstream makes wrong-direction days rarer, never chop days.
+    """
+    parts = score_components(summary)
+    used = {k: w for k, w in SCORE_WEIGHTS.items() if parts[k]['utility'] is not None}
+    for k, part in parts.items():
+        part['weight'] = SCORE_WEIGHTS[k]
+    score = 100 * sum(w * parts[k]['utility'] for k, w in used.items()) / sum(used.values()) if used else None
+    return {'score': score, 'components': parts, 'missing': [k for k in SCORE_WEIGHTS if k not in used]}
 
 
 def shuffle_null(datas, trades, labels, params, fill=PRIMARY_FILL, draws=NULL_DRAWS, seed=20260916):
@@ -360,14 +410,18 @@ def day_bootstrap(datas, labels, trades, bench, draws=BOOTSTRAP_DRAWS, seed=2026
     by_day = {day: [i for i, d in enumerate(datas) if d.case.trade_date == day] for day in days}
     rng = random.Random(seed)
     samples = {'strategy_expectancy': [], 'strategy_payoff_ratio': [], 'benchmark_expectancy': [],
-               'expectancy_minus_benchmark': []}
+               'expectancy_minus_benchmark': [], 'strategy_score': [], 'score_minus_benchmark': []}
     for _ in range(draws):
         idx = [i for _ in days for i in by_day[rng.choice(days)]]
         sub_labels = [labels[i] for i in idx]
-        s_bal = summarize([trades[i] for i in idx], sub_labels)['balanced']
-        b_bal = summarize([bench[i] for i in idx], sub_labels)['balanced']
+        s_sum = summarize([trades[i] for i in idx], sub_labels)
+        b_sum = summarize([bench[i] for i in idx], sub_labels)
+        s_bal, b_bal = s_sum['balanced'], b_sum['balanced']
         if s_bal['expectancy'] is None or b_bal['expectancy'] is None:
             continue
+        s_score, b_score = composite_score(s_sum)['score'], composite_score(b_sum)['score']
+        samples['strategy_score'].append(s_score)
+        samples['score_minus_benchmark'].append(s_score - b_score)
         samples['strategy_expectancy'].append(s_bal['expectancy'])
         samples['benchmark_expectancy'].append(b_bal['expectancy'])
         samples['expectancy_minus_benchmark'].append(s_bal['expectancy'] - b_bal['expectancy'])
@@ -535,6 +589,7 @@ def evaluate(dataset_dir, strategy_id=None, registry=None, null_draws=NULL_DRAWS
     developed = item['config'].get('developed_on', {})
     cutoff = developed.get('sessions_through')
     oos_idx = [i for i, d in enumerate(datas) if cutoff and d.case.trade_date > cutoff]
+    skilled = {'strategy': summarize(trades, labels, SKILLED_HIT_RATE), 'benchmark': summarize(bench, labels, SKILLED_HIT_RATE)}
     report = {
         'standard': 'docs/STANDARD.md',
         'strategy': {k: item[k] for k in ('strategy_id', 'sha256', 'engine', 'status')},
@@ -548,8 +603,7 @@ def evaluate(dataset_dir, strategy_id=None, registry=None, null_draws=NULL_DRAWS
         'fill_model': asdict(PRIMARY_FILL),
         'summary': summarize(trades, labels),
         'benchmark_open_hold': summarize(bench, labels),
-        'direction_skill_0.6': {'strategy': summarize(trades, labels, 0.6)['balanced'],
-                                'benchmark': summarize(bench, labels, 0.6)['balanced']},
+        'direction_skill_0.6': {'strategy': skilled['strategy']['balanced'], 'benchmark': skilled['benchmark']['balanced']},
         'stress': {},
         'shuffle_null': shuffle_null(datas, trades, labels, draws=null_draws, params=params) if null_draws else None,
         'prefix_consistency': prefix_consistency(datas, trades, item),
@@ -578,6 +632,12 @@ def evaluate(dataset_dir, strategy_id=None, registry=None, null_draws=NULL_DRAWS
                'gates': gates(oos_summary, oos_bench, oos_robust)}
     oos_sessions = oos['sessions'] if oos else 0
     decisive = oos['gates'] if oos and oos_sessions >= MIN_OOS_SESSIONS else in_sample_checks
+    report['score'] = {'strategy': composite_score(report['summary']),
+                       'benchmark': composite_score(report['benchmark_open_hold']),
+                       'strategy_hit_0.6': composite_score(skilled['strategy']),
+                       'benchmark_hit_0.6': composite_score(skilled['benchmark']),
+                       'out_of_sample': composite_score(oos['summary']) if oos else None,
+                       'out_of_sample_benchmark': composite_score(oos['benchmark_open_hold']) if oos else None}
     report['coverage'] = {'cases_per_scenario': coverage, 'minimum': MIN_CASES_PER_SCENARIO, 'ok': coverage_ok}
     report['gates_in_sample'] = in_sample_checks
     report['out_of_sample'] = oos
@@ -644,6 +704,28 @@ VERDICT_TEXT = {
 }
 
 
+SCORE_TEXT = {
+    'payoff_ratio': ('盈亏比（主指标）', '1 → 2 → 4（对数刻度）', lambda v: _num(v)),
+    'profit_factor': ('整体赚钱：总赚 ÷ 总亏', '0.5 → 1 → 2（对数刻度）', lambda v: _num(v)),
+    'with_direction': ('方向对时拿住：顺势单边 + 先逆后顺平均', '0 → +50% → +100%', lambda v: _pct(v)),
+    'not_with_direction': ('方向不利时少亏：逆势单边 + 先顺后逆 + 震荡平均', '−100% → −50% → 0', lambda v: _pct(v)),
+}
+
+
+def _score_line(report):
+    score, boot = report['score'], report['bootstrap_by_day']
+    text = '**综合分：%s / 100**（对照组 %s' % (_num(score['strategy']['score'], '%.1f'), _num(score['benchmark']['score'], '%.1f'))
+    if boot.get('strategy_score'):
+        text += '；按交易日重抽样 95%% 区间 %s ~ %s，比对照组高 %s ~ %s 分' % (
+            *[_num(x, '%.1f') for x in boot['strategy_score']], *[_num(x, '%+.1f') for x in boot['score_minus_benchmark']])
+    text += '；上游方向对 %d%% 时 %s，对照组 %s' % (round(100 * SKILLED_HIT_RATE), _num(score['strategy_hit_0.6']['score'], '%.1f'),
+                                            _num(score['benchmark_hit_0.6']['score'], '%.1f'))
+    if score['out_of_sample']:
+        text += '；样本外 %s，对照组 %s' % (_num(score['out_of_sample']['score'], '%.1f'),
+                                        _num(score['out_of_sample_benchmark']['score'], '%.1f'))
+    return text + '）。综合分用来比较版本和挑选候选，结论仍只看门槛。'
+
+
 def _hhmm(minute):
     return '—' if minute is None else '%02d:%02d' % divmod(570 + minute, 60)
 
@@ -659,6 +741,8 @@ def render_markdown(report):
         '# 评测报告：%s' % report['strategy']['strategy_id'],
         '',
         '**结论：%s** —— %s。' % (report['verdict'], VERDICT_TEXT[report['verdict']]),
+        '',
+        _score_line(report),
         '',
         '## 先看这里：这份报告在比什么',
         '',
@@ -732,6 +816,22 @@ def render_markdown(report):
         lines.append('| %s | %s | %s |' % (name, fmt(s['raw'][key]), fmt(b['raw'][key])))
     lines += [
         '| 美元合计（每张合约） | %s | %s |' % (_money(s['dollars_total']), _money(b['dollars_total'])),
+        '',
+        '### 综合分怎么来的（比较版本用，定义见 docs/STANDARD.md 第 10 节）',
+        '',
+        '每项先按固定刻度换成 0–1 分（锚点取自门槛，不随候选变化），再按权重平均、乘 100。不买入的 case 在各项里都按 0 收益计入。',
+        '',
+        '| 项目 | 刻度（0 分 → 0.5 分 → 1 分） | 权重 | 策略原始值 | 策略得分 | 对照组原始值 | 对照组得分 |',
+        '|---|---|---:|---:|---:|---:|---:|',
+    ]
+    for key, (name, scale, fmt) in SCORE_TEXT.items():
+        x, y = report['score']['strategy']['components'][key], report['score']['benchmark']['components'][key]
+        lines.append('| %s | %s | %d | %s | %s | %s | %s |' % (name, scale, x['weight'], fmt(x['value']), _num(x['utility']),
+                                                         fmt(y['value']), _num(y['utility'])))
+    lines += [
+        '| **综合分** | 加权平均 × 100 | %d | | **%s** | | %s |' % (
+            sum(SCORE_WEIGHTS.values()), _num(report['score']['strategy']['score'], '%.1f'),
+            _num(report['score']['benchmark']['score'], '%.1f')),
         '',
         '## 3. 分走势看（按当天实际走势事后分类，策略运行时看不到）',
         '',
