@@ -92,8 +92,8 @@ def freeze_session(market, calendar, dataset_dir, day, symbols=DEFAULT_SYMBOLS, 
     expected = int((session.closes - session.opens).total_seconds() // 60)
     cases_path, manifest_path = root / 'cases.json', root / 'manifest.json'
     root.mkdir(parents=True, exist_ok=True)
-    cases = json.loads(cases_path.read_text())['cases'] if cases_path.exists() else []
-    manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {
+    cases = json.loads(cases_path.read_text(encoding='utf-8'))['cases'] if cases_path.exists() else []
+    manifest = json.loads(manifest_path.read_text(encoding='utf-8')) if manifest_path.exists() else {
         'dataset': root.name, 'role': role, 'max_dte': 0, 'schema': 'custody-0dte/1',
         'selection_policy': SELECTION, 'sessions': [], 'skipped': []}
     if manifest.get('role') != role:
@@ -140,8 +140,8 @@ def freeze_session(market, calendar, dataset_dir, day, symbols=DEFAULT_SYMBOLS, 
     manifest['skipped'] = manifest.get('skipped', []) + skipped
     manifest['case_count'] = len(cases)
     manifest['updated_at'] = now.isoformat()
-    cases_path.write_text(json.dumps({'cases': cases}, indent=2) + '\n')
-    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + '\n')
+    cases_path.write_text(json.dumps({'cases': cases}, indent=2) + '\n', encoding='utf-8')
+    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
     files = write_checksums(root)
     Dataset(root)  # re-verify the whole directory after writing
     return {'trade_date': day, 'added_cases': added, 'skipped': skipped, 'files': files,

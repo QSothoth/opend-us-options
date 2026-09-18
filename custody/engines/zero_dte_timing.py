@@ -18,7 +18,9 @@ After the opening range (``opening_minutes``) enter on the first completed bar w
 
 Reason ``reversal_reclaim`` when the day first moved against us by more than the
 opening-range height, otherwise ``trend_breakout``. Entry never loosens with the
-clock (AGENTS.md: no fixed-time entry logic).
+clock (AGENTS.md: no fixed-time entry logic). With ``charm_exit_before_close_minutes``
+there is no entry that the charm exit would sell on the next bar (out of the money
+inside the charm window).
 
 Optional exit rules (they need the contract strike)
 ---------------------------------------------------
@@ -29,6 +31,13 @@ Optional exit rules (they need the contract strike)
   an option that is still far from its strike;
 * ``otm_stop_shrink``: an entry already out of the money gets a proportionally tighter
   stop (factor ``max(0.5, 1 - shrink * z)``) because each ATR costs it a larger share of premium;
+* ``take_profit_premium``: sell once the estimated premium return reaches the target
+  (``take_profit``). The premium is estimated with the Bachelier model from the signed
+  moneyness, the session sigma frozen at the entry decision and the minutes to the close
+  (never from option quotes);
+* ``min_premium_atr``: no entry while the estimated premium is below this many 1m ATR.
+  Each fill gives up part of the option bar range, which is roughly a fixed share of an
+  underlying ATR, so a small premium loses most of its return to friction.
 
 Exits (cut losers early, let winners run)
 -----------------------------------------
@@ -40,12 +49,14 @@ Risk is measured in the 1m ATR frozen at the entry decision.
   ``fail_progress_atr`` ATR of progress and back at/below the entry mark;
 * breakeven: after ``breakeven_at_atr`` ATR of progress the stop moves to the entry mark;
 * trailing: after ``trail_activate_atr`` ATR the stop trails the best close by
-  ``trail_atr`` ATR; there is no profit target;
+  ``trail_atr`` ATR;
 * flatten ``flatten_before_close_minutes`` before the session close.
 
 All stops are evaluated on completed 1m closes of the underlying.
 """
-from ..indicators import SessionIndicators
+import math
+
+from ..indicators import SessionIndicators, bachelier
 from ..strategy import Decision, flatten_minute, session_minute
 
 SCHEMA = {
@@ -69,10 +80,12 @@ SCHEMA = {
 # Optional signal and exit parameters.
 OPTIONAL = {
     'persist_minutes': ((int, 0, 120), 0),          # confirmation needs N consecutive closes on the VWAP side
-    'relax_after_minutes': ((int, 0, 0), 0),        # retired clock-based entry relaxation; only 0 (registered v4)
+    'relax_after_minutes': ((int, 0, 0), 0),        # retired clock-based entry relaxation; only 0
     'charm_exit_before_close_minutes': ((int, 16, 389), None),  # late exit for unprotected out-of-the-money positions
     'protection_needs_moneyness': ((int, 0, 1), 0),  # 1: a trail only protects once the option is at/in the money
     'otm_stop_shrink': ((float, 0.05, 0.9), None),   # stop distance x max(0.5, 1 - shrink * OTM z at entry)
+    'take_profit_premium': ((float, 0.05, 20.0), None),     # sell once the estimated premium return reaches this
+    'min_premium_atr': ((float, 0.1, 100.0), None),  # no entry while the estimated premium is below N x 1m ATR
 }
 OTM_STOP_FLOOR = 0.5
 
@@ -129,6 +142,7 @@ class ZeroDteTiming:
         self.entry_reason = self.exit_reason = None
         self.risk_distance = self.entry_atr = None
         self.entry_mark = self.entry_minute = self.stop = self.best = None
+        self.sigma = self.entry_value = None
 
     # ------------------------------------------------------------ helpers
     def _hi(self, bar):
@@ -174,9 +188,17 @@ class ZeroDteTiming:
         distance = -self.sign * (self.ind.close - self.strike)
         return distance / (self.ind.atr * left ** 0.5)
 
+    def _premium(self, signed_price, minute, sigma=None):
+        left = max(self.session_minutes - minute, 1)
+        return bachelier(signed_price - self.sign * self.strike, (sigma or self.sigma) * math.sqrt(left))
+
+    def _in_charm_window(self, minute):
+        charm = self.p['charm_exit_before_close_minutes']
+        return charm is not None and minute >= self.session_minutes - charm and self._otm_z(minute) > 0
+
     def _plan_risk(self):
-        """Freeze ATR and the stop distance from the latest completed bar."""
-        self.entry_atr = self.ind.atr
+        """Freeze ATR, sigma and the stop distance from the latest completed bar."""
+        self.entry_atr, self.sigma = self.ind.atr, self.ind.sigma
         recent = self.ind.prior_bars(self.p['stop_lookback']) + [self.ind.bars[-1]]
         distance = self.sign * self.ind.close - min(self._lo(b) for b in recent)
         self.risk_distance = min(max(distance, self.p['stop_min_atr'] * self.entry_atr),
@@ -192,6 +214,7 @@ class ZeroDteTiming:
         self.entry_minute = (at - self.session.opens).total_seconds() / 60
         self.entry_mark = self.best = self.sign * float(underlying_mark)
         self.stop = self.entry_mark - self.risk_distance
+        self.entry_value = max(self._premium(self.entry_mark, self.entry_minute), self.sigma * 1e-3)
 
     # ------------------------------------------------------------ rules
     def _entry_reason(self, bar, minute):
@@ -209,6 +232,10 @@ class ZeroDteTiming:
                  and s * (ind.ema_fast - ind.prev_ema_fast) > 0)
         if not (vwap_side and trend):
             return None
+        if self._in_charm_window(minute):
+            return None
+        if p['min_premium_atr'] is not None and self._premium(close, minute, ind.sigma) < p['min_premium_atr'] * atr:
+            return None
         if s * ind.session_open - min(s * ind.high, s * ind.low) > ind.or_high - ind.or_low:
             return 'reversal_reclaim'
         return 'trend_breakout'
@@ -224,13 +251,15 @@ class ZeroDteTiming:
         if progress >= p['trail_activate_atr']:
             self.stop = max(self.stop, self.best - p['trail_atr'] * self.entry_atr)
             reason = 'trailing_stop'
+        premium_return = self._premium(close, minute) / self.entry_value - 1
         protected = progress >= p['trail_activate_atr']
         if protected and p['protection_needs_moneyness'] and self._otm_z(minute) > 0:
             protected = False  # underlying progress in ATR means little while the option is still out of the money
         if close <= self.stop:
             self.phase, self.exit_reason = 'EXITING', reason
-        elif (p['charm_exit_before_close_minutes'] is not None and not protected
-              and minute >= self.session_minutes - p['charm_exit_before_close_minutes'] and self._otm_z(minute) > 0):
+        elif p['take_profit_premium'] is not None and premium_return >= p['take_profit_premium']:
+            self.phase, self.exit_reason = 'EXITING', 'take_profit'
+        elif not protected and self._in_charm_window(minute):
             self.phase, self.exit_reason = 'EXITING', 'charm_exit'
         elif (minute - self.entry_minute >= p['fail_minutes'] and progress < p['fail_progress_atr']
               and close <= self.entry_mark):

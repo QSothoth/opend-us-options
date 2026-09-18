@@ -30,12 +30,12 @@
 - 只用真实 OpenD 数据，且只用 [DATA](docs/DATA.md) 登记的数据集；合成数据只用于单元测试。
 - 每个 case 是真 0DTE（expiry = trade_date），有同日完整常规时段的正股 1m 和该合约期权 1m；每个数据文件都由 SHA256 固定，不一致或未固定直接报错。
 - 新数据集每个 (标的, 交易日) 必须同时有 **CALL 和 PUT**（同一行权价：开盘第一根 1m 开盘价最近的挂牌行权价），不得按收益、成交量或事后标签挑方向。
-- 验证集只评测，绝不调参。现有两个遗留数据集只有单边，结论最高 PROVISIONAL。
+- 验证集只评测，绝不调参。只有单边的数据集只能做诊断，结论最高 PROVISIONAL。
 - 每个交易日收盘后当天用 `custody freeze` 冻结（过期周权补不回来）。数据只以 GitHub Release（tag + zip + SHA256）发布，发布前必须通过 `python3 -m custody check`；Release 及其解压目录不可修改，新数据发新 tag，数据不进 git。
 
 ## 策略与评测
 
-- 策略 = `custody/engines/<engine>.py` + 不可变参数文件。改参数用新 `strategy_id` 和新文件，并在 `index.json` 登记 SHA256。
+- 策略 = `custody/engines/<engine>.py` + 不可变参数文件。改参数用新 `strategy_id` 和新文件，并在 `index.json` 登记 SHA256；同一引擎上的小改动用小版本号（如 v6 → v6.1），大改动才升大版本。
 - 状态只写在 `index.json`，只有评测 ACCEPT 才能改为 `accepted`。不保留废弃策略、旧报告或兼容分支；历史查 Git，不复活已删除的策略。
 - 研究前先写假设、结构性理由、每轮 ≤ 5 个候选和选择规则，跑完不改规则；参数用整数或常见值，不做网格搜索。候选用完整标准（含 G8–G10）比较，选择过程做留一天交叉验证并报告样本外估计；全部候选、结果和失败记入 `docs/STRATEGY.md`。
 - 唯一评测入口：`python3 -m custody evaluate --strategy <id> --dataset <目录> --out reports/<id>/<dataset>/`。主口径方向对称加权，主指标盈亏比；完成分单独展示、不是门槛；整体比较保留全部 case（未入场贡献零）。

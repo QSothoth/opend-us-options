@@ -815,13 +815,13 @@ REASON_ZH = {
     'trend_breakout': '顺势突破', 'reversal_reclaim': '反转收复',
     'invalidation_stop': '止损', 'breakeven_stop': '正股跌回买入价离场', 'trailing_stop': '从高点回撤离场',
     'no_progress': '迟迟不涨离场', 'scheduled_flatten': '收盘前强平', 'platform_flatten': '平台强平',
-    'charm_exit': '午后仍虚值离场',
+    'charm_exit': '午后仍虚值离场', 'take_profit': '估算权利金翻倍止盈',
 }
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(prog='custody evaluate', description=__doc__.splitlines()[0])
-    parser.add_argument('--dataset', required=True, help='extracted dataset directory (e.g. Release custody-train-0dte)')
+    parser.add_argument('--dataset', required=True, help='extracted dataset directory (e.g. Release custody-0dte-v5)')
     parser.add_argument('--strategy', default=None, help='registered strategy_id (default: registry default)')
     parser.add_argument('--out', required=True, help='directory for report.json and REPORT.md')
     parser.add_argument('--null-draws', type=int, default=NULL_DRAWS)
@@ -829,8 +829,8 @@ def main(argv=None):
     report = evaluate(args.dataset, args.strategy, null_draws=args.null_draws)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
-    (out / 'report.json').write_text(json.dumps(report, indent=2, ensure_ascii=False, allow_nan=False) + '\n')
-    (out / 'REPORT.md').write_text(render_markdown(report))
+    (out / 'report.json').write_text(json.dumps(report, indent=2, ensure_ascii=False, allow_nan=False) + '\n', encoding='utf-8')
+    (out / 'REPORT.md').write_text(render_markdown(report), encoding='utf-8')
     print(json.dumps({'verdict': report['verdict'], 'completion_score': report['summary']['completion_score'], 'balanced': report['summary']['balanced'],
                       'benchmark': report['benchmark_open_hold']['balanced']}, indent=2, ensure_ascii=False))
     return 0 if report['verdict'] in ('ACCEPT', 'PROVISIONAL') else 1

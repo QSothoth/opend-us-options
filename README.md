@@ -23,17 +23,17 @@ python3 -m unittest discover -s custody/tests
 python3 -m custody strategies
 
 # 下载后离线评测，显式指定策略，避免默认值与报告目录错配
-python3 -m custody evaluate --strategy zero_dte_timing_v4 \
-  --dataset data/custody-train-0dte --out reports/zero_dte_timing_v4/custody-train-0dte
+python3 -m custody evaluate --strategy zero_dte_timing_v6.1 \
+  --dataset data/custody-0dte-v5 --out reports/zero_dte_timing_v6.1/custody-0dte-v5
 ```
 
 数据获取、每日冻结及发布只按 [数据流程](docs/DATA.md) 操作；盘中观察见 [dryrun](docs/RUNTIME.md#4-dryrun)，模拟账户与实盘下单见 [run](docs/RUNTIME.md#5-run)。所有命令：`python3 -m custody`。
-V4 是单边遗留数据，`custody check` 会以非零退出码拒绝发布；离线评测允许它做诊断。
+只有单边的数据 `custody check` 会以非零退出码拒绝发布；离线评测允许它做诊断。
 
 ## 当前状态
 
-- 默认策略和生命周期以 [注册表](custody/strategies/index.json) 为准；当前 v4 为 candidate，尚未达到 ACCEPT。
-- v4 取消强制入场，保留确认信号和退出规则；最新 [V4 训练数据报告](reports/zero_dte_timing_v4/custody-train-0dte/REPORT.md) 与 [遗留验证数据报告](reports/zero_dte_timing_v4/custody-eval-2026-09-16/REPORT.md) 同时展示完成分和收益。研究记录见 [策略说明](docs/STRATEGY.md)。
+- 默认策略和生命周期以 [注册表](custody/strategies/index.json) 为准；当前 v6.1 为 candidate，尚未达到 ACCEPT。
+- v6.1 用较短的确认入场和 1–2 ATR 紧止损；最新 [V5 训练数据报告](reports/zero_dte_timing_v6.1/custody-0dte-v5/REPORT.md) 与 [验证数据报告](reports/zero_dte_timing_v6.1/custody-eval-2026-09-16-v2/REPORT.md) 同时展示完成分和收益。研究记录见 [策略说明](docs/STRATEGY.md)。
 - 下一步每天冻结同一行权价的 CALL / PUT，积累样本外交易日；验证集不得用于调参。
 - `custody run` 通过 OpenD 下单：`--mode paper` 用模拟账户，`--mode live` 只接受 accepted 策略；dryrun 只读行情、记录模拟成交。
 

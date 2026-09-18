@@ -79,7 +79,7 @@ def write_dataset(root, cases, name='test-dataset'):
         doc = {k: case[k] for k in ('symbol', 'contract', 'trade_date')}
         doc.update({k: case[k] for k in ('prev_close', 'selection', 'direction', 'right') if k in case})
         docs.append(doc)
-    (root / 'cases.json').write_text(json.dumps({'cases': docs}, indent=2))
-    (root / 'manifest.json').write_text(json.dumps({'dataset': name, 'role': 'train/custody'}))
+    (root / 'cases.json').write_text(json.dumps({'cases': docs}, indent=2), encoding='utf-8')
+    (root / 'manifest.json').write_text(json.dumps({'dataset': name, 'role': 'train/custody'}), encoding='utf-8')
     write_checksums(root)
     return root

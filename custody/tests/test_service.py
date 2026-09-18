@@ -152,13 +152,13 @@ class ServiceTests(unittest.TestCase):
             root = Path(self.tmp.name) / name
             root.mkdir()
             for path in source.iterdir():
-                (root / path.name).write_text(path.read_text())
+                (root / path.name).write_text(path.read_text(encoding='utf-8'), encoding='utf-8')
             target = root / (SID + '.json')
-            target.write_text(mutate(target.read_text()))
+            target.write_text(mutate(target.read_text(encoding='utf-8')), encoding='utf-8')
             if name == 'status_in_file':  # re-pin the hash so the status rule itself is exercised
-                index = json.loads((root / 'index.json').read_text())
+                index = json.loads((root / 'index.json').read_text(encoding='utf-8'))
                 index['strategies'][SID]['sha256'] = hashlib.sha256(target.read_bytes()).hexdigest()
-                (root / 'index.json').write_text(json.dumps(index))
+                (root / 'index.json').write_text(json.dumps(index), encoding='utf-8')
             with self.assertRaisesRegex(ValueError, message):
                 Registry(root)
 

@@ -5,11 +5,20 @@ bars already passed in, never on a later bar, a previous session, a daily bar or
 option price. Timing engines (:mod:`custody.engines`) build on this class and apply
 the direction sign themselves.
 """
+import math
 from collections import deque
 
 
+def bachelier(moneyness, spread):
+    """Undiscounted option value for signed moneyness and total standard deviation of the move."""
+    if spread <= 0:
+        return max(moneyness, 0.0)
+    d = moneyness / spread
+    return moneyness * 0.5 * (1 + math.erf(d / math.sqrt(2))) + spread * math.exp(-d * d / 2) / math.sqrt(2 * math.pi)
+
+
 class SessionIndicators:
-    """Incremental VWAP / EMA / ATR / opening range / extremes for one session."""
+    """Incremental VWAP / EMA / ATR / sigma / opening range / extremes for one session."""
 
     def __init__(self, ema_fast=9, ema_slow=21, atr_period=14, opening_minutes=15, history=60):
         if not 1 <= ema_fast < ema_slow or atr_period < 1 or opening_minutes < 1 or history < 2:
@@ -28,6 +37,7 @@ class SessionIndicators:
         self._pv = self._volume = 0.0
         self.vwap = None
         self.atr = None
+        self._squares = 0.0
 
     @property
     def close(self):
@@ -47,6 +57,7 @@ class SessionIndicators:
             true_range = bar.high - bar.low
         else:
             true_range = max(bar.high - bar.low, abs(bar.high - prev.close), abs(bar.low - prev.close))
+            self._squares += (bar.close - prev.close) ** 2
         self.true_ranges.append(true_range)
         self.atr = max(sum(self.true_ranges) / len(self.true_ranges), bar.close * 1e-5)
         self.high = bar.high if self.high is None else max(self.high, bar.high)
@@ -66,6 +77,12 @@ class SessionIndicators:
         self.bars.append(bar)
         self.count += 1
         self.minute = minute
+
+    @property
+    def sigma(self):
+        """Root mean square of this session's completed 1m close-to-close changes."""
+        changes = self.count - 1
+        return max(math.sqrt(self._squares / changes) if changes > 0 else 0.0, self.close * 1e-5)
 
     def prior_bars(self, n):
         """The ``n`` bars before the latest one (the latest bar is excluded)."""

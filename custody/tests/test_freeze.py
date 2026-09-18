@@ -57,7 +57,7 @@ class FreezeTests(unittest.TestCase):
             self.assertEqual([(c.direction, c.prev_close, c.selection) for c in ds.cases],
                              [('LONG', 599.5, 'both_sides_atm_at_open'), ('SHORT', 599.5, 'both_sides_atm_at_open')])
             self.assertEqual(len(ds.load(ds.cases[1]).underlying), 390)
-            manifest = json.loads((root / 'manifest.json').read_text())
+            manifest = json.loads((root / 'manifest.json').read_text(encoding='utf-8'))
             self.assertEqual((manifest['sessions'], manifest['case_count']), ([DAY], 2))
             self.assertTrue(summary['both_sides']['ok'])
             again = freeze_session(market, Calendar(), root, DAY, ['US.SPY'], now=AFTER_CLOSE,

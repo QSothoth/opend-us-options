@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from helpers import BASE_PARAMS, path_bars, piecewise, session  # noqa: E402
 
 from custody.engines.zero_dte_timing import ZeroDteTiming, validate_params  # noqa: E402
-from custody.indicators import SessionIndicators  # noqa: E402
+from custody.indicators import SessionIndicators, bachelier  # noqa: E402
 from custody.registry import Registry  # noqa: E402
 from custody.strategy import Decision, build_strategy, flatten_minute, session_minute  # noqa: E402
 
@@ -210,9 +210,9 @@ class DeterminismTests(unittest.TestCase):
     def test_registered_files_have_the_documented_shape(self):
         registry = Registry()
         for item in registry.list():
-            doc = json.loads((registry.root / (item['strategy_id'] + '.json')).read_text())
+            doc = json.loads((registry.root / (item['strategy_id'] + '.json')).read_text(encoding='utf-8'))
             self.assertEqual(set(doc), {'schema_version', 'strategy_id', 'engine', 'description', 'developed_on', 'params'})
-            self.assertEqual(doc['developed_on']['release'], 'custody-train-0dte')
+            self.assertEqual(doc['developed_on']['release'], 'custody-0dte-v5')
         self.assertEqual([i['strategy_id'] for i in registry.list() if i['status'] != 'retired'], [registry.default_id])
 
 
@@ -224,6 +224,34 @@ class OptionalRuleTests(unittest.TestCase):
             with self.assertRaises(ValueError, msg=str(bad)):
                 validate_params({**PARAMS, **bad})
 
+    def test_bachelier_and_session_sigma(self):
+        self.assertAlmostEqual(bachelier(0.0, 1.0), 1 / (2 * 3.141592653589793) ** 0.5)
+        self.assertEqual(bachelier(2.0, 0.0), 2.0)
+        self.assertEqual(bachelier(-2.0, 0.0), 0.0)
+        self.assertAlmostEqual(bachelier(1.0, 0.5) - bachelier(-1.0, 0.5), 1.0)   # put-call parity
+        ind = SessionIndicators(opening_minutes=1)
+        for i, bar in enumerate(path_bars([100.0, 101.0, 100.0, 101.0]), start=1):
+            ind.update(bar, i)
+        self.assertAlmostEqual(ind.sigma, 1.0)
+
+    def test_take_profit_sells_once_the_estimated_premium_doubles(self):
+        closes = piecewise([(1, 100.0), (15, 100.0), (390, 110.0)])
+        entry, _ = first(run(closes), 'ENTER')
+        minute, reason = first(run(closes, params={**PARAMS, 'take_profit_premium': 1.0}), 'EXIT')
+        self.assertEqual(reason, 'take_profit')
+        self.assertLess(minute, 375)
+        self.assertGreater(minute, entry)
+        for bad in (0.0, -1.0, True):
+            with self.assertRaises(ValueError, msg=str(bad)):
+                validate_params({**PARAMS, 'take_profit_premium': bad})
+
+    def test_no_out_of_the_money_entry_inside_the_charm_window(self):
+        late = [100.0] * 300 + piecewise([(1, 100.0), (90, 104.0)], 90)
+        charm = {**PARAMS, 'charm_exit_before_close_minutes': 90}
+        self.assertEqual(first(run(late, params=PARAMS, strike=110.0), 'ENTER')[1], 'trend_breakout')
+        self.assertEqual(first(run(late, params=charm, strike=110.0), 'ENTER'), (None, None))
+        self.assertEqual(first(run(late, params=charm, strike=100.0), 'ENTER')[1], 'trend_breakout')
+
     def test_persistence_rejects_a_fresh_breakout_until_the_vwap_side_has_held(self):
         closes = piecewise([(1, 100.0), (15, 100.0), (390, 110.0)])
         quick, _ = first(run(closes), 'ENTER')
@@ -231,6 +259,23 @@ class OptionalRuleTests(unittest.TestCase):
         self.assertEqual(reason, 'trend_breakout')
         self.assertGreaterEqual(held, quick + 15)
 
+    def test_retired_premium_breakeven_parameter_is_rejected(self):
+        with self.assertRaises(ValueError):
+            validate_params({**PARAMS, 'premium_breakeven_at': 0.1})
+
+    def test_no_entry_while_the_estimated_premium_is_small_against_the_atr(self):
+        closes = piecewise([(1, 100.0), (15, 100.0), (390, 110.0)])
+        quick = first(run(closes), 'ENTER')
+        self.assertEqual(first(run(closes, params={**PARAMS, 'min_premium_atr': 1.0}), 'ENTER'), quick)
+        # at the money the estimate is too small at first; deep in the money later it is not
+        later, reason = first(run(closes, params={**PARAMS, 'min_premium_atr': 100.0}), 'ENTER')
+        self.assertEqual(reason, 'trend_breakout')
+        self.assertGreater(later, quick[0])
+        self.assertEqual(first(run(closes, params={**PARAMS, 'min_premium_atr': 1.0}, strike=150.0), 'ENTER'),
+                         (None, None))
+        for bad in (0.0, True):
+            with self.assertRaises(ValueError, msg=str(bad)):
+                validate_params({**PARAMS, 'min_premium_atr': bad})
 
 
 

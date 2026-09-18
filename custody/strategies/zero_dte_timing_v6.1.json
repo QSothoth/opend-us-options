@@ -1,11 +1,11 @@
 {
   "schema_version": 2,
-  "strategy_id": "zero_dte_timing_v4",
+  "strategy_id": "zero_dte_timing_v6.1",
   "engine": "zero_dte_timing",
-  "description": "单笔末日期权择时：仅在正股走势确认后入场，无信号可空仓；按正股止损与跟踪退出，收盘前退出，完成率独立计分。",
+  "description": "单笔末日期权择时：正股站稳 VWAP 有利侧 5 根并突破后入场，估算权利金过低不入场；按 1–2 ATR 紧止损、正股保本与跟踪离场，估算权利金翻倍止盈，午后仍虚值离场，收盘前退出。",
   "developed_on": {
-    "release": "custody-train-0dte",
-    "generation": "V4",
+    "release": "custody-0dte-v5",
+    "generation": "V5",
     "sessions_through": "2026-09-16"
   },
   "params": {
@@ -20,15 +20,17 @@
     "stop_lookback": 10,
     "stop_min_atr": 1.0,
     "stop_max_atr": 2.0,
-    "fail_minutes": 20,
+    "fail_minutes": 390,
     "fail_progress_atr": 1.0,
     "breakeven_at_atr": 2.0,
     "trail_activate_atr": 5.0,
     "trail_atr": 5.0,
     "flatten_before_close_minutes": 15,
-    "persist_minutes": 20,
+    "persist_minutes": 5,
     "charm_exit_before_close_minutes": 90,
     "protection_needs_moneyness": 1,
-    "otm_stop_shrink": 0.25
+    "otm_stop_shrink": 0.25,
+    "take_profit_premium": 1.0,
+    "min_premium_atr": 3.0
   }
 }

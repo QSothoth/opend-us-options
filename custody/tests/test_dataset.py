@@ -50,7 +50,7 @@ class DatasetTests(unittest.TestCase):
 
     def test_checksums_are_mandatory_and_enforced(self):
         write_dataset(self.root, spy_cases())
-        with (self.root / 'option' / (CALL + '.csv')).open('a') as fh:
+        with (self.root / 'option' / (CALL + '.csv')).open('a', encoding='utf-8') as fh:
             fh.write('US.SPY260914C100000,2026-09-14T15:59:00-04:00,1m,1,1,1,1,1\n')
         with self.assertRaisesRegex(DatasetError, 'checksum mismatch'):
             Dataset(self.root)
@@ -72,8 +72,8 @@ class DatasetTests(unittest.TestCase):
     def test_incomplete_underlying_or_untraded_option_is_refused(self):
         write_dataset(self.root, spy_cases())
         tape = self.root / 'underlying' / 'US.SPY.csv'
-        lines = tape.read_text().splitlines()
-        tape.write_text('\n'.join(lines[:100] + lines[101:]) + '\n')
+        lines = tape.read_text(encoding='utf-8').splitlines()
+        tape.write_text('\n'.join(lines[:100] + lines[101:]) + '\n', encoding='utf-8')
         write_checksums(self.root)
         ds = Dataset(self.root)
         with self.assertRaisesRegex(DatasetError, 'not a complete 1m session'):
@@ -96,16 +96,16 @@ class DatasetTests(unittest.TestCase):
             series.append({'code': code, 'kind': kind, 'csv': rel,
                            'sha256': {'csv': hashlib.sha256((self.root / rel).read_bytes()).hexdigest()}})
         manifest = {'dataset': 'manifest-pinned', 'series': series}
-        (self.root / 'manifest.json').write_text(json.dumps(manifest))
+        (self.root / 'manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
         ds = Dataset(self.root)
         self.assertEqual((ds.checksums_verified, ds.pinned_by), (3, 'manifest.json'))
         self.assertEqual(len(ds.load(ds.cases[1]).underlying), 390)
-        (self.root / 'manifest.json').write_text(json.dumps(dict(manifest, series=series[:2])))
+        (self.root / 'manifest.json').write_text(json.dumps(dict(manifest, series=series[:2])), encoding='utf-8')
         ds = Dataset(self.root)
         with self.assertRaisesRegex(DatasetError, 'not pinned'):
             ds.load(ds.cases[1])
         series[0]['sha256']['csv'] = '0' * 64
-        (self.root / 'manifest.json').write_text(json.dumps(dict(manifest, series=series)))
+        (self.root / 'manifest.json').write_text(json.dumps(dict(manifest, series=series)), encoding='utf-8')
         with self.assertRaisesRegex(DatasetError, 'checksum mismatch'):
             Dataset(self.root)
 
@@ -131,7 +131,7 @@ class DatasetTests(unittest.TestCase):
         self.assertFalse(Dataset(mismatched).sides_report()['ok'])  # CALL and PUT must share the strike
         broken = Path(self.tmp.name) / 'broken'
         write_dataset(broken, spy_cases())
-        (broken / 'CHECKSUMS.sha256').write_text('0' * 64 + '  cases.json\n')
+        (broken / 'CHECKSUMS.sha256').write_text('0' * 64 + '  cases.json\n', encoding='utf-8')
         self.assertFalse(check(broken)['ok'])
 
     def test_isolation_report_blocks_role_and_date_leak(self):
@@ -186,15 +186,15 @@ class DatasetTests(unittest.TestCase):
         target = self.root / 'underlying' / 'US.SPY.csv'
         write_bars(target, bars[:2])
         write_bars(target, bars[1:])
-        rows = target.read_text().splitlines()
+        rows = target.read_text(encoding='utf-8').splitlines()
         self.assertEqual(len(rows), 4)  # header + 3 unique minutes
         self.assertTrue(rows[0].startswith('code,close_time'))
 
     def test_release_layout_extra_fields_are_tolerated(self):
         write_dataset(self.root, spy_cases())
-        doc = json.loads((self.root / 'cases.json').read_text())
+        doc = json.loads((self.root / 'cases.json').read_text(encoding='utf-8'))
         doc['cases'][0].update(call_volume=1.0, chosen_volume=2.0, expiry=DAY, right='CALL', strike=100.0)
-        (self.root / 'cases.json').write_text(json.dumps(doc))
+        (self.root / 'cases.json').write_text(json.dumps(doc), encoding='utf-8')
         write_checksums(self.root)
         self.assertEqual(len(Dataset(self.root).cases), 2)
 

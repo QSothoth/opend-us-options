@@ -4,10 +4,10 @@ A strategy file (``custody/strategies/<strategy_id>.json``) is immutable::
 
     {
       "schema_version": 2,
-      "strategy_id": "zero_dte_timing_v4",
+      "strategy_id": "zero_dte_timing_v6.1",
       "engine": "zero_dte_timing",            # key in custody.engines.ENGINES
       "description": "...",
-      "developed_on": {"release": "...", "generation": "V4", "sessions_through": "YYYY-MM-DD"},
+      "developed_on": {"release": "...", "generation": "V5", "sessions_through": "YYYY-MM-DD"},
       "params": { ... validated by the engine ... }
     }
 
@@ -26,7 +26,7 @@ class Registry:
     def __init__(self, root=None):
         from .engines import ENGINES
         self.root = Path(root or Path(__file__).parent / 'strategies').resolve()
-        index = json.loads((self.root / 'index.json').read_text())
+        index = json.loads((self.root / 'index.json').read_text(encoding='utf-8'))
         if index.get('schema_version') != 2:
             raise ValueError('unsupported strategy index schema')
         self._items = {}

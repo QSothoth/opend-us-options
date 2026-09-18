@@ -1,10 +1,10 @@
 {
   "schema_version": 2,
-  "default": "zero_dte_timing_v4",
+  "default": "zero_dte_timing_v6.1",
   "strategies": {
-    "zero_dte_timing_v4": {
-      "file": "zero_dte_timing_v4.json",
-      "sha256": "25c07b993a8211cdb087f826788d71c385400b25a7f3a5c2d202cb030b79ff71",
+    "zero_dte_timing_v6.1": {
+      "file": "zero_dte_timing_v6.1.json",
+      "sha256": "29097de544492b5a2abb3a24329334da3b80cfcea9c8465173d05addf3bacf5b",
       "status": "candidate"
     }
   }

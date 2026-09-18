@@ -190,7 +190,7 @@ class DryRunSafetyTests(unittest.TestCase):
             if 'tests' in path.relative_to(package).parts or path.name == 'broker.py':
                 continue
             name = path.name
-            tree = ast.parse(path.read_text())
+            tree = ast.parse(path.read_text(encoding='utf-8'))
             used = set()
             for node in ast.walk(tree):
                 if isinstance(node, ast.Attribute):
@@ -231,7 +231,7 @@ class FrameSourceTests(unittest.TestCase):
         f = source.frame(self.job(), at + timedelta(seconds=2))
         self.assertEqual((f.action, f.reason, f.bar_close), ('ENTER', 'trend_breakout', at))
         fill_at = at + timedelta(seconds=4)
-        later = bars[entry_minute + 30].close_time
+        later = bars[entry_minute + 3].close_time
         f2 = StrategyFrameSource(self.History(bars)).frame(self.job(fill_at.isoformat(), bars[entry_minute].close),
                                                            later + timedelta(seconds=1))
         self.assertEqual(f2.action, 'HOLD')

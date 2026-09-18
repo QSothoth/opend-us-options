@@ -93,7 +93,7 @@ class CaseData:
 
 def _bars_from_csv(path, code):
     out = {}
-    with Path(path).open(newline='') as fh:
+    with Path(path).open(newline='', encoding='utf-8') as fh:
         for row in csv.DictReader(fh):
             try:
                 bar = Bar(code, instant(row['close_time']), float(row['open']), float(row['high']),
@@ -119,8 +119,8 @@ class Dataset:
     def __init__(self, root):
         self.root = Path(root).resolve()
         try:
-            self.manifest = json.loads((self.root / 'manifest.json').read_text())
-            raw_cases = json.loads((self.root / 'cases.json').read_text())['cases']
+            self.manifest = json.loads((self.root / 'manifest.json').read_text(encoding='utf-8'))
+            raw_cases = json.loads((self.root / 'cases.json').read_text(encoding='utf-8'))['cases']
         except (OSError, KeyError, ValueError) as exc:
             raise DatasetError('missing or unreadable manifest.json/cases.json under %s' % self.root) from exc
         self.name = self.manifest.get('dataset') or self.root.name
@@ -147,7 +147,7 @@ class Dataset:
         path = self.root / 'CHECKSUMS.sha256'
         pins = []
         if path.exists():
-            for line in path.read_text().splitlines():
+            for line in path.read_text(encoding='utf-8').splitlines():
                 if line.strip():
                     digest, name = line.split(maxsplit=1)
                     pins.append((name.strip().lstrip('*'), digest))
@@ -246,7 +246,7 @@ def write_bars(path, bars):
         merged[bar.close_time] = bar
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix('.csv.tmp')
-    with tmp.open('w', newline='') as fh:
+    with tmp.open('w', newline='', encoding='utf-8') as fh:
         writer = csv.writer(fh)
         writer.writerow(CSV_FIELDS)
         for key in sorted(merged):
@@ -261,7 +261,7 @@ def write_checksums(root):
     for path in sorted(root.rglob('*')):
         if path.is_file() and path.name != 'CHECKSUMS.sha256' and not path.name.endswith('.tmp'):
             lines.append('%s  %s' % (sha256_file(path), path.relative_to(root).as_posix()))
-    (root / 'CHECKSUMS.sha256').write_text('\n'.join(lines) + '\n')
+    (root / 'CHECKSUMS.sha256').write_text('\n'.join(lines) + '\n', encoding='utf-8')
     return len(lines)
 
 

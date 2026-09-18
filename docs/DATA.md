@@ -74,27 +74,33 @@ python3 -m custody check --dataset <训练目录> --validation <验证目录>
 
 | 名称 | 角色 | 用途 |
 |---|---|---|
-| `custody-train-0dte` | `train/custody` | 当前训练数据（双边 0DTE） |
-| `custody-eval-2026-09-16` | `validation/custody` | 留出验证，只评测，绝不调参 |
+| `custody-0dte-v5`（V5） | `train/custody` | 当前唯一训练数据 |
+| `custody-eval-2026-09-16-v2` | `validation/custody` | 留出验证，只评测，绝不调参 |
 
-只使用此处登记的数据集。新数据按下文流程冻结并发布，训练集 tag 从 `custody-0dte-v5` 起递增。本地 canonical 目录在 `/workspace/pi-jobs/custody-train-0dte/out/` 与 `/workspace/pi-jobs/custody-eval-2026-09-16/out/`；GitHub Release 可能落后于本地扩展。
+只使用此处登记的数据集。新数据按下文流程冻结并发布，训练集 tag 从 `custody-0dte-v6` 起递增。`custody check --dataset data/custody-0dte-v5 --validation data/custody-eval-2026-09-16-v2` 通过（无重叠交易日或会话）。
 
-### 训练集 custody-train-0dte（双边，本地扩展）
+### V5 详情
 
-- 角色 `train/custody`；zip SHA256 `e043bf002d2a807816ff62651029402ef2692bb4f0257a51321d0c0b26e3e8df`（本地 canonical），`CHECKSUMS.sha256` 的 SHA256 `8d8c7092be679092e6e95b1fb23a07b1f038de9f756f388b7af8a44d5db104ab`
-- **126 个 case / 20 个交易日**（2026-08-18 → 2026-09-15），全部真 0DTE（`expiry == trade_date`）
-- **63 LONG+CALL / 63 SHORT+PUT**；63 个 `(标的, 交易日)` 全部同一行权价两边齐全，`custody check` 通过
-- 13 个标的（case 数）：SPY 40、QQQ 14、AAPL 10、IWM 10、META 10、MSFT 10、AMD 6、NVDA 6、TSLA 6、MU 4、AMZN 4、AVGO 4、GOOGL 2
-- 来源：OpenD 期权历史缓存 82 个 case + 可用订阅 K_1M 流的 44 个 case（2026-09-10 / 09-11 / 09-14 / 09-15）；每 case 都带 `prev_close`、`session_close`、`selection = both_sides_atm_at_open`
-- 跳过的交易日：2026-08-17（历史 `NN_ProtoRet_SvrFailed`）、2026-09-16（留出验证，禁止进入训练）；另有 26 个单一名股会话因过期链不可查、且当日无对应到期合约而跳过（见 `manifest.skipped`）
-- 交割口径：期权历史配额 60/60 用尽，非缓存合约无法再拉；缺口日改用只读订阅流的当日 K 线（已用同合约历史 ↔ 流对比验证逐 bar 一致）
+- zip SHA256 `5676241cb2498f711977e7c207572ca66f316a0b76bac68b416b2a2f439ad73c`
+- `CHECKSUMS.sha256` 的 SHA256 `35875e44318c78ab5b09cd53cac3b22ce26a8a12cb468aeed5efd72e43e97c69`
+- 20 个交易日（2026-08-18 → 2026-09-15），126 个 case，63 组 CALL / PUT 两边齐全：SPY 40、QQQ 14、IWM 10、AAPL 10、META 10、MSFT 10、AMD 6、NVDA 6、TSLA 6、AMZN 4、AVGO 4、MU 4、GOOGL 2
+- 合约：开盘第一根 K 线价格最近的挂牌行权价（`both_sides_atm_at_open`）；每个 case 都带 `prev_close`、`session_close`；`custody check` 通过
+- 按评测标准的场景分布：顺势单边 43、逆势单边 43、震荡 20、先逆后顺 10、先顺后逆 10
+- 行情来源：OpenD 期权历史缓存 82 个 case，另 44 个 case（2026-09-10 / 09-11 / 09-14 / 09-15）因期权历史配额用尽改用只读订阅 K_1M 流（已与同合约历史逐 bar 对比一致）
+- 跳过：2026-08-17（OpenD 历史 `NN_ProtoRet_SvrFailed`）、2026-09-16（留出验证）；另有 26 个个股会话因当日无对应到期合约或过期链不可查而跳过（见 `manifest.skipped`）
+- 来源：2026-09-17 上传到旧 tag `custody-train-0dte` 的附件（zip `e043bf00…`），只把 `manifest.json` 的数据集名改为 `custody-0dte-v5` 并重算其哈希行，行情文件逐字节不变
 
-### 验证集 custody-eval-2026-09-16
+### 验证集 custody-eval-2026-09-16-v2
 
-- 角色 `validation/custody`；zip SHA256 `ac041ab60de15d755194cfb1400f1acfbfaf4661c9144e90dd1e45e95ed2ac11`（本地 canonical）
-- 2026-09-16 一个交易日，10 张单一个股真 0DTE 的 CALL+PUT 两边：INTC、AMD、TSLA、NVDA、MU、AVGO、AMZN、GOOGL、META、MSFT，共 20 个 case（10 LONG/CALL、10 SHORT/PUT）
-- 文件哈希在 `manifest.json` 的 `series` 里
-- 与训练集无任何交易日或 `(标的, 交易日)` 重叠；`custody check --dataset <训练> --validation <验证>` 通过
+- zip SHA256 `5758f49dd9c16fcfea85c9cc41160f01e71f7a341dd6a44214c738a41654dfd7`；文件哈希在 `manifest.json` 的 `series` 里
+- 2026-09-16 一个交易日，10 个个股各一组 CALL / PUT（共 20 个 case）：INTC、AMD、TSLA、NVDA、MU、AVGO、AMZN、GOOGL、META、MSFT；`custody check` 通过，与 V5 没有重叠交易日或会话
+- 场景分布：顺势单边 8、逆势单边 8、先逆后顺 2、先顺后逆 2、震荡 0，场景覆盖不足
+- 当前策略开发截止为 2026-09-16，这份数据不属于它的样本外
+- 来源：2026-09-17 上传到旧 tag `custody-eval-2026-09-16` 的附件（zip `ac041ab6…`），只改了 `manifest.json` 的数据集名
+
+### 已停用的数据集
+
+旧 tag `custody-train-0dte`（V4，单边 36 个 case）和 `custody-eval-2026-09-16`（单边 10 个 CALL）的附件在 2026-09-17 被原地替换，与原登记的哈希（`65398673…`、`58f0af99…`）不再一致，已停用；原内容与结论查 Git 历史。今后不得原地替换附件，数据变化一律发新 tag，也不以本地目录代替 Release。
 
 ### 下载并校验
 
@@ -104,25 +110,23 @@ python3 -m custody check --dataset <训练目录> --validation <验证目录>
 
 ```bash
 set -euo pipefail
-test ! -e data/custody-train-0dte
+test ! -e data/custody-0dte-v5
 mkdir -p data
-gh release download custody-train-0dte --repo QSothoth/opend-us-options --pattern custody-train-0dte.zip --dir data
-echo "65398673c6617ef0a013c1795936016404babe4a1d4fc1777e16502c2621c7d3  data/custody-train-0dte.zip" | sha256sum -c
-unzip -q data/custody-train-0dte.zip -d data      # -> data/custody-train-0dte/
+gh release download custody-0dte-v5 --repo QSothoth/opend-us-options --pattern custody-0dte-v5.zip --dir data
+echo "5676241cb2498f711977e7c207572ca66f316a0b76bac68b416b2a2f439ad73c  data/custody-0dte-v5.zip" | sha256sum -c
+python3 -m zipfile -e data/custody-0dte-v5.zip data      # -> data/custody-0dte-v5/
 ```
 
 验证集：
 
 ```bash
 set -euo pipefail
-test ! -e data/custody-eval-2026-09-16
+test ! -e data/custody-eval-2026-09-16-v2
 mkdir -p data
-gh release download custody-eval-2026-09-16 --repo QSothoth/opend-us-options --pattern custody-eval-2026-09-16.zip --dir data
-echo "58f0af996a33f042fd81751f3b68408266bd224be2530df10f44230e67165a31  data/custody-eval-2026-09-16.zip" | sha256sum -c
-unzip -q data/custody-eval-2026-09-16.zip -d data
+gh release download custody-eval-2026-09-16-v2 --repo QSothoth/opend-us-options --pattern custody-eval-2026-09-16-v2.zip --dir data
+echo "5758f49dd9c16fcfea85c9cc41160f01e71f7a341dd6a44214c738a41654dfd7  data/custody-eval-2026-09-16-v2.zip" | sha256sum -c
+python3 -m zipfile -e data/custody-eval-2026-09-16-v2.zip data
 ```
-
-下载的 Release 可能与上面的本地 canonical 双边切片不同；以 `custody check` 输出和各数据集 manifest 的 `role` 为准。
 
 ## 4. 每日冻结（V5 起的数据来源）
 
@@ -162,25 +166,25 @@ OpenD 保留过期周权的时间很短，最好当天收盘 20 分钟后就冻�
 
 攒够一批交易日（建议至少 20 个新交易日，才够做样本外判定），并且 `custody check` 通过后：
 
-先停止向工作目录追加数据，选择未使用的新 tag。以下以 V5 为例，目录或附件已存在就停止，避免复制嵌套或更新旧 zip：
+先停止向工作目录追加数据，选择未使用的新 tag。以下以 V6 为例，目录或附件已存在就停止，避免复制嵌套或更新旧 zip：
 
 ```bash
 set -euo pipefail
-test ! -e data/custody-0dte-v5
-test ! -e data/custody-0dte-v5.zip
-test ! -e data/custody-0dte-v5.zip.sha256
-cp -r data/custody-0dte-work data/custody-0dte-v5
-python3 -m custody check --dataset data/custody-0dte-v5      # 必须 "ok": true（含 CALL/PUT 两边齐全）
-sha256sum data/custody-0dte-v5/CHECKSUMS.sha256
-(cd data && zip -qr custody-0dte-v5.zip custody-0dte-v5 && sha256sum custody-0dte-v5.zip > custody-0dte-v5.zip.sha256)
-cat data/custody-0dte-v5.zip.sha256
+test ! -e data/custody-0dte-v6
+test ! -e data/custody-0dte-v6.zip
+test ! -e data/custody-0dte-v6.zip.sha256
+cp -r data/custody-0dte-work data/custody-0dte-v6
+python3 -m custody check --dataset data/custody-0dte-v6      # 必须 "ok": true（含 CALL/PUT 两边齐全）
+sha256sum data/custody-0dte-v6/CHECKSUMS.sha256
+(cd data && python3 -m zipfile -c custody-0dte-v6.zip custody-0dte-v6 && sha256sum custody-0dte-v6.zip > custody-0dte-v6.zip.sha256)
+cat data/custody-0dte-v6.zip.sha256
 ```
 
 核对检查结果、窗口、标的、case 数和上面两个 SHA256，将它们填写到发布说明后再执行发布：
 
 ```bash
-gh release create custody-0dte-v5 data/custody-0dte-v5.zip data/custody-0dte-v5.zip.sha256 \
-  --repo QSothoth/opend-us-options --title "Custody 0DTE dataset V5 (both sides)" --notes "<窗口、标的、case 数、两个 SHA256>"
+gh release create custody-0dte-v6 data/custody-0dte-v6.zip data/custody-0dte-v6.zip.sha256 \
+  --repo QSothoth/opend-us-options --title "Custody 0DTE dataset V6 (both sides)" --notes "<窗口、标的、case 数、两个 SHA256>"
 ```
 
 发布后只在本文件登记 tag、角色、窗口和两个 SHA256（zip 与 `CHECKSUMS.sha256`）。若正式替换当前训练集，再更新 `AGENTS.md` 的可用数据约束；发布验证集不会自动使它成为训练集。
