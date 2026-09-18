@@ -213,7 +213,7 @@ class DeterminismTests(unittest.TestCase):
             doc = json.loads((registry.root / (item['strategy_id'] + '.json')).read_text(encoding='utf-8'))
             self.assertEqual(set(doc), {'schema_version', 'strategy_id', 'engine', 'description', 'developed_on', 'params'})
             self.assertEqual(doc['developed_on']['release'], 'custody-0dte-v5')
-        self.assertEqual([i['strategy_id'] for i in registry.list() if i['status'] != 'retired'], [registry.default_id])
+        self.assertIn(registry.default_id, [i['strategy_id'] for i in registry.list() if i['status'] != 'retired'])
 
 
 class OptionalRuleTests(unittest.TestCase):
@@ -276,6 +276,18 @@ class OptionalRuleTests(unittest.TestCase):
         for bad in (0.0, True):
             with self.assertRaises(ValueError, msg=str(bad)):
                 validate_params({**PARAMS, 'min_premium_atr': bad})
+
+    def test_no_entry_while_the_close_has_run_away_from_vwap(self):
+        burst = piecewise([(1, 100.0), (15, 100.0), (30, 103.0), (60, 102.0), (390, 108.0)])
+        steady = piecewise([(1, 100.0), (15, 100.0), (390, 110.0)])
+        capped = {**PARAMS, 'max_vwap_atr': 2.0}
+        self.assertEqual(first(run(burst), 'ENTER'), (16, 'trend_breakout'))
+        self.assertEqual(first(run(burst, params=capped), 'ENTER'), (None, None))
+        self.assertEqual(first(run([200 - c for c in burst], 'SHORT', params=capped), 'ENTER'), (None, None))
+        self.assertEqual(first(run(steady, params=capped), 'ENTER'), first(run(steady), 'ENTER'))
+        for bad in (0.25, 0.0, True):   # must exceed vwap_buffer_atr (0.25)
+            with self.assertRaises(ValueError, msg=str(bad)):
+                validate_params({**PARAMS, 'max_vwap_atr': bad})
 
 
 

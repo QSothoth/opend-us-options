@@ -22,6 +22,11 @@ clock (AGENTS.md: no fixed-time entry logic). With ``charm_exit_before_close_min
 there is no entry that the charm exit would sell on the next bar (out of the money
 inside the charm window).
 
+Optional entry filter (off by default): ``max_vwap_atr`` - no entry while the close is
+more than this many ATR beyond VWAP. A buyer should not chase a move that has already
+run away from VWAP: a stop of at most ``stop_max_atr`` ATR would then sit above VWAP,
+inside an ordinary pullback, and the premium already pays for the finished move.
+
 Optional exit rules (they need the contract strike)
 ---------------------------------------------------
 * ``charm_exit_before_close_minutes``: that close to the close, an out-of-the-money
@@ -86,6 +91,7 @@ OPTIONAL = {
     'otm_stop_shrink': ((float, 0.05, 0.9), None),   # stop distance x max(0.5, 1 - shrink * OTM z at entry)
     'take_profit_premium': ((float, 0.05, 20.0), None),     # sell once the estimated premium return reaches this
     'min_premium_atr': ((float, 0.1, 100.0), None),  # no entry while the estimated premium is below N x 1m ATR
+    'max_vwap_atr': ((float, 0.1, 20.0), None),      # no entry while the close is more than N ATR beyond VWAP
 }
 OTM_STOP_FLOOR = 0.5
 
@@ -117,6 +123,8 @@ def validate_params(params):
         out[name] = value
     if out['ema_fast'] >= out['ema_slow'] or out['stop_min_atr'] > out['stop_max_atr']:
         raise ValueError('inconsistent EMA or stop parameters')
+    if out['max_vwap_atr'] is not None and out['max_vwap_atr'] <= out['vwap_buffer_atr']:
+        raise ValueError('max_vwap_atr must exceed vwap_buffer_atr')
     return out
 
 
@@ -231,6 +239,8 @@ class ZeroDteTiming:
         trend = (s * (ind.ema_fast - ind.ema_slow) >= p['trend_buffer_atr'] * atr
                  and s * (ind.ema_fast - ind.prev_ema_fast) > 0)
         if not (vwap_side and trend):
+            return None
+        if p['max_vwap_atr'] is not None and close > s * ind.vwap + p['max_vwap_atr'] * atr:
             return None
         if self._in_charm_window(minute):
             return None

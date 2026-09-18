@@ -1,0 +1,1901 @@
+{
+  "standard": "docs/STANDARD.md",
+  "strategy": {
+    "strategy_id": "zero_dte_timing_v6.2",
+    "sha256": "c35072f93626067f7fa2d1f922a4fa42cce992591e54c9dc5b5623a07b0abcc2",
+    "engine": "zero_dte_timing",
+    "status": "candidate"
+  },
+  "strategy_params": {
+    "ema_fast": 9,
+    "ema_slow": 21,
+    "atr_period": 14,
+    "opening_minutes": 15,
+    "momentum_lookback": 5,
+    "vwap_buffer_atr": 0.25,
+    "trend_buffer_atr": 0.0,
+    "relax_after_minutes": 0,
+    "stop_lookback": 10,
+    "stop_min_atr": 1.0,
+    "stop_max_atr": 2.0,
+    "fail_minutes": 390,
+    "fail_progress_atr": 1.0,
+    "breakeven_at_atr": 2.0,
+    "trail_activate_atr": 5.0,
+    "trail_atr": 5.0,
+    "flatten_before_close_minutes": 15,
+    "persist_minutes": 5,
+    "charm_exit_before_close_minutes": 90,
+    "protection_needs_moneyness": 1,
+    "otm_stop_shrink": 0.25,
+    "take_profit_premium": 1.0,
+    "min_premium_atr": 5.0,
+    "max_vwap_atr": 2.0
+  },
+  "developed_on": {
+    "release": "custody-0dte-v5",
+    "generation": "V5",
+    "sessions_through": "2026-09-16"
+  },
+  "dataset": {
+    "name": "custody-eval-2026-09-16-v2",
+    "checksums_sha256": "5aea2102243daca34e94e9239b5c0bb9abb6158edafad1b76f9f7251667bf2b8",
+    "checksums_verified": 60,
+    "cases": 20,
+    "sessions": 1,
+    "window": [
+      "2026-09-16",
+      "2026-09-16"
+    ],
+    "selections": {
+      "unspecified": 20
+    },
+    "sides": {
+      "symbol_sessions": 10,
+      "both_sides": 10,
+      "ok": true,
+      "missing": []
+    }
+  },
+  "fill_model": {
+    "delay_minutes": 1,
+    "slippage_fraction": 0.25,
+    "fee_per_contract": 0.65,
+    "multiplier": 100
+  },
+  "summary": {
+    "cases": 20,
+    "completed": 10,
+    "completion_rate": 0.5,
+    "completion_score": 50.0,
+    "outcomes": {
+      "NO_ENTRY_SIGNAL": 10,
+      "COMPLETED": 10
+    },
+    "traded": {
+      "n": 10,
+      "expectancy": -0.253007,
+      "win_rate": 0.1,
+      "average_win": 0.036667,
+      "average_loss": 0.285193,
+      "payoff_ratio": 0.128568,
+      "profit_factor": 0.014285
+    },
+    "traded_raw": {
+      "n": 10,
+      "expectancy": -0.253007,
+      "win_rate": 0.1,
+      "average_win": 0.036667,
+      "average_loss": 0.285193,
+      "payoff_ratio": 0.128568,
+      "profit_factor": 0.014285
+    },
+    "failures": {
+      "NO_ENTRY_SIGNAL": 10
+    },
+    "balanced": {
+      "n": 20,
+      "expectancy": -0.126503,
+      "win_rate": 0.05,
+      "average_win": 0.036667,
+      "average_loss": 0.285193,
+      "payoff_ratio": 0.128568,
+      "profit_factor": 0.014285
+    },
+    "balanced_dollars": {
+      "n": 20,
+      "expectancy": -29.1125,
+      "win_rate": 0.05,
+      "average_win": 7.7,
+      "average_loss": 65.55,
+      "payoff_ratio": 0.117468,
+      "profit_factor": 0.013052
+    },
+    "raw": {
+      "n": 20,
+      "expectancy": -0.126503,
+      "win_rate": 0.05,
+      "average_win": 0.036667,
+      "average_loss": 0.285193,
+      "payoff_ratio": 0.128568,
+      "profit_factor": 0.014285
+    },
+    "dollars_total": -582.25,
+    "coverage_gaps": [],
+    "by_scenario": {
+      "trend_with": {
+        "n": 8,
+        "expectancy": -0.089168,
+        "win_rate": 0.125,
+        "average_win": 0.036667,
+        "average_loss": 0.150002,
+        "payoff_ratio": 0.244441,
+        "profit_factor": 0.048888,
+        "label_zh": "顺势单边",
+        "traded": 6,
+        "median": -0.075488,
+        "upside_capture": 0.009782
+      },
+      "reversal_with": {
+        "n": 2,
+        "expectancy": -0.011964,
+        "win_rate": 0.0,
+        "average_win": null,
+        "average_loss": 0.023929,
+        "payoff_ratio": null,
+        "profit_factor": 0.0,
+        "label_zh": "先逆后顺",
+        "traded": 1,
+        "median": -0.011964,
+        "upside_capture": 0.0
+      },
+      "chop": {
+        "n": 0,
+        "expectancy": null,
+        "win_rate": null,
+        "average_win": null,
+        "average_loss": null,
+        "payoff_ratio": null,
+        "profit_factor": null,
+        "label_zh": "震荡",
+        "traded": 0,
+        "median": null,
+        "upside_capture": null
+      },
+      "reversal_against": {
+        "n": 2,
+        "expectancy": -0.163553,
+        "win_rate": 0.0,
+        "average_win": null,
+        "average_loss": 0.327105,
+        "payoff_ratio": null,
+        "profit_factor": 0.0,
+        "label_zh": "先顺后逆",
+        "traded": 1,
+        "median": -0.163553,
+        "upside_capture": 0.0
+      },
+      "trend_against": {
+        "n": 8,
+        "expectancy": -0.183211,
+        "win_rate": 0.0,
+        "average_win": null,
+        "average_loss": 0.732845,
+        "payoff_ratio": null,
+        "profit_factor": 0.0,
+        "label_zh": "逆势单边",
+        "traded": 2,
+        "median": 0.0,
+        "upside_capture": null
+      }
+    },
+    "with_direction": {
+      "n": 10,
+      "expectancy": -0.073727,
+      "win_rate": 0.1,
+      "average_win": 0.036667,
+      "average_loss": 0.12899,
+      "payoff_ratio": 0.28426,
+      "profit_factor": 0.047377
+    },
+    "not_with_direction": {
+      "n": 10,
+      "expectancy": -0.17928,
+      "win_rate": 0.0,
+      "average_win": null,
+      "average_loss": 0.597599,
+      "payoff_ratio": null,
+      "profit_factor": 0.0
+    },
+    "hold_minutes_median": 41.0,
+    "entry_reasons": {
+      "trend_breakout": 9,
+      "reversal_reclaim": 1
+    },
+    "exit_reasons": {
+      "scheduled_flatten": 1,
+      "breakeven_stop": 4,
+      "invalidation_stop": 4,
+      "trailing_stop": 1
+    }
+  },
+  "benchmark_open_hold": {
+    "cases": 20,
+    "completed": 20,
+    "completion_rate": 1.0,
+    "completion_score": 100.0,
+    "outcomes": {
+      "COMPLETED": 20
+    },
+    "traded": {
+      "n": 20,
+      "expectancy": -0.407509,
+      "win_rate": 0.3,
+      "average_win": 0.502199,
+      "average_loss": 0.797383,
+      "payoff_ratio": 0.629809,
+      "profit_factor": 0.269918
+    },
+    "traded_raw": {
+      "n": 20,
+      "expectancy": -0.407509,
+      "win_rate": 0.3,
+      "average_win": 0.502199,
+      "average_loss": 0.797383,
+      "payoff_ratio": 0.629809,
+      "profit_factor": 0.269918
+    },
+    "failures": {},
+    "balanced": {
+      "n": 20,
+      "expectancy": -0.407509,
+      "win_rate": 0.3,
+      "average_win": 0.502199,
+      "average_loss": 0.797383,
+      "payoff_ratio": 0.629809,
+      "profit_factor": 0.269918
+    },
+    "balanced_dollars": {
+      "n": 20,
+      "expectancy": -106.625,
+      "win_rate": 0.3,
+      "average_win": 155.2,
+      "average_loss": 218.835714,
+      "payoff_ratio": 0.709208,
+      "profit_factor": 0.303946
+    },
+    "raw": {
+      "n": 20,
+      "expectancy": -0.407509,
+      "win_rate": 0.3,
+      "average_win": 0.502199,
+      "average_loss": 0.797383,
+      "payoff_ratio": 0.629809,
+      "profit_factor": 0.269918
+    },
+    "dollars_total": -2132.5,
+    "coverage_gaps": [],
+    "by_scenario": {
+      "trend_with": {
+        "n": 8,
+        "expectancy": 0.241532,
+        "win_rate": 0.625,
+        "average_win": 0.584444,
+        "average_loss": 0.329988,
+        "payoff_ratio": 1.771104,
+        "profit_factor": 2.95184,
+        "label_zh": "顺势单边",
+        "traded": 8,
+        "median": 0.282305,
+        "upside_capture": 0.504281
+      },
+      "reversal_with": {
+        "n": 2,
+        "expectancy": -0.076249,
+        "win_rate": 0.5,
+        "average_win": 0.090974,
+        "average_loss": 0.243473,
+        "payoff_ratio": 0.373653,
+        "profit_factor": 0.373653,
+        "label_zh": "先逆后顺",
+        "traded": 2,
+        "median": -0.076249,
+        "upside_capture": 0.09925
+      },
+      "chop": {
+        "n": 0,
+        "expectancy": null,
+        "win_rate": null,
+        "average_win": null,
+        "average_loss": null,
+        "payoff_ratio": null,
+        "profit_factor": null,
+        "label_zh": "震荡",
+        "traded": 0,
+        "median": null,
+        "upside_capture": null
+      },
+      "reversal_against": {
+        "n": 2,
+        "expectancy": -1.002108,
+        "win_rate": 0.0,
+        "average_win": null,
+        "average_loss": 1.002108,
+        "payoff_ratio": null,
+        "profit_factor": 0.0,
+        "label_zh": "先顺后逆",
+        "traded": 2,
+        "median": -1.002108,
+        "upside_capture": 0.0
+      },
+      "trend_against": {
+        "n": 8,
+        "expectancy": -0.990714,
+        "win_rate": 0.0,
+        "average_win": null,
+        "average_loss": 0.990714,
+        "payoff_ratio": null,
+        "profit_factor": 0.0,
+        "label_zh": "逆势单边",
+        "traded": 8,
+        "median": -1.001818,
+        "upside_capture": 0.0
+      }
+    },
+    "with_direction": {
+      "n": 10,
+      "expectancy": 0.177976,
+      "win_rate": 0.6,
+      "average_win": 0.502199,
+      "average_loss": 0.30836,
+      "payoff_ratio": 1.628615,
+      "profit_factor": 2.442922
+    },
+    "not_with_direction": {
+      "n": 10,
+      "expectancy": -0.992993,
+      "win_rate": 0.0,
+      "average_win": null,
+      "average_loss": 0.992993,
+      "payoff_ratio": null,
+      "profit_factor": 0.0
+    },
+    "hold_minutes_median": 370.0,
+    "entry_reasons": {
+      "benchmark_open": 20
+    },
+    "exit_reasons": {
+      "scheduled_flatten": 20
+    }
+  },
+  "direction_skill_0.6": {
+    "strategy": {
+      "n": 20,
+      "expectancy": -0.115948,
+      "win_rate": 0.06,
+      "average_win": 0.036667,
+      "average_loss": 0.246142,
+      "payoff_ratio": 0.148965,
+      "profit_factor": 0.018621
+    },
+    "benchmark": {
+      "n": 20,
+      "expectancy": -0.290412,
+      "win_rate": 0.36,
+      "average_win": 0.502199,
+      "average_loss": 0.736255,
+      "payoff_ratio": 0.682099,
+      "profit_factor": 0.383681
+    }
+  },
+  "stress": {
+    "slippage_0": {
+      "fill_model": {
+        "delay_minutes": 1,
+        "slippage_fraction": 0.0,
+        "fee_per_contract": 0.65,
+        "multiplier": 100
+      },
+      "strategy": {
+        "n": 20,
+        "expectancy": -0.118586,
+        "win_rate": 0.05,
+        "average_win": 0.036667,
+        "average_loss": 0.267599,
+        "payoff_ratio": 0.137021,
+        "profit_factor": 0.015225
+      },
+      "benchmark": {
+        "n": 20,
+        "expectancy": -0.392268,
+        "win_rate": 0.3,
+        "average_win": 0.530864,
+        "average_loss": 0.787896,
+        "payoff_ratio": 0.673774,
+        "profit_factor": 0.28876
+      }
+    },
+    "slippage_0.5": {
+      "fill_model": {
+        "delay_minutes": 1,
+        "slippage_fraction": 0.5,
+        "fee_per_contract": 0.65,
+        "multiplier": 100
+      },
+      "strategy": {
+        "n": 20,
+        "expectancy": -0.132751,
+        "win_rate": 0.05,
+        "average_win": 0.036667,
+        "average_loss": 0.299077,
+        "payoff_ratio": 0.122599,
+        "profit_factor": 0.013622
+      },
+      "benchmark": {
+        "n": 20,
+        "expectancy": -0.417232,
+        "win_rate": 0.3,
+        "average_win": 0.47605,
+        "average_loss": 0.800067,
+        "payoff_ratio": 0.595013,
+        "profit_factor": 0.255006
+      }
+    },
+    "delay_2m": {
+      "fill_model": {
+        "delay_minutes": 2,
+        "slippage_fraction": 0.25,
+        "fee_per_contract": 0.65,
+        "multiplier": 100
+      },
+      "strategy": {
+        "n": 20,
+        "expectancy": -0.129621,
+        "win_rate": 0.1,
+        "average_win": 0.233886,
+        "average_loss": 0.382525,
+        "payoff_ratio": 0.611428,
+        "profit_factor": 0.152857
+      },
+      "benchmark": {
+        "n": 20,
+        "expectancy": -0.424226,
+        "win_rate": 0.3,
+        "average_win": 0.494717,
+        "average_loss": 0.818059,
+        "payoff_ratio": 0.604744,
+        "profit_factor": 0.259176
+      }
+    }
+  },
+  "shuffle_null": {
+    "draws": 1000,
+    "p_expectancy": 0.859141,
+    "p_payoff_ratio": 0.962283
+  },
+  "prefix_consistency": {
+    "passed": true,
+    "mismatches": []
+  },
+  "bootstrap_by_day": {
+    "draws": 1000,
+    "strategy_expectancy": [
+      -0.126503,
+      -0.126503
+    ],
+    "strategy_payoff_ratio": [
+      0.128568,
+      0.128568
+    ],
+    "benchmark_expectancy": [
+      -0.407509,
+      -0.407509
+    ],
+    "expectancy_minus_benchmark": [
+      0.281005,
+      0.281005
+    ],
+    "strategy_score": [
+      16.414409,
+      16.414409
+    ],
+    "score_minus_benchmark": [
+      12.714757,
+      12.714757
+    ]
+  },
+  "market_shapes": {
+    "unknown_prev_close|LONG": {
+      "n": 10,
+      "strategy_mean": -0.17928,
+      "benchmark_mean": -0.992993
+    },
+    "unknown_prev_close|SHORT": {
+      "n": 10,
+      "strategy_mean": -0.073727,
+      "benchmark_mean": 0.177976
+    }
+  },
+  "cases": [
+    {
+      "symbol": "US.INTC",
+      "contract": "US.INTC260916C103000",
+      "trade_date": "2026-09-16",
+      "direction": "LONG",
+      "entry": null,
+      "exit": null,
+      "decisions": null,
+      "entry_signal": null,
+      "outcome": "NO_ENTRY_SIGNAL",
+      "failure": "NO_ENTRY_SIGNAL",
+      "net_return": null,
+      "net_pnl": null,
+      "hold_minutes": null,
+      "best_net_return": null,
+      "benchmark_net_return": -1.002277,
+      "scenario": "trend_against",
+      "first_hour_move": 0.073,
+      "rest_move": -0.279,
+      "day_range_pct": 5.061,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.INTC",
+      "contract": "US.INTC260916P103000",
+      "trade_date": "2026-09-16",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 19,
+        "reason": "trend_breakout",
+        "fill_minute": 20,
+        "price": 2.1,
+        "bar_close": 2.1
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 381,
+        "price": 2.19,
+        "bar_close": 2.19
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 19,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": 0.036667,
+      "net_pnl": 7.7,
+      "hold_minutes": 361,
+      "best_net_return": 0.624762,
+      "benchmark_net_return": 0.309474,
+      "scenario": "trend_with",
+      "first_hour_move": -0.073,
+      "rest_move": 0.279,
+      "day_range_pct": 5.061,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.AMD",
+      "contract": "US.AMD260916C525000",
+      "trade_date": "2026-09-16",
+      "direction": "LONG",
+      "entry": {
+        "minute": 27,
+        "reason": "trend_breakout",
+        "fill_minute": 28,
+        "price": 3.8,
+        "bar_close": 3.79
+      },
+      "exit": {
+        "minute": 66,
+        "reason": "breakeven_stop",
+        "fill_minute": 67,
+        "price": 2.57,
+        "bar_close": 2.59
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 27,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.327105,
+      "net_pnl": -124.3,
+      "hold_minutes": 39,
+      "best_net_return": 0.276184,
+      "benchmark_net_return": -1.001155,
+      "scenario": "reversal_against",
+      "first_hour_move": 0.394,
+      "rest_move": -0.659,
+      "day_range_pct": 4.097,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.AMD",
+      "contract": "US.AMD260916P525000",
+      "trade_date": "2026-09-16",
+      "direction": "SHORT",
+      "entry": null,
+      "exit": null,
+      "decisions": null,
+      "entry_signal": null,
+      "outcome": "NO_ENTRY_SIGNAL",
+      "failure": "NO_ENTRY_SIGNAL",
+      "net_return": null,
+      "net_pnl": null,
+      "hold_minutes": null,
+      "best_net_return": null,
+      "benchmark_net_return": 0.090974,
+      "scenario": "reversal_with",
+      "first_hour_move": -0.394,
+      "rest_move": 0.659,
+      "day_range_pct": 4.097,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.TSLA",
+      "contract": "US.TSLA260916C365000",
+      "trade_date": "2026-09-16",
+      "direction": "LONG",
+      "entry": null,
+      "exit": null,
+      "decisions": null,
+      "entry_signal": null,
+      "outcome": "NO_ENTRY_SIGNAL",
+      "failure": "NO_ENTRY_SIGNAL",
+      "net_return": null,
+      "net_pnl": null,
+      "hold_minutes": null,
+      "best_net_return": null,
+      "benchmark_net_return": -1.003061,
+      "scenario": "reversal_against",
+      "first_hour_move": 0.547,
+      "rest_move": -0.562,
+      "day_range_pct": 2.852,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.TSLA",
+      "contract": "US.TSLA260916P365000",
+      "trade_date": "2026-09-16",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 167,
+        "reason": "reversal_reclaim",
+        "fill_minute": 168,
+        "price": 4.2,
+        "bar_close": 4.15
+      },
+      "exit": {
+        "minute": 191,
+        "reason": "breakeven_stop",
+        "fill_minute": 192,
+        "price": 4.1125,
+        "bar_close": 4.15
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 167,
+        "reason": "reversal_reclaim"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.023929,
+      "net_pnl": -10.05,
+      "hold_minutes": 24,
+      "best_net_return": 1.330238,
+      "benchmark_net_return": -0.243473,
+      "scenario": "reversal_with",
+      "first_hour_move": -0.547,
+      "rest_move": 0.562,
+      "day_range_pct": 2.852,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.NVDA",
+      "contract": "US.NVDA260916C215000",
+      "trade_date": "2026-09-16",
+      "direction": "LONG",
+      "entry": null,
+      "exit": null,
+      "decisions": null,
+      "entry_signal": null,
+      "outcome": "NO_ENTRY_SIGNAL",
+      "failure": "NO_ENTRY_SIGNAL",
+      "net_return": null,
+      "net_pnl": null,
+      "hold_minutes": null,
+      "best_net_return": null,
+      "benchmark_net_return": -0.976408,
+      "scenario": "trend_against",
+      "first_hour_move": 0.207,
+      "rest_move": -0.324,
+      "day_range_pct": 1.989,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.NVDA",
+      "contract": "US.NVDA260916P215000",
+      "trade_date": "2026-09-16",
+      "direction": "SHORT",
+      "entry": null,
+      "exit": null,
+      "decisions": null,
+      "entry_signal": null,
+      "outcome": "NO_ENTRY_SIGNAL",
+      "failure": "NO_ENTRY_SIGNAL",
+      "net_return": null,
+      "net_pnl": null,
+      "hold_minutes": null,
+      "best_net_return": null,
+      "benchmark_net_return": -0.529146,
+      "scenario": "trend_with",
+      "first_hour_move": -0.207,
+      "rest_move": 0.324,
+      "day_range_pct": 1.989,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.MU",
+      "contract": "US.MU260916C930000",
+      "trade_date": "2026-09-16",
+      "direction": "LONG",
+      "entry": null,
+      "exit": null,
+      "decisions": null,
+      "entry_signal": null,
+      "outcome": "NO_ENTRY_SIGNAL",
+      "failure": "NO_ENTRY_SIGNAL",
+      "net_return": null,
+      "net_pnl": null,
+      "hold_minutes": null,
+      "best_net_return": null,
+      "benchmark_net_return": -0.938205,
+      "scenario": "trend_against",
+      "first_hour_move": -0.06,
+      "rest_move": -0.438,
+      "day_range_pct": 2.522,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.MU",
+      "contract": "US.MU260916P930000",
+      "trade_date": "2026-09-16",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 128,
+        "reason": "trend_breakout",
+        "fill_minute": 129,
+        "price": 5.955,
+        "bar_close": 5.9
+      },
+      "exit": {
+        "minute": 171,
+        "reason": "breakeven_stop",
+        "fill_minute": 172,
+        "price": 5.46,
+        "bar_close": 5.58
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 128,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.085306,
+      "net_pnl": -50.8,
+      "hold_minutes": 43,
+      "best_net_return": 1.01293,
+      "benchmark_net_return": -0.3636,
+      "scenario": "trend_with",
+      "first_hour_move": 0.06,
+      "rest_move": 0.438,
+      "day_range_pct": 2.522,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.AVGO",
+      "contract": "US.AVGO260916C345000",
+      "trade_date": "2026-09-16",
+      "direction": "LONG",
+      "entry": {
+        "minute": 22,
+        "reason": "trend_breakout",
+        "fill_minute": 23,
+        "price": 1.09,
+        "bar_close": 1.08
+      },
+      "exit": {
+        "minute": 188,
+        "reason": "invalidation_stop",
+        "fill_minute": 189,
+        "price": 0.2375,
+        "bar_close": 0.24
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 22,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.794037,
+      "net_pnl": -86.55,
+      "hold_minutes": 166,
+      "best_net_return": 0.061468,
+      "benchmark_net_return": -1.003822,
+      "scenario": "trend_against",
+      "first_hour_move": -0.022,
+      "rest_move": -0.425,
+      "day_range_pct": 2.435,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.AVGO",
+      "contract": "US.AVGO260916P345000",
+      "trade_date": "2026-09-16",
+      "direction": "SHORT",
+      "entry": null,
+      "exit": null,
+      "decisions": null,
+      "entry_signal": null,
+      "outcome": "NO_ENTRY_SIGNAL",
+      "failure": "NO_ENTRY_SIGNAL",
+      "net_return": null,
+      "net_pnl": null,
+      "hold_minutes": null,
+      "best_net_return": null,
+      "benchmark_net_return": 0.255136,
+      "scenario": "trend_with",
+      "first_hour_move": 0.022,
+      "rest_move": 0.425,
+      "day_range_pct": 2.435,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.AMZN",
+      "contract": "US.AMZN260916C250000",
+      "trade_date": "2026-09-16",
+      "direction": "LONG",
+      "entry": null,
+      "exit": null,
+      "decisions": null,
+      "entry_signal": null,
+      "outcome": "NO_ENTRY_SIGNAL",
+      "failure": "NO_ENTRY_SIGNAL",
+      "net_return": null,
+      "net_pnl": null,
+      "hold_minutes": null,
+      "best_net_return": null,
+      "benchmark_net_return": -1.00625,
+      "scenario": "trend_against",
+      "first_hour_move": -0.171,
+      "rest_move": -0.396,
+      "day_range_pct": 1.999,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.AMZN",
+      "contract": "US.AMZN260916P250000",
+      "trade_date": "2026-09-16",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 221,
+        "reason": "trend_breakout",
+        "fill_minute": 223,
+        "price": 2.6725,
+        "bar_close": 2.66
+      },
+      "exit": {
+        "minute": 235,
+        "reason": "invalidation_stop",
+        "fill_minute": 237,
+        "price": 2.51,
+        "bar_close": 2.51
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 221,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.065669,
+      "net_pnl": -17.55,
+      "hold_minutes": 14,
+      "best_net_return": 1.053134,
+      "benchmark_net_return": 0.418983,
+      "scenario": "trend_with",
+      "first_hour_move": 0.171,
+      "rest_move": 0.396,
+      "day_range_pct": 1.999,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.GOOGL",
+      "contract": "US.GOOGL260916C347500",
+      "trade_date": "2026-09-16",
+      "direction": "LONG",
+      "entry": {
+        "minute": 22,
+        "reason": "trend_breakout",
+        "fill_minute": 23,
+        "price": 1.27,
+        "bar_close": 1.2
+      },
+      "exit": {
+        "minute": 42,
+        "reason": "invalidation_stop",
+        "fill_minute": 43,
+        "price": 0.43,
+        "bar_close": 0.43
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 22,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.671654,
+      "net_pnl": -85.3,
+      "hold_minutes": 20,
+      "best_net_return": 0.005512,
+      "benchmark_net_return": -1.002679,
+      "scenario": "trend_against",
+      "first_hour_move": -0.264,
+      "rest_move": -0.309,
+      "day_range_pct": 2.236,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.GOOGL",
+      "contract": "US.GOOGL260916P347500",
+      "trade_date": "2026-09-16",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 302,
+        "reason": "trend_breakout",
+        "fill_minute": 303,
+        "price": 2.95,
+        "bar_close": 2.95
+      },
+      "exit": {
+        "minute": 311,
+        "reason": "breakeven_stop",
+        "fill_minute": 312,
+        "price": 2.65,
+        "bar_close": 2.65
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 302,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.106102,
+      "net_pnl": -31.3,
+      "hold_minutes": 9,
+      "best_net_return": 1.148136,
+      "benchmark_net_return": 0.679381,
+      "scenario": "trend_with",
+      "first_hour_move": 0.264,
+      "rest_move": 0.309,
+      "day_range_pct": 2.236,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.META",
+      "contract": "US.META260916C680000",
+      "trade_date": "2026-09-16",
+      "direction": "LONG",
+      "entry": null,
+      "exit": null,
+      "decisions": null,
+      "entry_signal": null,
+      "outcome": "NO_ENTRY_SIGNAL",
+      "failure": "NO_ENTRY_SIGNAL",
+      "net_return": null,
+      "net_pnl": null,
+      "hold_minutes": null,
+      "best_net_return": null,
+      "benchmark_net_return": -0.994714,
+      "scenario": "trend_against",
+      "first_hour_move": -0.006,
+      "rest_move": -0.509,
+      "day_range_pct": 1.97,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.META",
+      "contract": "US.META260916P680000",
+      "trade_date": "2026-09-16",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 88,
+        "reason": "trend_breakout",
+        "fill_minute": 89,
+        "price": 4.155,
+        "bar_close": 4.04
+      },
+      "exit": {
+        "minute": 139,
+        "reason": "trailing_stop",
+        "fill_minute": 140,
+        "price": 3.775,
+        "bar_close": 3.85
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 88,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.094585,
+      "net_pnl": -39.3,
+      "hold_minutes": 51,
+      "best_net_return": 0.916245,
+      "benchmark_net_return": -0.097219,
+      "scenario": "trend_with",
+      "first_hour_move": 0.006,
+      "rest_move": 0.509,
+      "day_range_pct": 1.97,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.MSFT",
+      "contract": "US.MSFT260916C495000",
+      "trade_date": "2026-09-16",
+      "direction": "LONG",
+      "entry": null,
+      "exit": null,
+      "decisions": null,
+      "entry_signal": null,
+      "outcome": "NO_ENTRY_SIGNAL",
+      "failure": "NO_ENTRY_SIGNAL",
+      "net_return": null,
+      "net_pnl": null,
+      "hold_minutes": null,
+      "best_net_return": null,
+      "benchmark_net_return": -1.001359,
+      "scenario": "trend_against",
+      "first_hour_move": -0.053,
+      "rest_move": -0.414,
+      "day_range_pct": 1.773,
+      "market_shape": "unknown_prev_close"
+    },
+    {
+      "symbol": "US.MSFT",
+      "contract": "US.MSFT260916P495000",
+      "trade_date": "2026-09-16",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 43,
+        "reason": "trend_breakout",
+        "fill_minute": 44,
+        "price": 3.635,
+        "bar_close": 3.56
+      },
+      "exit": {
+        "minute": 97,
+        "reason": "invalidation_stop",
+        "fill_minute": 98,
+        "price": 2.2,
+        "bar_close": 2.26
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 43,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.398349,
+      "net_pnl": -144.8,
+      "hold_minutes": 54,
+      "best_net_return": 1.007428,
+      "benchmark_net_return": 1.259245,
+      "scenario": "trend_with",
+      "first_hour_move": 0.053,
+      "rest_move": 0.414,
+      "day_range_pct": 1.773,
+      "market_shape": "unknown_prev_close"
+    }
+  ],
+  "robustness": {
+    "halves": {
+      "first_half": {
+        "days": null,
+        "cases": 0,
+        "strategy_mean": null,
+        "benchmark_mean": null
+      },
+      "second_half": {
+        "days": [
+          "2026-09-16",
+          "2026-09-16"
+        ],
+        "cases": 20,
+        "strategy_mean": -0.126503,
+        "benchmark_mean": -0.407509
+      },
+      "passed": null
+    },
+    "leave_one_day_out": {
+      "passed": null,
+      "failed_days": [],
+      "runs": [
+        {
+          "dropped": "2026-09-16",
+          "passed": null,
+          "strategy_expectancy": null,
+          "strategy_payoff_ratio": null,
+          "benchmark_expectancy": null,
+          "benchmark_payoff_ratio": null
+        }
+      ]
+    },
+    "neighbors": {
+      "passed": false,
+      "count": 41,
+      "failed": [
+        {
+          "param": "atr_period",
+          "from": 14,
+          "to": 10,
+          "passed": false,
+          "expectancy": -0.143633,
+          "payoff_ratio": 0.08212
+        },
+        {
+          "param": "atr_period",
+          "from": 14,
+          "to": 18,
+          "passed": false,
+          "expectancy": -0.127302,
+          "payoff_ratio": 0.114384
+        },
+        {
+          "param": "breakeven_at_atr",
+          "from": 2.0,
+          "to": 1.5,
+          "passed": false,
+          "expectancy": -0.105403,
+          "payoff_ratio": 0.153866
+        },
+        {
+          "param": "breakeven_at_atr",
+          "from": 2.0,
+          "to": 2.5,
+          "passed": false,
+          "expectancy": -0.157527,
+          "payoff_ratio": 0.103539
+        },
+        {
+          "param": "charm_exit_before_close_minutes",
+          "from": 90,
+          "to": 68,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "charm_exit_before_close_minutes",
+          "from": 90,
+          "to": 112,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "ema_fast",
+          "from": 9,
+          "to": 7,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "ema_fast",
+          "from": 9,
+          "to": 11,
+          "passed": false,
+          "expectancy": -0.114571,
+          "payoff_ratio": 0.141748
+        },
+        {
+          "param": "ema_slow",
+          "from": 21,
+          "to": 16,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "ema_slow",
+          "from": 21,
+          "to": 26,
+          "passed": false,
+          "expectancy": -0.114571,
+          "payoff_ratio": 0.141748
+        },
+        {
+          "param": "fail_progress_atr",
+          "from": 1.0,
+          "to": 0.75,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "fail_progress_atr",
+          "from": 1.0,
+          "to": 1.25,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "max_vwap_atr",
+          "from": 2.0,
+          "to": 2.5,
+          "passed": false,
+          "expectancy": -0.155844,
+          "payoff_ratio": 0.092637
+        },
+        {
+          "param": "min_premium_atr",
+          "from": 5.0,
+          "to": 3.75,
+          "passed": false,
+          "expectancy": -0.181087,
+          "payoff_ratio": 0.110248
+        },
+        {
+          "param": "min_premium_atr",
+          "from": 5.0,
+          "to": 6.25,
+          "passed": false,
+          "expectancy": -0.058514,
+          "payoff_ratio": 0.212659
+        },
+        {
+          "param": "momentum_lookback",
+          "from": 5,
+          "to": 4,
+          "passed": false,
+          "expectancy": -0.148053,
+          "payoff_ratio": 0.122315
+        },
+        {
+          "param": "momentum_lookback",
+          "from": 5,
+          "to": 6,
+          "passed": false,
+          "expectancy": -0.123555,
+          "payoff_ratio": 0.131591
+        },
+        {
+          "param": "opening_minutes",
+          "from": 15,
+          "to": 11,
+          "passed": false,
+          "expectancy": -0.157777,
+          "payoff_ratio": 0.114863
+        },
+        {
+          "param": "opening_minutes",
+          "from": 15,
+          "to": 19,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "otm_stop_shrink",
+          "from": 0.25,
+          "to": 0.1875,
+          "passed": false,
+          "expectancy": -0.126847,
+          "payoff_ratio": 0.128224
+        },
+        {
+          "param": "otm_stop_shrink",
+          "from": 0.25,
+          "to": 0.3125,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "persist_minutes",
+          "from": 5,
+          "to": 4,
+          "passed": false,
+          "expectancy": -0.148237,
+          "payoff_ratio": 0.122165
+        },
+        {
+          "param": "protection_needs_moneyness",
+          "from": 1,
+          "to": 0,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "stop_lookback",
+          "from": 10,
+          "to": 8,
+          "passed": false,
+          "expectancy": -0.123884,
+          "payoff_ratio": 0.131247
+        },
+        {
+          "param": "stop_lookback",
+          "from": 10,
+          "to": 12,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "stop_max_atr",
+          "from": 2.0,
+          "to": 2.5,
+          "passed": false,
+          "expectancy": -0.125456,
+          "payoff_ratio": 0.129626
+        },
+        {
+          "param": "stop_min_atr",
+          "from": 1.0,
+          "to": 0.75,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "stop_min_atr",
+          "from": 1.0,
+          "to": 1.25,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "take_profit_premium",
+          "from": 1.0,
+          "to": 0.75,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "take_profit_premium",
+          "from": 1.0,
+          "to": 1.25,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "trail_activate_atr",
+          "from": 5.0,
+          "to": 3.75,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "trail_activate_atr",
+          "from": 5.0,
+          "to": 6.25,
+          "passed": false,
+          "expectancy": -0.129813,
+          "payoff_ratio": 0.125336
+        },
+        {
+          "param": "trail_atr",
+          "from": 5.0,
+          "to": 3.75,
+          "passed": false,
+          "expectancy": -0.12524,
+          "payoff_ratio": 0.129846
+        },
+        {
+          "param": "trail_atr",
+          "from": 5.0,
+          "to": 6.25,
+          "passed": false,
+          "expectancy": -0.14329,
+          "payoff_ratio": 0.113696
+        },
+        {
+          "param": "vwap_buffer_atr",
+          "from": 0.25,
+          "to": 0.1875,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "vwap_buffer_atr",
+          "from": 0.25,
+          "to": 0.3125,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        }
+      ],
+      "runs": [
+        {
+          "param": "atr_period",
+          "from": 14,
+          "to": 10,
+          "passed": false,
+          "expectancy": -0.143633,
+          "payoff_ratio": 0.08212
+        },
+        {
+          "param": "atr_period",
+          "from": 14,
+          "to": 18,
+          "passed": false,
+          "expectancy": -0.127302,
+          "payoff_ratio": 0.114384
+        },
+        {
+          "param": "breakeven_at_atr",
+          "from": 2.0,
+          "to": 1.5,
+          "passed": false,
+          "expectancy": -0.105403,
+          "payoff_ratio": 0.153866
+        },
+        {
+          "param": "breakeven_at_atr",
+          "from": 2.0,
+          "to": 2.5,
+          "passed": false,
+          "expectancy": -0.157527,
+          "payoff_ratio": 0.103539
+        },
+        {
+          "param": "charm_exit_before_close_minutes",
+          "from": 90,
+          "to": 68,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "charm_exit_before_close_minutes",
+          "from": 90,
+          "to": 112,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "ema_fast",
+          "from": 9,
+          "to": 7,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "ema_fast",
+          "from": 9,
+          "to": 11,
+          "passed": false,
+          "expectancy": -0.114571,
+          "payoff_ratio": 0.141748
+        },
+        {
+          "param": "ema_slow",
+          "from": 21,
+          "to": 16,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "ema_slow",
+          "from": 21,
+          "to": 26,
+          "passed": false,
+          "expectancy": -0.114571,
+          "payoff_ratio": 0.141748
+        },
+        {
+          "param": "fail_minutes",
+          "from": 390,
+          "to": 292,
+          "passed": null,
+          "expectancy": -0.155313,
+          "payoff_ratio": null
+        },
+        {
+          "param": "fail_progress_atr",
+          "from": 1.0,
+          "to": 0.75,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "fail_progress_atr",
+          "from": 1.0,
+          "to": 1.25,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "flatten_before_close_minutes",
+          "from": 15,
+          "to": 19,
+          "passed": true,
+          "expectancy": -0.117932,
+          "payoff_ratio": 0.729665
+        },
+        {
+          "param": "max_vwap_atr",
+          "from": 2.0,
+          "to": 1.5,
+          "passed": null,
+          "expectancy": -0.004265,
+          "payoff_ratio": null
+        },
+        {
+          "param": "max_vwap_atr",
+          "from": 2.0,
+          "to": 2.5,
+          "passed": false,
+          "expectancy": -0.155844,
+          "payoff_ratio": 0.092637
+        },
+        {
+          "param": "min_premium_atr",
+          "from": 5.0,
+          "to": 3.75,
+          "passed": false,
+          "expectancy": -0.181087,
+          "payoff_ratio": 0.110248
+        },
+        {
+          "param": "min_premium_atr",
+          "from": 5.0,
+          "to": 6.25,
+          "passed": false,
+          "expectancy": -0.058514,
+          "payoff_ratio": 0.212659
+        },
+        {
+          "param": "momentum_lookback",
+          "from": 5,
+          "to": 4,
+          "passed": false,
+          "expectancy": -0.148053,
+          "payoff_ratio": 0.122315
+        },
+        {
+          "param": "momentum_lookback",
+          "from": 5,
+          "to": 6,
+          "passed": false,
+          "expectancy": -0.123555,
+          "payoff_ratio": 0.131591
+        },
+        {
+          "param": "opening_minutes",
+          "from": 15,
+          "to": 11,
+          "passed": false,
+          "expectancy": -0.157777,
+          "payoff_ratio": 0.114863
+        },
+        {
+          "param": "opening_minutes",
+          "from": 15,
+          "to": 19,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "otm_stop_shrink",
+          "from": 0.25,
+          "to": 0.1875,
+          "passed": false,
+          "expectancy": -0.126847,
+          "payoff_ratio": 0.128224
+        },
+        {
+          "param": "otm_stop_shrink",
+          "from": 0.25,
+          "to": 0.3125,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "persist_minutes",
+          "from": 5,
+          "to": 4,
+          "passed": false,
+          "expectancy": -0.148237,
+          "payoff_ratio": 0.122165
+        },
+        {
+          "param": "persist_minutes",
+          "from": 5,
+          "to": 6,
+          "passed": true,
+          "expectancy": -0.016929,
+          "payoff_ratio": 3.850387
+        },
+        {
+          "param": "protection_needs_moneyness",
+          "from": 1,
+          "to": 0,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "stop_lookback",
+          "from": 10,
+          "to": 8,
+          "passed": false,
+          "expectancy": -0.123884,
+          "payoff_ratio": 0.131247
+        },
+        {
+          "param": "stop_lookback",
+          "from": 10,
+          "to": 12,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "stop_max_atr",
+          "from": 2.0,
+          "to": 1.5,
+          "passed": null,
+          "expectancy": -0.099319,
+          "payoff_ratio": null
+        },
+        {
+          "param": "stop_max_atr",
+          "from": 2.0,
+          "to": 2.5,
+          "passed": false,
+          "expectancy": -0.125456,
+          "payoff_ratio": 0.129626
+        },
+        {
+          "param": "stop_min_atr",
+          "from": 1.0,
+          "to": 0.75,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "stop_min_atr",
+          "from": 1.0,
+          "to": 1.25,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "take_profit_premium",
+          "from": 1.0,
+          "to": 0.75,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "take_profit_premium",
+          "from": 1.0,
+          "to": 1.25,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "trail_activate_atr",
+          "from": 5.0,
+          "to": 3.75,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "trail_activate_atr",
+          "from": 5.0,
+          "to": 6.25,
+          "passed": false,
+          "expectancy": -0.129813,
+          "payoff_ratio": 0.125336
+        },
+        {
+          "param": "trail_atr",
+          "from": 5.0,
+          "to": 3.75,
+          "passed": false,
+          "expectancy": -0.12524,
+          "payoff_ratio": 0.129846
+        },
+        {
+          "param": "trail_atr",
+          "from": 5.0,
+          "to": 6.25,
+          "passed": false,
+          "expectancy": -0.14329,
+          "payoff_ratio": 0.113696
+        },
+        {
+          "param": "vwap_buffer_atr",
+          "from": 0.25,
+          "to": 0.1875,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        },
+        {
+          "param": "vwap_buffer_atr",
+          "from": 0.25,
+          "to": 0.3125,
+          "passed": false,
+          "expectancy": -0.126503,
+          "payoff_ratio": 0.128568
+        }
+      ]
+    }
+  },
+  "score": {
+    "strategy": {
+      "score": 16.414409,
+      "components": {
+        "payoff_ratio": {
+          "value": 0.128568,
+          "utility": 0.0,
+          "weight": 2
+        },
+        "profit_factor": {
+          "value": 0.014285,
+          "utility": 0.0,
+          "weight": 1
+        },
+        "with_direction": {
+          "value": -0.073727,
+          "utility": 0.0,
+          "weight": 1
+        },
+        "not_with_direction": {
+          "value": -0.17928,
+          "utility": 0.82072,
+          "weight": 1
+        }
+      },
+      "missing": []
+    },
+    "benchmark": {
+      "score": 3.699652,
+      "components": {
+        "payoff_ratio": {
+          "value": 0.629809,
+          "utility": 0.0,
+          "weight": 2
+        },
+        "profit_factor": {
+          "value": 0.269918,
+          "utility": 0.0,
+          "weight": 1
+        },
+        "with_direction": {
+          "value": 0.177976,
+          "utility": 0.177976,
+          "weight": 1
+        },
+        "not_with_direction": {
+          "value": -0.992993,
+          "utility": 0.007007,
+          "weight": 1
+        }
+      },
+      "missing": []
+    },
+    "strategy_hit_0.6": {
+      "score": 16.414409,
+      "components": {
+        "payoff_ratio": {
+          "value": 0.148965,
+          "utility": 0.0,
+          "weight": 2
+        },
+        "profit_factor": {
+          "value": 0.018621,
+          "utility": 0.0,
+          "weight": 1
+        },
+        "with_direction": {
+          "value": -0.073727,
+          "utility": 0.0,
+          "weight": 1
+        },
+        "not_with_direction": {
+          "value": -0.17928,
+          "utility": 0.82072,
+          "weight": 1
+        }
+      },
+      "missing": []
+    },
+    "benchmark_hit_0.6": {
+      "score": 3.699652,
+      "components": {
+        "payoff_ratio": {
+          "value": 0.682099,
+          "utility": 0.0,
+          "weight": 2
+        },
+        "profit_factor": {
+          "value": 0.383681,
+          "utility": 0.0,
+          "weight": 1
+        },
+        "with_direction": {
+          "value": 0.177976,
+          "utility": 0.177976,
+          "weight": 1
+        },
+        "not_with_direction": {
+          "value": -0.992993,
+          "utility": 0.007007,
+          "weight": 1
+        }
+      },
+      "missing": []
+    },
+    "out_of_sample": null,
+    "out_of_sample_benchmark": null
+  },
+  "coverage": {
+    "cases_per_scenario": {
+      "trend_with": 8,
+      "reversal_with": 2,
+      "chop": 0,
+      "reversal_against": 2,
+      "trend_against": 8
+    },
+    "minimum": 5,
+    "ok": false
+  },
+  "gates_in_sample": {
+    "G3_expectancy_beats_benchmark": true,
+    "G4_payoff_ratio_at_least_2": false,
+    "G5_trend_against_loss_smaller_than_benchmark": true,
+    "G6_with_direction_expectancy_positive": false,
+    "G7_payoff_ratio_beats_benchmark": false,
+    "G8_both_halves_beat_benchmark": null,
+    "G9_leave_one_day_out_stable": null,
+    "G10_parameter_neighbors_beat_benchmark": false,
+    "G11_profit_factor_above_1": false
+  },
+  "out_of_sample": null,
+  "verdict": "REJECT"
+}

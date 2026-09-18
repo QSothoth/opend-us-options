@@ -141,7 +141,7 @@ class ServiceTests(unittest.TestCase):
         registry = Registry()
         self.assertEqual(registry.default_id, SID)
         usable = [s['strategy_id'] for s in registry.list() if s['status'] != 'retired']
-        self.assertEqual(usable, [SID])
+        self.assertIn(SID, usable)
         item = registry.get(SID)
         item['config']['params']['trail_atr'] = 99
         self.assertNotEqual(registry.get(SID)['config']['params']['trail_atr'], 99)
