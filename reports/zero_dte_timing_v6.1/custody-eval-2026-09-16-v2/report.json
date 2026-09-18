@@ -67,6 +67,11 @@
     "completed": 19,
     "completion_rate": 0.95,
     "completion_score": 95.0,
+    "with_direction_participation": {
+      "cases": 10,
+      "traded": 10,
+      "rate": 1.0
+    },
     "outcomes": {
       "COMPLETED": 19,
       "NO_ENTRY_SIGNAL": 1
@@ -223,6 +228,11 @@
     "completed": 20,
     "completion_rate": 1.0,
     "completion_score": 100.0,
+    "with_direction_participation": {
+      "cases": 10,
+      "traded": 10,
+      "rate": 1.0
+    },
     "outcomes": {
       "COMPLETED": 20
     },
@@ -495,12 +505,12 @@
       0.088158
     ],
     "strategy_score": [
-      9.885078,
-      9.885078
+      26.908063,
+      26.908063
     ],
     "score_minus_benchmark": [
-      6.185426,
-      6.185426
+      3.948341,
+      3.948341
     ]
   },
   "market_shapes": {
@@ -1894,7 +1904,10 @@
   },
   "score": {
     "strategy": {
-      "score": 9.885078,
+      "score": 26.908063,
+      "return_score": 9.885078,
+      "completion_score": 95.0,
+      "completion_weight": 0.2,
       "components": {
         "payoff_ratio": {
           "value": 0.102745,
@@ -1920,7 +1933,10 @@
       "missing": []
     },
     "benchmark": {
-      "score": 3.699652,
+      "score": 22.959722,
+      "return_score": 3.699652,
+      "completion_score": 100.0,
+      "completion_weight": 0.2,
       "components": {
         "payoff_ratio": {
           "value": 0.629809,
@@ -1946,7 +1962,10 @@
       "missing": []
     },
     "strategy_hit_0.6": {
-      "score": 9.885078,
+      "score": 26.908063,
+      "return_score": 9.885078,
+      "completion_score": 95.0,
+      "completion_weight": 0.2,
       "components": {
         "payoff_ratio": {
           "value": 0.116086,
@@ -1972,7 +1991,10 @@
       "missing": []
     },
     "benchmark_hit_0.6": {
-      "score": 3.699652,
+      "score": 22.959722,
+      "return_score": 3.699652,
+      "completion_score": 100.0,
+      "completion_weight": 0.2,
       "components": {
         "payoff_ratio": {
           "value": 0.682099,

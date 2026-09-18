@@ -67,6 +67,11 @@
     "completed": 107,
     "completion_rate": 0.849206,
     "completion_score": 84.920635,
+    "with_direction_participation": {
+      "cases": 53,
+      "traded": 53,
+      "rate": 1.0
+    },
     "outcomes": {
       "COMPLETED": 107,
       "NO_ENTRY_SIGNAL": 19
@@ -225,6 +230,11 @@
     "completed": 124,
     "completion_rate": 0.984127,
     "completion_score": 98.412698,
+    "with_direction_participation": {
+      "cases": 53,
+      "traded": 53,
+      "rate": 1.0
+    },
     "outcomes": {
       "COMPLETED": 124,
       "EXIT_NOT_FILLED": 2
@@ -498,12 +508,12 @@
       0.27225
     ],
     "strategy_score": [
-      25.746974,
-      61.644734
+      37.854358,
+      66.038453
     ],
     "score_minus_benchmark": [
-      -1.904256,
-      37.423672
+      -3.688353,
+      27.172913
     ]
   },
   "market_shapes": {
@@ -5477,7 +5487,10 @@
   },
   "score": {
     "strategy": {
-      "score": 40.88369,
+      "score": 49.691079,
+      "return_score": 40.88369,
+      "completion_score": 84.920635,
+      "completion_weight": 0.2,
       "components": {
         "payoff_ratio": {
           "value": 2.33304,
@@ -5503,7 +5516,10 @@
       "missing": []
     },
     "benchmark": {
-      "score": 28.494856,
+      "score": 42.478424,
+      "return_score": 28.494856,
+      "completion_score": 98.412698,
+      "completion_weight": 0.2,
       "components": {
         "payoff_ratio": {
           "value": 1.601245,
@@ -5529,7 +5545,10 @@
       "missing": []
     },
     "strategy_hit_0.6": {
-      "score": 44.540532,
+      "score": 52.616553,
+      "return_score": 44.540532,
+      "completion_score": 84.920635,
+      "completion_weight": 0.2,
       "components": {
         "payoff_ratio": {
           "value": 2.412191,
@@ -5555,7 +5574,10 @@
       "missing": []
     },
     "benchmark_hit_0.6": {
-      "score": 34.248079,
+      "score": 47.081003,
+      "return_score": 34.248079,
+      "completion_score": 98.412698,
+      "completion_weight": 0.2,
       "components": {
         "payoff_ratio": {
           "value": 1.693768,

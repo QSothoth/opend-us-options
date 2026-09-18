@@ -50,9 +50,10 @@ BOOTSTRAP_DRAWS = 1000        # trading-day bootstrap for the direction-balanced
 NEIGHBOR_SCALE = 0.25          # parameter neighbours: each numeric parameter x0.75 and x1.25
 CAPTURE_MIN_BEST = 0.20      # upside capture counts cases whose best reachable exit was >= +20%
 # Composite score used to compare versions (docs/STANDARD.md section 10); the verdict still comes from the gates.
-# Weights are shares: the primary metric counts twice, every other compared metric once. A case without an
-# entry counts as a zero return in every item; completion is shown on its own (G1) and not scored again.
+# Return-score weights: the primary metric counts twice, every other return metric once.
+# Unentered cases contribute zero returns; completion contributes a separate fixed share of the composite.
 SCORE_WEIGHTS = {'payoff_ratio': 2, 'profit_factor': 1, 'with_direction': 1, 'not_with_direction': 1}
+COMPLETION_SCORE_WEIGHT = 0.2
 SKILLED_HIT_RATE = 0.6       # upstream direction right 60% of the time: reported next to the 50/50 main view
 
 
@@ -287,12 +288,16 @@ def summarize(trades, labels, hit_rate=0.5):
                                  if any(returns[i] is not None for i in idx) else None,
                                  upside_capture=statistics.mean(captures) if captures else None)
     completed = sum(t['outcome'] == 'COMPLETED' for t in trades)
+    with_cases = sum(scenario in WITH_DIRECTION for scenario in scenarios)
+    with_traded = sum(by_scenario[name]['traded'] for name in WITH_DIRECTION)
     holds = [t['hold_minutes'] for t in trades if t['hold_minutes'] is not None]
     return {
         'cases': len(trades),
         'completed': completed,
         'completion_rate': completed / len(trades) if trades else 0.0,
         'completion_score': 100 * completed / len(trades) if trades else 0.0,
+        'with_direction_participation': {'cases': with_cases, 'traded': with_traded,
+                                         'rate': with_traded / with_cases if with_cases else None},
         'outcomes': Counter(t['outcome'] for t in trades),
         'traded': weighted_metrics([t['net_return'] for t in trades], weights),
         'traded_raw': weighted_metrics([t['net_return'] for t in trades]),
@@ -339,18 +344,24 @@ def score_components(summary):
 
 
 def composite_score(summary):
-    """Weighted mean of the component utilities x 100 (docs/STANDARD.md section 10).
+    """80% return score plus 20% completion score (docs/STANDARD.md section 10).
 
     The ratios come from the summary's mirror-weighted metrics, so a summary made at another upstream hit rate
     scores that hit rate. The two scenario items are averages within a day type and keep their weights: a better
-    upstream makes wrong-direction days rarer, never chop days.
+    upstream makes wrong-direction days rarer, never chop days. Completion uses raw case counts at either
+    hit rate. Missing return components are normalized inside the return score, preserving the outer shares.
     """
     parts = score_components(summary)
     used = {k: w for k, w in SCORE_WEIGHTS.items() if parts[k]['utility'] is not None}
     for k, part in parts.items():
         part['weight'] = SCORE_WEIGHTS[k]
-    score = 100 * sum(w * parts[k]['utility'] for k, w in used.items()) / sum(used.values()) if used else None
-    return {'score': score, 'components': parts, 'missing': [k for k in SCORE_WEIGHTS if k not in used]}
+    return_score = 100 * sum(w * parts[k]['utility'] for k, w in used.items()) / sum(used.values()) if used else None
+    completion_score = summary['completion_score']
+    score = ((1 - COMPLETION_SCORE_WEIGHT) * return_score + COMPLETION_SCORE_WEIGHT * completion_score
+             if return_score is not None else None)
+    return {'score': score, 'return_score': return_score, 'completion_score': completion_score,
+            'completion_weight': COMPLETION_SCORE_WEIGHT, 'components': parts,
+            'missing': [k for k in SCORE_WEIGHTS if k not in used]}
 
 
 def shuffle_null(datas, trades, labels, params, fill=PRIMARY_FILL, draws=NULL_DRAWS, seed=20260916):
@@ -723,7 +734,8 @@ def _score_line(report):
     if score['out_of_sample']:
         text += '；样本外 %s，对照组 %s' % (_num(score['out_of_sample']['score'], '%.1f'),
                                         _num(score['out_of_sample_benchmark']['score'], '%.1f'))
-    return text + '）。综合分用来比较版本和挑选候选，结论仍只看门槛。'
+    return text + '）。综合分 = 收益分 × %d%% + 完成分 × %d%%，用来比较版本和挑选候选，结论仍只看门槛。' % (
+        round(100 * (1 - COMPLETION_SCORE_WEIGHT)), round(100 * COMPLETION_SCORE_WEIGHT))
 
 
 def _hhmm(minute):
@@ -789,8 +801,13 @@ def render_markdown(report):
         '| 指标 | 说明 | 策略 | 对照组（09:35 买，拿到 15:45） |', '|---|---|---:|---:|',
     ]
     lines += [
-        '| G1 完成分（独立评分，不是门槛） | 完整买入并卖出 / 全部 case × 100 | %.1f / 100 | %.1f / 100 |' % (s['completion_score'], b['completion_score']),
+        '| G1 完成分（占综合分 %d%%，不是门槛） | 完整买入并卖出 / 全部 case × 100 | %.1f / 100 | %.1f / 100 |' % (
+            round(100 * COMPLETION_SCORE_WEIGHT), s['completion_score'], b['completion_score']),
         '| 完成笔数 / 全部 case | 到期结算不算完成卖出 | %d / %d | %d / %d |' % (s['completed'], s['cases'], b['completed'], b['cases']),
+        '| 方向正确时参与率 | 顺势单边与先逆后顺中已入场 / 全部 case，含到期结算；仅诊断 | %d / %d（%s） | %d / %d（%s） |' % (
+            s['with_direction_participation']['traded'], s['with_direction_participation']['cases'],
+            _share(s['with_direction_participation']['rate']), b['with_direction_participation']['traded'],
+            b['with_direction_participation']['cases'], _share(b['with_direction_participation']['rate'])),
         '| 已入场平均收益 | 含到期结算；未入场不进入此项 | %s | %s |' % (_pct(s['traded']['expectancy']), _pct(b['traded']['expectancy'])),
     ]
     rows = (('expectancy', '每个 case 平均收益', '未入场贡献零，保留全部 case', _pct),
@@ -819,7 +836,8 @@ def render_markdown(report):
         '',
         '### 综合分怎么来的（比较版本用，定义见 docs/STANDARD.md 第 10 节）',
         '',
-        '每项先按固定刻度换成 0–1 分（锚点取自门槛，不随候选变化），再按权重平均、乘 100。不买入的 case 在各项里都按 0 收益计入。',
+        '收益项先按固定刻度换成 0–1 分（锚点取自门槛，不随候选变化），再按权重平均、乘 100，得到收益分。'
+        '不买入的 case 在收益项里按 0 收益计入；缺项只在收益分内部重新分配权重，外层收益分与完成分的比例固定。',
         '',
         '| 项目 | 刻度（0 分 → 0.5 分 → 1 分） | 权重 | 策略原始值 | 策略得分 | 对照组原始值 | 对照组得分 |',
         '|---|---|---:|---:|---:|---:|---:|',
@@ -829,9 +847,17 @@ def render_markdown(report):
         lines.append('| %s | %s | %d | %s | %s | %s | %s |' % (name, scale, x['weight'], fmt(x['value']), _num(x['utility']),
                                                          fmt(y['value']), _num(y['utility'])))
     lines += [
-        '| **综合分** | 加权平均 × 100 | %d | | **%s** | | %s |' % (
-            sum(SCORE_WEIGHTS.values()), _num(report['score']['strategy']['score'], '%.1f'),
-            _num(report['score']['benchmark']['score'], '%.1f')),
+        '| **收益分** | 加权平均 × 100 | %d | | **%s** | | %s |' % (
+            sum(SCORE_WEIGHTS.values()), _num(report['score']['strategy']['return_score'], '%.1f'),
+            _num(report['score']['benchmark']['return_score'], '%.1f')),
+        '',
+        '| 综合分组成 | 固定权重 | 策略 | 对照组 |', '|---|---:|---:|---:|',
+        '| 收益分 | %d%% | %s | %s |' % (round(100 * (1 - COMPLETION_SCORE_WEIGHT)),
+            _num(report['score']['strategy']['return_score'], '%.1f'), _num(report['score']['benchmark']['return_score'], '%.1f')),
+        '| 完成分 | %d%% | %s | %s |' % (round(100 * COMPLETION_SCORE_WEIGHT),
+            _num(s['completion_score'], '%.1f'), _num(b['completion_score'], '%.1f')),
+        '| **综合分** | 100%% | **%s** | %s |' % (
+            _num(report['score']['strategy']['score'], '%.1f'), _num(report['score']['benchmark']['score'], '%.1f')),
         '',
         '## 3. 分走势看（按当天实际走势事后分类，策略运行时看不到）',
         '',

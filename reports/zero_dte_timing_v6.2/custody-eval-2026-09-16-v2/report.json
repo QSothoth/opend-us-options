@@ -68,6 +68,11 @@
     "completed": 10,
     "completion_rate": 0.5,
     "completion_score": 50.0,
+    "with_direction_participation": {
+      "cases": 10,
+      "traded": 7,
+      "rate": 0.7
+    },
     "outcomes": {
       "NO_ENTRY_SIGNAL": 10,
       "COMPLETED": 10
@@ -224,6 +229,11 @@
     "completed": 20,
     "completion_rate": 1.0,
     "completion_score": 100.0,
+    "with_direction_participation": {
+      "cases": 10,
+      "traded": 10,
+      "rate": 1.0
+    },
     "outcomes": {
       "COMPLETED": 20
     },
@@ -496,12 +506,12 @@
       0.281005
     ],
     "strategy_score": [
-      16.414409,
-      16.414409
+      23.131527,
+      23.131527
     ],
     "score_minus_benchmark": [
-      12.714757,
-      12.714757
+      0.171805,
+      0.171805
     ]
   },
   "market_shapes": {
@@ -1768,7 +1778,10 @@
   },
   "score": {
     "strategy": {
-      "score": 16.414409,
+      "score": 23.131527,
+      "return_score": 16.414409,
+      "completion_score": 50.0,
+      "completion_weight": 0.2,
       "components": {
         "payoff_ratio": {
           "value": 0.128568,
@@ -1794,7 +1807,10 @@
       "missing": []
     },
     "benchmark": {
-      "score": 3.699652,
+      "score": 22.959722,
+      "return_score": 3.699652,
+      "completion_score": 100.0,
+      "completion_weight": 0.2,
       "components": {
         "payoff_ratio": {
           "value": 0.629809,
@@ -1820,7 +1836,10 @@
       "missing": []
     },
     "strategy_hit_0.6": {
-      "score": 16.414409,
+      "score": 23.131527,
+      "return_score": 16.414409,
+      "completion_score": 50.0,
+      "completion_weight": 0.2,
       "components": {
         "payoff_ratio": {
           "value": 0.148965,
@@ -1846,7 +1865,10 @@
       "missing": []
     },
     "benchmark_hit_0.6": {
-      "score": 3.699652,
+      "score": 22.959722,
+      "return_score": 3.699652,
+      "completion_score": 100.0,
+      "completion_weight": 0.2,
       "components": {
         "payoff_ratio": {
           "value": 0.682099,

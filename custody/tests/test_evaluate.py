@@ -3,6 +3,7 @@ import tempfile
 import unittest
 from datetime import timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).parent))
 from helpers import DAY, option_bars, path_bars, piecewise, session, write_dataset  # noqa: E402
@@ -107,6 +108,15 @@ class SimulationTests(unittest.TestCase):
         self.assertEqual(zero['completion_score'], 0)
         self.assertIsNone(zero['balanced']['payoff_ratio'])
         self.assertIsNone(zero['traded']['expectancy'])
+        self.assertEqual(zero['with_direction_participation'], {'cases': 0, 'traded': 0, 'rate': None})
+        # Participation counts both correct-direction scenarios and an actual entry, even if settled at expiry.
+        participation = ev.summarize([complete, flat, unfilled, settled, complete, flat],
+                                    [{'scenario': name} for name in ('trend_with', 'reversal_with', 'reversal_with',
+                                                                    'trend_with', 'trend_against', 'chop')])
+        self.assertEqual(participation['with_direction_participation'], {'cases': 4, 'traded': 2, 'rate': 0.5})
+        all_flat = ev.summarize([flat] * len(ev.SCENARIOS), [{'scenario': name} for name in ev.SCENARIOS])
+        self.assertEqual(all_flat['with_direction_participation'], {'cases': 2, 'traded': 0, 'rate': 0.0})
+        self.assertAlmostEqual(ev.composite_score(all_flat)['score'], 16.0)
 
     def test_shuffled_control_preserves_nonparticipation(self):
         data = case_data(self.closes)
@@ -185,21 +195,49 @@ class WeightingAndMetricsTests(unittest.TestCase):
                     'with_direction': {'expectancy': with_}, 'not_with_direction': {'expectancy': not_with}}
         self.assertEqual(ev.SCORE_WEIGHTS['payoff_ratio'], 2)          # the primary metric counts twice
         self.assertEqual(sum(ev.SCORE_WEIGHTS.values()), 5)
-        self.assertNotIn('completion', ev.SCORE_WEIGHTS)                # not buying is a zero return, not a second penalty
+        self.assertNotIn('completion', ev.SCORE_WEIGHTS)               # these are the return score's internal weights
+        self.assertEqual(ev.COMPLETION_SCORE_WEIGHT, 0.2)
         mid = ev.composite_score(summary(2.0, 1.0, 0.5, -0.5, 50.0))
         self.assertAlmostEqual(mid['score'], 50.0)                     # every anchor midpoint (G4, G11) -> 50
+        self.assertEqual((mid['return_score'], mid['completion_score'], mid['completion_weight']), (50.0, 50.0, 0.2))
         self.assertAlmostEqual(ev.composite_score(summary(8.0, 5.0, 1.5, 0.2, 100.0))['score'], 100.0)   # capped
         doubled = ev.composite_score(summary(4.0, 1.0, 0.5, -0.5, 50.0))
-        self.assertAlmostEqual(doubled['score'] - mid['score'], 100 * 2 * 0.5 / 5)   # log scale: 2 -> 4 is +0.5
+        self.assertAlmostEqual(doubled['score'] - mid['score'], 0.8 * 100 * 2 * 0.5 / 5)  # log scale: 2 -> 4 is +0.5
+        low = ev.composite_score(summary(2.0, 1.0, 0.5, -0.5, 0.0))
+        high = ev.composite_score(summary(2.0, 1.0, 0.5, -0.5, 100.0))
+        self.assertEqual(high['return_score'], low['return_score'])
+        self.assertAlmostEqual(high['score'] - low['score'], 20.0)      # completion owns a fixed 20 points
         # never won anything: the ratios score 0; staying flat only earns the loss-control part
         flat = ev.composite_score(summary(None, None, 0.0, 0.0, 0.0, win=None, loss=None))
-        self.assertAlmostEqual(flat['score'], 100 / 5)
+        self.assertAlmostEqual(flat['return_score'], 100 / 5)
+        self.assertAlmostEqual(flat['score'], 16.0)
         perfect = ev.composite_score(summary(None, None, 1.0, 0.0, 50.0, loss=None))['components']
         self.assertEqual((perfect['payoff_ratio']['utility'], perfect['profit_factor']['utility']), (1.0, 1.0))
-        # a metric the data cannot define is left out and the weights renormalise
-        gap = ev.composite_score(summary(2.0, 1.0, None, -0.5, 50.0))
+        # Missing return metrics renormalise inside the 80% block, never changing completion's weight.
+        gap = ev.composite_score(summary(2.0, 1.0, None, -0.5, 0.0))
         self.assertEqual(gap['missing'], ['with_direction'])
-        self.assertAlmostEqual(gap['score'], 50.0)
+        self.assertAlmostEqual(gap['return_score'], 50.0)
+        self.assertAlmostEqual(gap['score'], 40.0)
+        empty = ev.summarize([], [])
+        self.assertEqual(empty['with_direction_participation'], {'cases': 0, 'traded': 0, 'rate': None})
+        self.assertEqual(empty['completion_score'], 0.0)
+        empty_score = ev.composite_score(empty)
+        self.assertIsNone(empty_score['return_score'])
+        self.assertIsNone(empty_score['score'])
+        self.assertEqual(set(empty_score['missing']), set(ev.SCORE_WEIGHTS))
+
+    def test_bootstrap_recomputes_completion_for_each_resampled_day(self):
+        datas = [SimpleNamespace(case=SimpleNamespace(trade_date=day))
+                 for day in ('2026-09-14', '2026-09-15') for _ in range(2)]
+        labels = [{'scenario': name} for name in ('trend_with', 'trend_against')] * 2
+        complete = {'entry': {'reason': 'test'}, 'exit': {'reason': 'test'}, 'outcome': 'COMPLETED',
+                    'net_return': 0.0, 'net_pnl': 0.0, 'best_net_return': 0.0, 'hold_minutes': 1, 'failure': None}
+        skipped = dict(complete, entry=None, exit=None, outcome='NO_ENTRY_SIGNAL',
+                       net_return=None, net_pnl=None, hold_minutes=None)
+        # Zero returns keep the return score at 20; daily completion varies from 0 to 100.
+        result = ev.day_bootstrap(datas, labels, [complete, complete, skipped, skipped], [complete] * 4, draws=100)
+        self.assertEqual(result['strategy_score'], [16.0, 36.0])
+        self.assertEqual(result['score_minus_benchmark'], [-20.0, 0.0])
 
     def test_parameter_neighbours_move_each_number_both_ways_and_skip_invalid(self):
         from custody.engines.zero_dte_timing import validate_params
@@ -256,6 +294,9 @@ class EndToEndTests(unittest.TestCase):
             self.assertEqual(report['out_of_sample']['sessions'], 1)
             for side in ('strategy', 'benchmark', 'strategy_hit_0.6', 'benchmark_hit_0.6'):
                 self.assertTrue(0 <= report['score'][side]['score'] <= 100)
+            for side in ('strategy', 'benchmark'):
+                self.assertEqual(report['score'][side]['completion_score'],
+                                 report['score'][side + '_hit_0.6']['completion_score'])
             # the 60% score takes its ratios from the 60% mirror weights; the day-type averages do not move
             skilled, plain = report['score']['strategy_hit_0.6']['components'], report['score']['strategy']['components']
             self.assertEqual(skilled['payoff_ratio']['value'], report['direction_skill_0.6']['strategy']['payoff_ratio'])
@@ -264,7 +305,7 @@ class EndToEndTests(unittest.TestCase):
             self.assertIsNotNone(report['score']['out_of_sample'])
             markdown = ev.render_markdown(report)
             for section in ('## 先看这里', '**综合分：', '### 综合分怎么来的', '对照组', '## 1. 过没过门槛', '## 2. 总体',
-                            '## 3. 分走势看', '## 4. 结果靠不靠得住', '## 5. 逐笔明细'):
+                            '## 3. 分走势看', '## 4. 结果靠不靠得住', '## 5. 逐笔明细', '方向正确时参与率', '80%', '20%'):
                 self.assertIn(section, markdown)
             self.assertEqual(ev.evaluate(Path(tmp) / 'ds', null_draws=20), report)  # deterministic
 

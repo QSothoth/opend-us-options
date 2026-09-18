@@ -20,8 +20,12 @@ class DocsTests(unittest.TestCase):
                        str(ev.SPLIT_MINUTE), str(ev.LABEL_BAND), str(ev.NULL_DRAWS),
                        '%d%%' % round(100 * ev.NEIGHBOR_SCALE), 'G7', 'G8', 'G9', 'G10', 'settled_at_expiry'):
             self.assertIn(needle, text)
-        for key, (name, scale, _) in ev.SCORE_TEXT.items():   # composite score: same items, scales and weights
+        for key, (name, scale, _) in ev.SCORE_TEXT.items():   # return score: same items, scales and internal weights
             self.assertIn('| %s | %s | %d |' % (name, scale, ev.SCORE_WEIGHTS[key]), text)
+        self.assertIn('综合分 = %d%% × 收益分 + %d%% × 完成分' %
+                      (round(100 * (1 - ev.COMPLETION_SCORE_WEIGHT)), round(100 * ev.COMPLETION_SCORE_WEIGHT)), text)
+        self.assertIn('方向正确时参与率', text)
+        self.assertIn('16 分', text)
 
     def test_both_sides_rule_is_written_everywhere_it_applies(self):
         for name in ('AGENTS.md', 'docs/DATA.md', 'docs/STANDARD.md'):
@@ -37,6 +41,10 @@ class DocsTests(unittest.TestCase):
                 report = json.loads(path.read_text(encoding='utf-8'))
                 self.assertEqual(report['strategy']['sha256'], item['sha256'], path)
                 self.assertIn('completion_score', report['summary'], path)
+                self.assertIn('with_direction_participation', report['summary'], path)
+                for side in ('strategy', 'benchmark', 'strategy_hit_0.6', 'benchmark_hit_0.6'):
+                    self.assertEqual(report['score'][side]['completion_weight'], ev.COMPLETION_SCORE_WEIGHT, path)
+                    self.assertIn('return_score', report['score'][side], path)
                 self.assertNotIn('G1_completion_100pct', report['gates_in_sample'], path)
 
 
