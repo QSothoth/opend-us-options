@@ -28,7 +28,7 @@ from custody.strategy import build_strategy  # noqa: E402
 
 T = datetime(2026, 9, 14, 10, 0, tzinfo=ET)
 CONTRACT = 'US.QQQ260914P700000'
-SID = Registry().default_id
+SID = 'zero_dte_timing_v6.1'  # mechanics tests pin a strategy that trades the synthetic paths
 
 
 class Catalog:

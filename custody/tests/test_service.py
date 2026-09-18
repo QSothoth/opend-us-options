@@ -128,7 +128,8 @@ class ServiceTests(unittest.TestCase):
             CustodyService(old, 'test', Catalog(), Calendar())
         live = CustodyService(Path(self.tmp.name) / 'live.sqlite', 'live', Catalog(), Calendar(), mode='live')
         with self.assertRaisesRegex(ValueError, 'accepted'):
-            live.create_job(self.request, T)
+            candidate = next(s['strategy_id'] for s in Registry().list() if s['status'] == 'candidate')
+            live.create_job(dict(self.request, strategy_id=candidate), T)
 
     def test_entry_window_closes_at_flatten(self):
         late = T.replace(hour=15, minute=45)

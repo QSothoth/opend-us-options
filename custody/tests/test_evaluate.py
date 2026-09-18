@@ -14,7 +14,7 @@ from custody.marketdata import Bar  # noqa: E402
 from custody.registry import Registry  # noqa: E402
 from custody.strategy import Decision, session_minute  # noqa: E402
 
-ITEM = Registry().get(Registry().default_id)
+ITEM = Registry().get('zero_dte_timing_v6.1')  # trades the synthetic paths; cutoff before the 09-17 case
 PARAMS = ITEM['config']['params']
 CALL, PUT = 'US.SPY260914C100000', 'US.SPY260914P100000'
 
@@ -319,7 +319,7 @@ class EndToEndTests(unittest.TestCase):
                     cases.append({'symbol': 'US.SPY', 'contract': code, 'trade_date': day, 'underlying': closes,
                                   'option': option_bars(closes, 100, right, code, day=day)})
             write_dataset(Path(tmp) / 'ds', cases)
-            report = ev.evaluate(Path(tmp) / 'ds', null_draws=20)
+            report = ev.evaluate(Path(tmp) / 'ds', ITEM['strategy_id'], null_draws=20)
             self.assertEqual(report['dataset']['cases'], 4)
             self.assertEqual((report['dataset']['sides']['ok'], report['dataset']['sides']['both_sides']), (True, 2))
             self.assertEqual(report['summary']['completion_score'], 25.0)
@@ -350,7 +350,7 @@ class EndToEndTests(unittest.TestCase):
                             '## 3. 分走势看', '## 4. 同一标的 CALL 和 PUT 合起来看', '## 5. 结果靠不靠得住',
                             '## 6. 逐笔明细', '方向正确时参与率', '80%', '20%'):
                 self.assertIn(section, markdown)
-            self.assertEqual(ev.evaluate(Path(tmp) / 'ds', null_draws=20), report)  # deterministic
+            self.assertEqual(ev.evaluate(Path(tmp) / 'ds', ITEM['strategy_id'], null_draws=20), report)  # deterministic
 
 
 if __name__ == '__main__':

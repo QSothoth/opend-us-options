@@ -1,6 +1,6 @@
 # 策略说明
 
-默认策略：**`zero_dte_timing_v6.1`（candidate）**，参数见 [注册文件](../custody/strategies/zero_dte_timing_v6.1.json)。v6.1 = v6 + 研究轮次 R9 的候选 K2：确认根数 20 → 5、入场前的价格止损收回到 1–2 ATR、取消估算权利金保本。
+原默认策略（2026-09-18 前）：**`zero_dte_timing_v6.1`（candidate）**，参数见 [注册文件](../custody/strategies/zero_dte_timing_v6.1.json)。v6.1 = v6 + 研究轮次 R9 的候选 K2：确认根数 20 → 5、入场前的价格止损收回到 1–2 ATR、取消估算权利金保本。
 
 并行候选：**`zero_dte_timing_v6.2`（candidate，非默认）**，参数见 [注册文件](../custody/strategies/zero_dte_timing_v6.2.json)。v6.2 = v6.1 + 研究轮次 R10 的候选 P4：收盘离开 VWAP 超过 2 ATR 不入场（`max_vwap_atr`），估算权利金门槛 3 → 5 ATR；出场规则不变。按 R10 的约束它不替换 v6.1，dryrun / run 需显式传 `--strategy zero_dte_timing_v6.2`，是否改为默认另行决定。
 
@@ -8,7 +8,9 @@
 
 研究候选：**`zero_dte_timing_v6.4`（candidate，非默认）**，参数见 [注册文件](../custody/strategies/zero_dte_timing_v6.4.json)。v6.4 = v6.2 + R15 的 Y4：只接受波动压缩后的突破（`squeeze_lookback=10`），10 分钟无进展离场（`fail_minutes=10`），估算浮盈 +50% 后回落到一半即卖（`profit_lock_at=0.5`、`profit_lock_keep=0.5`）。**训练集第一个 G3–G12 全部通过的已注册版本**（结论 PROVISIONAL：没有样本外交易日），留一天选择交叉验证 20 折中 19 折选中它；但只做 29 笔，按交易日配对重抽样相对 v6.3 的综合分差区间跨零，验证集那一天仍亏钱。开发截止 2026-09-18，dryrun / run 需显式传 `--strategy zero_dte_timing_v6.4`，是否改为默认另行决定。
 
-研究基线：**`zero_dte_timing_v6.5`（candidate，非默认）**，参数见 [注册文件](../custody/strategies/zero_dte_timing_v6.5.json)。v6.5 = v6.4 去掉「VWAP 有利侧站稳 5 根」（`persist_minutes=0`），即 R16 的 Z3。它**没有满足 R16 预登记的选择规则**（收益分 76.3 / 79.1 低于 v6.4 的 77.6 / 80.2），2026-09-18 由用户决定登记，并作为之后研究的比较基线；这是一次破例，见 R16 结果。训练集 G3–G12 全部通过（PROVISIONAL），交易 68 笔（v6.4 为 29 笔）；验证集那一天 14 笔平均 −15.2%，差于 v6.4。dryrun / run 需显式传 `--strategy zero_dte_timing_v6.5`，是否改为默认另行决定。
+**默认策略**（2026-09-18 起）与研究基线：**`zero_dte_timing_v6.5`（accepted，破例，见下）**，参数见 [注册文件](../custody/strategies/zero_dte_timing_v6.5.json)。v6.5 = v6.4 去掉「VWAP 有利侧站稳 5 根」（`persist_minutes=0`），即 R16 的 Z3。它**没有满足 R16 预登记的选择规则**（收益分 76.3 / 79.1 低于 v6.4 的 77.6 / 80.2），2026-09-18 由用户决定登记，并作为之后研究的比较基线；这是一次破例，见 R16 结果。训练集 G3–G12 全部通过（PROVISIONAL），交易 68 笔（v6.4 为 29 笔）；验证集那一天 14 笔平均 −15.2%，差于 v6.4。2026-09-18 由用户决定设为默认策略，dryrun / run 不传 `--strategy` 时即使用 v6.5。
+
+**状态破例（2026-09-18，用户决定）**：v6.5 未经评测 ACCEPT（结论 PROVISIONAL，样本外交易日 0，验证集那一天 −15.2%），由用户决定在 `index.json` 中改为 `accepted`，用于小规模（每单 1 张）试运行实盘链路。这违反 AGENTS.md「只有评测 ACCEPT 才能改为 accepted」，仅此一次，报告与结论不变；样本外交易日满 20 个后按标准重新评测，未 ACCEPT 则改回 `candidate`。
 
 五者都使用引擎 `custody/engines/zero_dte_timing.py`。
 

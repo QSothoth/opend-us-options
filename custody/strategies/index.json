@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "default": "zero_dte_timing_v6.1",
+  "default": "zero_dte_timing_v6.5",
   "strategies": {
     "zero_dte_timing_v6.1": {
       "file": "zero_dte_timing_v6.1.json",
@@ -25,7 +25,7 @@
     "zero_dte_timing_v6.5": {
       "file": "zero_dte_timing_v6.5.json",
       "sha256": "547d304e3380ea6764057d46cea8e6d9ad6c7cfeff3fd727398586071a7638c2",
-      "status": "candidate"
+      "status": "accepted"
     }
   }
 }
