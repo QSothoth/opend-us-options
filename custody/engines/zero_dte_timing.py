@@ -28,6 +28,11 @@ run away from VWAP: a stop of at most ``stop_max_atr`` ATR would then sit above 
 inside an ordinary pullback, and the premium already pays for the finished move.
 ``min_breakout_volume_ratio`` requires current volume to reach a multiple of the
 prior breakout window's mean volume. It defaults to off.
+``squeeze_lookback`` (off by default) only lets a breakout through when the move comes out
+of a volatility squeeze seen within the last N bars (the current one included): the
+20-close Bollinger band (+-2 standard deviations) inside the 20-close mean +- 1.5 1m ATR
+(the usual TTM squeeze). A buyer pays least for premium while realized volatility is
+compressed, and a break out of the compression tends to come with expansion.
 
 Optional exit rules (they need the contract strike)
 ---------------------------------------------------
@@ -42,6 +47,11 @@ Optional exit rules (they need the contract strike)
   (``take_profit``). The premium is estimated with the Bachelier model from the signed
   moneyness, the session sigma frozen at the entry decision and the minutes to the close
   (never from option quotes);
+* ``profit_lock_at`` / ``profit_lock_keep``: once the best estimated premium return since
+  entry reaches ``profit_lock_at``, sell when it falls to ``profit_lock_keep`` of that best
+  (``profit_lock``). The lock rises with the peak and is measured on the premium the position
+  is paid on, so a winner below the take-profit no longer gives its whole gain back to an
+  underlying stop; ``take_profit_premium`` still sells first;
 * ``min_premium_atr``: no entry while the estimated premium is below this many 1m ATR.
   Each fill gives up part of the option bar range, which is roughly a fixed share of an
   underlying ATR, so a small premium loses most of its return to friction.
@@ -62,6 +72,7 @@ Risk is measured in the 1m ATR frozen at the entry decision.
 All stops are evaluated on completed 1m closes of the underlying.
 """
 import math
+from collections import deque
 
 from ..indicators import SessionIndicators, bachelier
 from ..strategy import Decision, flatten_minute, session_minute
@@ -92,11 +103,15 @@ OPTIONAL = {
     'protection_needs_moneyness': ((int, 0, 1), 0),  # 1: a trail only protects once the option is at/in the money
     'otm_stop_shrink': ((float, 0.05, 0.9), None),   # stop distance x max(0.5, 1 - shrink * OTM z at entry)
     'take_profit_premium': ((float, 0.05, 20.0), None),     # sell once the estimated premium return reaches this
+    'profit_lock_at': ((float, 0.05, 20.0), None),   # best estimated premium return that arms the profit lock
+    'profit_lock_keep': ((float, 0.05, 0.95), None),  # armed: sell at this share of the best estimated premium return
     'min_premium_atr': ((float, 0.1, 100.0), None),  # no entry while the estimated premium is below N x 1m ATR
     'max_vwap_atr': ((float, 0.1, 20.0), None),      # no entry while the close is more than N ATR beyond VWAP
     'min_breakout_volume_ratio': ((float, 0.1, 5.0), None),  # current volume / prior breakout window mean
+    'squeeze_lookback': ((int, 1, 60), None),        # entry needs a volatility squeeze within the last N bars
 }
 OTM_STOP_FLOOR = 0.5
+SQUEEZE_PERIOD, SQUEEZE_BAND_SD, SQUEEZE_CHANNEL_ATR = 20, 2.0, 1.5
 
 
 def validate_params(params):
@@ -128,6 +143,8 @@ def validate_params(params):
         raise ValueError('inconsistent EMA or stop parameters')
     if out['max_vwap_atr'] is not None and out['max_vwap_atr'] <= out['vwap_buffer_atr']:
         raise ValueError('max_vwap_atr must exceed vwap_buffer_atr')
+    if (out['profit_lock_at'] is None) != (out['profit_lock_keep'] is None):
+        raise ValueError('profit_lock_at and profit_lock_keep go together')
     return out
 
 
@@ -153,7 +170,9 @@ class ZeroDteTiming:
         self.entry_reason = self.exit_reason = None
         self.risk_distance = self.entry_atr = None
         self.entry_mark = self.entry_minute = self.stop = self.best = None
-        self.sigma = self.entry_value = None
+        self.sigma = self.entry_value = self.peak_return = None
+        self.squeeze_closes = deque(maxlen=SQUEEZE_PERIOD)
+        self.bars_since_squeeze = None  # None until the first squeeze of the session
 
     # ------------------------------------------------------------ helpers
     def _hi(self, bar):
@@ -174,6 +193,8 @@ class ZeroDteTiming:
         minute = session_minute(self.session, bar.close_time)
         self.ind.update(bar, minute)
         self.vwap_side_bars = self.vwap_side_bars + 1 if self.sign * (bar.close - self.ind.vwap) > 0 else 0
+        if self.p['squeeze_lookback'] is not None:
+            self._update_squeeze(bar)
         if self.phase != 'FLAT' and minute >= self.flatten_minute:
             if self.phase != 'EXITING':
                 self.phase, self.exit_reason = 'EXITING', 'scheduled_flatten'
@@ -192,6 +213,18 @@ class ZeroDteTiming:
         self.phase, self.entry_reason = 'ENTERING', reason
         self._plan_risk()
         return Decision('ENTER', reason, self._diagnostics(minute))
+
+    def _update_squeeze(self, bar):
+        self.squeeze_closes.append(bar.close)
+        squeezed = False
+        if len(self.squeeze_closes) == SQUEEZE_PERIOD:
+            mean = sum(self.squeeze_closes) / SQUEEZE_PERIOD
+            sd = math.sqrt(sum((c - mean) ** 2 for c in self.squeeze_closes) / SQUEEZE_PERIOD)
+            squeezed = SQUEEZE_BAND_SD * sd <= SQUEEZE_CHANNEL_ATR * self.ind.atr
+        if squeezed:
+            self.bars_since_squeeze = 0
+        elif self.bars_since_squeeze is not None:
+            self.bars_since_squeeze += 1
 
     def _otm_z(self, minute):
         """How far out of the money, in expected remaining moves (1m ATR x sqrt(minutes left))."""
@@ -226,6 +259,7 @@ class ZeroDteTiming:
         self.entry_mark = self.best = self.sign * float(underlying_mark)
         self.stop = self.entry_mark - self.risk_distance
         self.entry_value = max(self._premium(self.entry_mark, self.entry_minute), self.sigma * 1e-3)
+        self.peak_return = 0.0
 
     # ------------------------------------------------------------ rules
     def _entry_reason(self, bar, minute):
@@ -241,6 +275,9 @@ class ZeroDteTiming:
             if mean_volume <= 0 or bar.volume <= 0 or bar.volume < p['min_breakout_volume_ratio'] * mean_volume:
                 return None
         if self.vwap_side_bars < p['persist_minutes']:
+            return None
+        if p['squeeze_lookback'] is not None and (self.bars_since_squeeze is None
+                                                  or self.bars_since_squeeze >= p['squeeze_lookback']):
             return None
         vwap_side = close >= s * ind.vwap + p['vwap_buffer_atr'] * atr
         trend = (s * (ind.ema_fast - ind.ema_slow) >= p['trend_buffer_atr'] * atr
@@ -269,6 +306,8 @@ class ZeroDteTiming:
             self.stop = max(self.stop, self.best - p['trail_atr'] * self.entry_atr)
             reason = 'trailing_stop'
         premium_return = self._premium(close, minute) / self.entry_value - 1
+        self.peak_return = max(self.peak_return, premium_return)
+        lock_at, keep = p['profit_lock_at'], p['profit_lock_keep']
         protected = progress >= p['trail_activate_atr']
         if protected and p['protection_needs_moneyness'] and self._otm_z(minute) > 0:
             protected = False  # underlying progress in ATR means little while the option is still out of the money
@@ -276,6 +315,8 @@ class ZeroDteTiming:
             self.phase, self.exit_reason = 'EXITING', reason
         elif p['take_profit_premium'] is not None and premium_return >= p['take_profit_premium']:
             self.phase, self.exit_reason = 'EXITING', 'take_profit'
+        elif lock_at is not None and self.peak_return >= lock_at and premium_return <= keep * self.peak_return:
+            self.phase, self.exit_reason = 'EXITING', 'profit_lock'
         elif not protected and self._in_charm_window(minute):
             self.phase, self.exit_reason = 'EXITING', 'charm_exit'
         elif (minute - self.entry_minute >= p['fail_minutes'] and progress < p['fail_progress_atr']

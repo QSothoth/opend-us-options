@@ -16,6 +16,16 @@
       "file": "zero_dte_timing_v6.3.json",
       "sha256": "29f1fde47b3fdd755a6591c3e61f1a168cdc859db642c04edb840d0441543a3c",
       "status": "candidate"
+    },
+    "zero_dte_timing_v6.4": {
+      "file": "zero_dte_timing_v6.4.json",
+      "sha256": "1df582eb05107fdb7d3cac3e2a853f6bc0537221c9ca0c92e7e6b78593fabd38",
+      "status": "candidate"
+    },
+    "zero_dte_timing_v6.5": {
+      "file": "zero_dte_timing_v6.5.json",
+      "sha256": "547d304e3380ea6764057d46cea8e6d9ad6c7cfeff3fd727398586071a7638c2",
+      "status": "candidate"
     }
   }
 }

@@ -1,0 +1,40 @@
+{
+  "schema_version": 2,
+  "strategy_id": "zero_dte_timing_v6.4",
+  "engine": "zero_dte_timing",
+  "description": "单笔末日期权择时：在 v6.2 的入场上只接受波动压缩后的突破（最近 10 根内布林带落在 1.5 ATR 通道内）；成交 10 分钟仍无进展即离场，估算浮盈到 +50% 后回落到一半即卖，估算翻倍止盈、2 ATR 正股保本、止损与收盘前退出同 v6.2。R15 选出。",
+  "developed_on": {
+    "release": "custody-0dte-v5",
+    "generation": "V5",
+    "sessions_through": "2026-09-18"
+  },
+  "params": {
+    "ema_fast": 9,
+    "ema_slow": 21,
+    "atr_period": 14,
+    "opening_minutes": 15,
+    "momentum_lookback": 5,
+    "vwap_buffer_atr": 0.25,
+    "trend_buffer_atr": 0.0,
+    "relax_after_minutes": 0,
+    "stop_lookback": 10,
+    "stop_min_atr": 1.0,
+    "stop_max_atr": 2.0,
+    "fail_minutes": 10,
+    "fail_progress_atr": 1.0,
+    "breakeven_at_atr": 2.0,
+    "trail_activate_atr": 5.0,
+    "trail_atr": 5.0,
+    "flatten_before_close_minutes": 15,
+    "persist_minutes": 5,
+    "charm_exit_before_close_minutes": 90,
+    "protection_needs_moneyness": 1,
+    "otm_stop_shrink": 0.25,
+    "take_profit_premium": 1.0,
+    "min_premium_atr": 5.0,
+    "max_vwap_atr": 2.0,
+    "profit_lock_at": 0.5,
+    "profit_lock_keep": 0.5,
+    "squeeze_lookback": 10
+  }
+}

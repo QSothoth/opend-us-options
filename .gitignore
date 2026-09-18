@@ -1,21 +1,62 @@
+# Python 环境、缓存与构建产物
 __pycache__/
 *.py[cod]
 .venv/
 venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# 本地环境与密钥（保留配置示例）
 .env
 .env.*
 !.env.example
 *.pem
 *.key
+
+# 编辑器、系统与本地工具配置
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.claude/settings.local.json
+*.swp
+*.swo
+*~
+
+# 日志、临时文件与本地数据库
+*.log
+*.log.*
+*.pid
+*.tmp
+*.bak
+/tmp/
+/temp/
+.cache/
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
 *.duckdb
 *.duckdb-wal
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
-.idea/
-.vscode/
+*.sqlite-journal
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.sqlite3-journal
 
-# Datasets live in GitHub Releases, never in git (docs/DATA.md).
+# 数据集仅通过 GitHub Release 发布，不入库（见 docs/DATA.md）
 data/
 *.zip
+
+# 本地探索脚本和中间结果；正式研究记录在 docs/STRATEGY.md
+/research/

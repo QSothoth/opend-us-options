@@ -236,7 +236,8 @@ class OptionalRuleTests(unittest.TestCase):
 
     def test_disabled_entry_filters_preserve_decisions(self):
         closes = piecewise([(1, 100), (15, 100), (60, 103), (90, 101), (390, 105)])
-        disabled = {**PARAMS, 'min_breakout_volume_ratio': None}
+        disabled = {**PARAMS, 'min_breakout_volume_ratio': None, 'squeeze_lookback': None,
+                    'profit_lock_at': None, 'profit_lock_keep': None}
         for direction, path in (('LONG', closes), ('SHORT', [200 - c for c in closes])):
             self.assertEqual(run(path, direction), run(path, direction, disabled))
 
@@ -260,6 +261,43 @@ class OptionalRuleTests(unittest.TestCase):
         for bad in (0.0, -1.0, True):
             with self.assertRaises(ValueError, msg=str(bad)):
                 validate_params({**PARAMS, 'take_profit_premium': bad})
+
+    def test_profit_lock_keeps_part_of_the_peak_and_take_profit_still_sells_first(self):
+        run_up = piecewise([(1, 100.0), (15, 100.0), (390, 110.0)])
+        up_down = piecewise([(1, 100.0), (15, 100.0), (40, 101.0), (200, 101.0), (390, 100.0)])
+        # Only the premium rules can sell: breakeven, trail and the time stop are out of reach.
+        loose = {**PARAMS, 'breakeven_at_atr': 50.0, 'trail_activate_atr': 50.0, 'trail_atr': 50.0, 'fail_minutes': 390}
+        locked = {**loose, 'profit_lock_at': 1.0, 'profit_lock_keep': 0.5}
+        for direction, mirror in (('LONG', lambda c: c), ('SHORT', lambda c: 200 - c)):
+            with self.subTest(direction=direction):
+                up, down = [mirror(c) for c in run_up], [mirror(c) for c in up_down]
+                self.assertEqual(first(run(up, direction, locked), 'EXIT'), (375, 'scheduled_flatten'))
+                minute, reason = first(run(down, direction, locked), 'EXIT')
+                self.assertEqual(reason, 'profit_lock')
+                self.assertGreater(minute, 200)
+                capped = first(run(up, direction, {**loose, 'take_profit_premium': 1.0}), 'EXIT')
+                self.assertEqual(capped[1], 'take_profit')
+                self.assertEqual(first(run(up, direction, {**locked, 'take_profit_premium': 1.0}), 'EXIT'), capped)
+        for bad in ({'profit_lock_at': 0.5}, {'profit_lock_keep': 0.5},
+                    {'profit_lock_at': 0.5, 'profit_lock_keep': 1.0}, {'profit_lock_at': 0.0, 'profit_lock_keep': 0.5},
+                    {'profit_lock_at': True, 'profit_lock_keep': 0.5}):
+            with self.assertRaises(ValueError, msg=str(bad)):
+                validate_params({**PARAMS, **bad})
+
+    def test_squeeze_lets_through_only_breakouts_out_of_a_recent_compression(self):
+        base = piecewise([(1, 100.0), (40, 100.0), (60, 101.0), (390, 106.0)])     # 40 flat bars, then a breakout
+        steady = piecewise([(1, 100.0), (390, 110.0)])                            # trends from the open, never compressed
+        squeeze = {**PARAMS, 'squeeze_lookback': 10}
+        for direction, mirror in (('LONG', lambda c: c), ('SHORT', lambda c: 200 - c)):
+            with self.subTest(direction=direction):
+                out_of_base = [mirror(c) for c in base]
+                self.assertEqual(first(run(out_of_base, direction, squeeze), 'ENTER'), first(run(out_of_base, direction), 'ENTER'))
+                trending = [mirror(c) for c in steady]
+                self.assertEqual(first(run(trending, direction), 'ENTER')[1], 'trend_breakout')
+                self.assertEqual(first(run(trending, direction, squeeze), 'ENTER'), (None, None))
+        for bad in (0, 1.5, True):
+            with self.assertRaises(ValueError, msg=str(bad)):
+                validate_params({**PARAMS, 'squeeze_lookback': bad})
 
     def test_no_out_of_the_money_entry_inside_the_charm_window(self):
         late = [100.0] * 300 + piecewise([(1, 100.0), (90, 104.0)], 90)

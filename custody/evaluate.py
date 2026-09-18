@@ -49,6 +49,9 @@ NULL_DRAWS = 1000
 BOOTSTRAP_DRAWS = 1000        # trading-day bootstrap for the direction-balanced metrics (report only)
 NEIGHBOR_SCALE = 0.25          # parameter neighbours: each numeric parameter x0.75 and x1.25
 CAPTURE_MIN_BEST = 0.20      # upside capture counts cases whose best reachable exit was >= +20%
+PAIR_BIG_LOSS = -0.5         # a same-underlying CALL + PUT pair that lost more than half of the premium it paid
+PAIR_MAX_BIG_LOSS_SHARE = 0.10  # G12: at most one traded pair in ten may lose that much
+PAIR_KINDS = ('both', 'with_only', 'against_only', 'chop_only', 'none')
 # Composite score used to compare versions (docs/STANDARD.md section 10); the verdict still comes from the gates.
 # Return-score weights: the primary metric counts twice, every other return metric once.
 # Unentered cases contribute zero returns; completion contributes a separate fixed share of the composite.
@@ -316,6 +319,53 @@ def summarize(trades, labels, hit_rate=0.5):
     }
 
 
+def pair_outcomes(datas, trades, labels, fill=PRIMARY_FILL):
+    """CALL and PUT of the same symbol, day and strike taken together (docs/STANDARD.md section 7).
+
+    One contract per bought side: the pair P&L is the sum of both sides, its return is that sum over the
+    premium actually paid. The mirror-weighted mean already averages the pairs; this reports how they are
+    distributed - how many pairs made money, how many lost more than half of what they paid, and what
+    happened when only the right or only the wrong side was bought. A pair with no side bought holds no
+    position and is neither a win nor a loss; shares are over traded pairs unless named otherwise. G12
+    checks the traded-pair shares; the pairs are not part of the composite score.
+    """
+    groups = defaultdict(dict)
+    for data, trade, label in zip(datas, trades, labels):
+        case = data.case
+        groups[(case.symbol, case.trade_date, case.strike)][case.direction] = (trade, label['scenario'])
+    rows = []
+    for (symbol, day, strike), sides in sorted(groups.items()):
+        if set(sides) != {'LONG', 'SHORT'}:
+            continue
+        bought = [(trade, scenario) for trade, scenario in sides.values() if trade['entry'] is not None]
+        if len(bought) != 1:
+            kind = 'both' if bought else 'none'
+        else:
+            scenario = bought[0][1]
+            kind = 'with_only' if scenario in WITH_DIRECTION else 'chop_only' if scenario == 'chop' else 'against_only'
+        paid = sum(trade['entry']['price'] * fill.multiplier for trade, _ in bought)
+        pnl = sum(trade['net_pnl'] for trade, _ in bought)
+        rows.append({'symbol': symbol, 'trade_date': day, 'strike': strike, 'bought': kind,
+                     'net_pnl': pnl if bought else None, 'net_return': pnl / paid if bought else None})
+    traded = [r['net_return'] for r in rows if r['net_return'] is not None]
+    count = lambda subset, test: sum(1 for r in subset if r['net_pnl'] is not None and test(r))
+    share = lambda k, n: k / n if n else None
+    profitable, losing = count(rows, lambda r: r['net_pnl'] > 0), count(rows, lambda r: r['net_pnl'] < 0)
+    big_loss = count(rows, lambda r: r['net_return'] < PAIR_BIG_LOSS)
+    by_bought = {}
+    for kind in PAIR_KINDS:
+        subset = [r for r in rows if r['bought'] == kind]
+        returns = [r['net_return'] for r in subset if r['net_return'] is not None]
+        by_bought[kind] = {'pairs': len(subset), 'profitable': count(subset, lambda r: r['net_pnl'] > 0),
+                           'mean_return': statistics.mean(returns) if returns else None}
+    return {'pairs': len(rows), 'traded': len(traded), 'profitable': profitable, 'losing': losing, 'big_loss': big_loss,
+            'profitable_share': share(profitable, len(rows)), 'profitable_share_traded': share(profitable, len(traded)),
+            'losing_share_traded': share(losing, len(traded)), 'big_loss_share_traded': share(big_loss, len(traded)),
+            'median_return': statistics.median(traded) if traded else None, 'worst_return': min(traded) if traded else None,
+            'dollars_mean': statistics.mean(r['net_pnl'] or 0.0 for r in rows) if rows else None,
+            'by_bought': by_bought, 'rows': rows}
+
+
 def _unit(x):
     return min(max(x, 0.0), 1.0)
 
@@ -466,8 +516,9 @@ def prefix_consistency(datas, trades, item, fill=PRIMARY_FILL):
 
 
 # ------------------------------------------------------------------ verdict
-def gates(summary, benchmark, robust):
+def gates(summary, benchmark, robust, pairs):
     s, b = summary, benchmark
+    pair_s, pair_b = pairs['strategy'], pairs['benchmark']
     against, bench_against = s['by_scenario']['trend_against'], b['by_scenario']['trend_against']
     checks = {
         'G3_expectancy_beats_benchmark': _all([_gt(s['balanced']['expectancy'], b['balanced']['expectancy']),
@@ -481,6 +532,9 @@ def gates(summary, benchmark, robust):
         'G9_leave_one_day_out_stable': robust['leave_one_day_out']['passed'],
         'G10_parameter_neighbors_beat_benchmark': robust['neighbors']['passed'],
         'G11_profit_factor_above_1': _gt(s['balanced']['profit_factor'], 1.0),
+        'G12_call_put_pairs_tolerate_the_wrong_side': _all([
+            _gt(pair_s['profitable_share_traded'], pair_b['profitable_share_traded']),
+            _le(pair_s['big_loss_share_traded'], PAIR_MAX_BIG_LOSS_SHARE)]),
     }
     return checks
 
@@ -566,6 +620,10 @@ def _ge(a, b):
     return None if a is None or b is None else a >= b
 
 
+def _le(a, b):
+    return None if a is None or b is None else a <= b
+
+
 def _all(values):
     """Tri-state AND: False if anything failed, None if something could not be judged."""
     values = list(values)
@@ -620,6 +678,7 @@ def evaluate(dataset_dir, strategy_id=None, registry=None, null_draws=NULL_DRAWS
         'prefix_consistency': prefix_consistency(datas, trades, item),
         'bootstrap_by_day': day_bootstrap(datas, labels, trades, bench, draws=BOOTSTRAP_DRAWS if null_draws else 50),
         'market_shapes': _market_shapes(trades, bench, labels),
+        'pairs': {'strategy': pair_outcomes(datas, trades, labels), 'benchmark': pair_outcomes(datas, bench, labels)},
         'cases': [dict(t, decisions=None, benchmark_net_return=b['net_return'], **l)
                   for t, b, l in zip(trades, bench, labels)],
     }
@@ -631,16 +690,18 @@ def evaluate(dataset_dir, strategy_id=None, registry=None, null_draws=NULL_DRAWS
     coverage = {s: report['summary']['by_scenario'][s]['n'] for s in SCENARIOS}
     coverage_ok = all(n >= MIN_CASES_PER_SCENARIO for n in coverage.values())
     report['robustness'] = robustness(datas, labels, trades, bench, item)
-    in_sample_checks = gates(report['summary'], report['benchmark_open_hold'], report['robustness'])
+    in_sample_checks = gates(report['summary'], report['benchmark_open_hold'], report['robustness'], report['pairs'])
     oos = None
     if oos_idx:
         pick = lambda seq: [seq[i] for i in oos_idx]
         oos_summary = summarize(pick(trades), pick(labels))
         oos_bench = summarize(pick(bench), pick(labels))
         oos_robust = robustness(pick(datas), pick(labels), pick(trades), pick(bench), item)
+        oos_pairs = {'strategy': pair_outcomes(pick(datas), pick(trades), pick(labels)),
+                     'benchmark': pair_outcomes(pick(datas), pick(bench), pick(labels))}
         oos = {'sessions': len({datas[i].case.trade_date for i in oos_idx}), 'summary': oos_summary,
                'benchmark_open_hold': oos_bench, 'robustness': oos_robust,
-               'gates': gates(oos_summary, oos_bench, oos_robust)}
+               'pairs': oos_pairs, 'gates': gates(oos_summary, oos_bench, oos_robust, oos_pairs)}
     oos_sessions = oos['sessions'] if oos else 0
     decisive = oos['gates'] if oos and oos_sessions >= MIN_OOS_SESSIONS else in_sample_checks
     report['score'] = {'strategy': composite_score(report['summary']),
@@ -706,6 +767,8 @@ GATE_TEXT = {
     'G9_leave_one_day_out_stable': 'G9 去掉任意一天，平均收益和盈亏比仍都赢对照组（防过拟合）',
     'G10_parameter_neighbors_beat_benchmark': 'G10 每个参数上下浮动 25%，平均收益和盈亏比仍都赢对照组（防过拟合）',
     'G11_profit_factor_above_1': 'G11 整体赚钱（总赚 ÷ 总亏 > 1）',
+    'G12_call_put_pairs_tolerate_the_wrong_side': 'G12 同一标的 CALL + PUT 合起来：赚钱的配对比例高于对照组，'
+                                                  '亏掉一半以上的配对不超过 %d%%' % round(100 * PAIR_MAX_BIG_LOSS_SHARE),
 }
 VERDICT_TEXT = {
     'ACCEPT': '达标，可以把策略状态改为 accepted',
@@ -736,6 +799,50 @@ def _score_line(report):
                                         _num(score['out_of_sample_benchmark']['score'], '%.1f'))
     return text + '）。综合分 = 收益分 × %d%% + 完成分 × %d%%，用来比较版本和挑选候选，结论仍只看门槛。' % (
         round(100 * (1 - COMPLETION_SCORE_WEIGHT)), round(100 * COMPLETION_SCORE_WEIGHT))
+
+
+PAIR_KIND_ZH = {'both': '两边都买', 'with_only': '只买了方向对的一边', 'against_only': '只买了方向错的一边',
+                'chop_only': '只买了一边（震荡日）', 'none': '两边都没买'}
+
+
+def _pair_lines(pairs):
+    s, b = pairs['strategy'], pairs['benchmark']
+    lines = [
+        '',
+        '## 4. 同一标的 CALL 和 PUT 合起来看（买错一边时亏多少）',
+        '',
+        '同一标的、同一天、同一行权价的 CALL 和 PUT 算一对，买入的每一边按 1 张合约计，两边盈亏相加，再除以实际付出的权利金。'
+        '上游方向对时，对的一边要多赚、错的一边要少亏，合起来才不亏。两边都没买的一对没有仓位，不算赚也不算亏，'
+        '下表比例除特别注明外都以有交易的配对为分母。**G12**：合起来赚钱的配对比例要高于对照组，'
+        '亏掉超过一半权利金的配对不超过 %d%%；不进综合分（定义见 docs/STANDARD.md 第 7、9 节）。' % round(100 * PAIR_MAX_BIG_LOSS_SHARE),
+        '',
+    ]
+    if not s['pairs']:
+        return lines + ['这份数据没有 CALL 和 PUT 两边齐全的配对，无法计算。']
+    count = lambda k, share: '%d（%s）' % (k, _share(share))
+    lines += [
+        '| 指标 | 策略 | 对照组（两边都 09:35 买，拿到 15:45） |', '|---|---:|---:|',
+        '| 配对数 / 有交易的配对 | %d / %d | %d / %d |' % (s['pairs'], s['traded'], b['pairs'], b['traded']),
+        '| **合起来赚钱的配对**（G12：要高于对照组） | %s | %s |' % (count(s['profitable'], s['profitable_share_traded']),
+                                                            count(b['profitable'], b['profitable_share_traded'])),
+        '| 合起来赚钱的配对占全部配对（没买也算在分母里） | %s | %s |' % (_share(s['profitable_share']), _share(b['profitable_share'])),
+        '| 合起来亏钱的配对 | %s | %s |' % (count(s['losing'], s['losing_share_traded']), count(b['losing'], b['losing_share_traded'])),
+        '| **亏掉超过一半权利金的配对**（G12：不超过 %d%%） | %s | %s |' % (
+            round(100 * PAIR_MAX_BIG_LOSS_SHARE), count(s['big_loss'], s['big_loss_share_traded']),
+            count(b['big_loss'], b['big_loss_share_traded'])),
+        '| 有交易配对的收益中位数 / 最差一对 | %s / %s | %s / %s |' % (
+            _pct(s['median_return']), _pct(s['worst_return']), _pct(b['median_return']), _pct(b['worst_return'])),
+        '| 每对平均盈亏（美元，没买记 0） | %s | %s |' % (_money(s['dollars_mean']), _money(b['dollars_mean'])),
+        '',
+        '策略按买了哪一边拆开（「对 / 错」按买入那一边当天的走势，事后分类）：',
+        '',
+        '| 买了哪边 | 配对数 | 合起来赚钱 | 平均收益 |', '|---|---:|---:|---:|',
+    ]
+    for kind in PAIR_KINDS:
+        row = s['by_bought'][kind]
+        lines.append('| %s | %d | %s | %s |' % (PAIR_KIND_ZH[kind], row['pairs'],
+                                                '—' if kind == 'none' else row['profitable'], _pct(row['mean_return'])))
+    return lines
 
 
 def _hhmm(minute):
@@ -871,10 +978,11 @@ def render_markdown(report):
             SCENARIO_ZH[name], x['n'], _pct(x['expectancy']), _pct(y['expectancy']), _num(x['payoff_ratio']),
             _share(x['upside_capture'])))
     lines += ['', '\\* 只统计入场后「最好能卖到 +%d%% 以上」的合约：实际收益占最好可能收益的比例（亏钱记 0%%）。' % round(100 * CAPTURE_MIN_BEST)]
+    lines += _pair_lines(report['pairs'])
     null = report['shuffle_null']
     lines += [
         '',
-        '## 4. 结果靠不靠得住',
+        '## 5. 结果靠不靠得住',
         '',
         ('- **随机时点对照**：把策略的买卖时间随机换到别的合约上，重复 %s 次。随机时间的平均收益不比策略差的比例 p = %s，盈亏比 p = %s。'
          'p 越小越说明择时真的用上了当天走势；p 大于 0.1 基本等于没有择时能力。' % (
@@ -921,7 +1029,7 @@ def render_markdown(report):
             _pct(row['benchmark']['expectancy'])))
     lines += ['', '完成情况：' + '；'.join('%s %d' % (OUTCOME_ZH[k], s['outcomes'].get(k, 0)) for k in OUTCOME_ZH),
               '', '未入场的收益率逐笔记为 —，总体比较贡献零；到期结算纳入盈亏但不计完成卖出。',
-              '', '## 5. 逐笔明细', '',
+              '', '## 6. 逐笔明细', '',
               '| 标的 | 日期 | 合约 | 当天走势 | 买入 | 买入原因 | 卖出 | 卖出原因 | 策略收益 | 对照组收益 | 完成情况 |',
               '|---|---|---|---|---|---|---|---|---:|---:|---|']
     for c in report['cases']:
@@ -942,6 +1050,7 @@ REASON_ZH = {
     'invalidation_stop': '止损', 'breakeven_stop': '正股跌回买入价离场', 'trailing_stop': '从高点回撤离场',
     'no_progress': '迟迟不涨离场', 'scheduled_flatten': '收盘前强平', 'platform_flatten': '平台强平',
     'charm_exit': '午后仍虚值离场', 'take_profit': '估算权利金翻倍止盈',
+    'profit_lock': '浮盈回落锁盈离场',
 }
 
 

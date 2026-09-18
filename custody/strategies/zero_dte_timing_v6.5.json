@@ -1,0 +1,40 @@
+{
+  "schema_version": 2,
+  "strategy_id": "zero_dte_timing_v6.5",
+  "engine": "zero_dte_timing",
+  "description": "单笔末日期权择时：v6.4 去掉「VWAP 有利侧站稳 5 根」的入场确认（压缩后突破不再等 5 根），其余同 v6.4。R16 候选 Z3；未满足 R16 预登记的收益分条件，2026-09-18 由用户决定登记并作为研究基线。",
+  "developed_on": {
+    "release": "custody-0dte-v5",
+    "generation": "V5",
+    "sessions_through": "2026-09-18"
+  },
+  "params": {
+    "ema_fast": 9,
+    "ema_slow": 21,
+    "atr_period": 14,
+    "opening_minutes": 15,
+    "momentum_lookback": 5,
+    "vwap_buffer_atr": 0.25,
+    "trend_buffer_atr": 0.0,
+    "relax_after_minutes": 0,
+    "stop_lookback": 10,
+    "stop_min_atr": 1.0,
+    "stop_max_atr": 2.0,
+    "fail_minutes": 10,
+    "fail_progress_atr": 1.0,
+    "breakeven_at_atr": 2.0,
+    "trail_activate_atr": 5.0,
+    "trail_atr": 5.0,
+    "flatten_before_close_minutes": 15,
+    "persist_minutes": 0,
+    "charm_exit_before_close_minutes": 90,
+    "protection_needs_moneyness": 1,
+    "otm_stop_shrink": 0.25,
+    "take_profit_premium": 1.0,
+    "min_premium_atr": 5.0,
+    "max_vwap_atr": 2.0,
+    "profit_lock_at": 0.5,
+    "profit_lock_keep": 0.5,
+    "squeeze_lookback": 10
+  }
+}

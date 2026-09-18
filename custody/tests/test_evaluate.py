@@ -261,6 +261,43 @@ class WeightingAndMetricsTests(unittest.TestCase):
         self.assertEqual(ev.verdict(dict(passing, G4=None), True, True, 25, True), 'PROVISIONAL')   # cannot judge -> never ACCEPT
         self.assertEqual(ev.verdict(dict(passing, G3=None, G4=False), True, True, 25, True), 'REJECT')
 
+    def test_call_and_put_pairs_add_up_one_contract_per_bought_side(self):
+        def side(symbol, direction, scenario, price=None, pnl=None, strike=100.0, day=DAY):
+            data = SimpleNamespace(case=SimpleNamespace(symbol=symbol, trade_date=day, strike=strike, direction=direction))
+            trade = {'entry': None if price is None else {'price': price}, 'net_pnl': pnl}
+            return data, trade, {'scenario': scenario}
+        rows = [
+            side('US.A', 'LONG', 'trend_with', 1.0, 100.0), side('US.A', 'SHORT', 'trend_against', 1.0, -40.0),   # +30%
+            side('US.B', 'LONG', 'trend_with'), side('US.B', 'SHORT', 'trend_against', 2.0, -120.0),            # wrong side only
+            side('US.C', 'LONG', 'reversal_with', 0.5, 25.0), side('US.C', 'SHORT', 'reversal_against'),        # right side only
+            side('US.D', 'LONG', 'chop'), side('US.D', 'SHORT', 'chop'),                                         # nothing bought
+            side('US.E', 'LONG', 'chop', 1.0, -10.0), side('US.E', 'SHORT', 'chop', strike=101.0),               # strikes differ
+        ]
+        pairs = ev.pair_outcomes(*zip(*rows))
+        self.assertEqual((pairs['pairs'], pairs['traded'], pairs['profitable'], pairs['losing'], pairs['big_loss']), (4, 3, 2, 1, 1))
+        self.assertEqual([r['bought'] for r in pairs['rows']], ['both', 'against_only', 'with_only', 'none'])
+        self.assertAlmostEqual(pairs['rows'][0]['net_return'], 0.3)
+        self.assertAlmostEqual(pairs['rows'][1]['net_return'], -0.6)
+        self.assertEqual((pairs['profitable_share'], pairs['profitable_share_traded']), (0.5, 2 / 3))
+        self.assertEqual((pairs['losing_share_traded'], pairs['big_loss_share_traded']), (1 / 3, 1 / 3))
+        self.assertAlmostEqual(pairs['worst_return'], -0.6)
+        self.assertAlmostEqual(pairs['dollars_mean'], (60.0 - 120.0 + 25.0 + 0.0) / 4)
+        self.assertEqual(pairs['by_bought']['none'], {'pairs': 1, 'profitable': 0, 'mean_return': None})
+        self.assertEqual(pairs['by_bought']['chop_only']['pairs'], 0)
+        empty = ev.pair_outcomes(*zip(side('US.A', 'LONG', 'trend_with', 1.0, 5.0)))
+        self.assertEqual((empty['pairs'], empty['profitable_share'], empty['median_return']), (0, None, None))
+
+    def test_g12_needs_more_profitable_pairs_than_the_benchmark_and_few_big_pair_losses(self):
+        flat = {'expectancy': 0.0, 'payoff_ratio': 1.0, 'profit_factor': 1.0}
+        summary = {'balanced': flat, 'balanced_dollars': flat, 'by_scenario': {'trend_against': flat}, 'with_direction': flat}
+        robust = {'halves': {'passed': True}, 'leave_one_day_out': {'passed': True}, 'neighbors': {'passed': True}}
+        bench = {'profitable_share_traded': 0.25, 'big_loss_share_traded': 0.4}
+        key = 'G12_call_put_pairs_tolerate_the_wrong_side'
+        for profitable, big_loss, expected in ((0.3, ev.PAIR_MAX_BIG_LOSS_SHARE, True), (0.25, 0.0, False),
+                                               (0.3, 0.11, False), (None, None, None)):
+            pairs = {'strategy': {'profitable_share_traded': profitable, 'big_loss_share_traded': big_loss}, 'benchmark': bench}
+            self.assertIs(ev.gates(summary, summary, robust, pairs)[key], expected, (profitable, big_loss))
+
     def test_tri_state_helpers(self):
         self.assertIsNone(ev._gt(None, 1.0))
         self.assertFalse(ev._gt(0.5, 1.0))
@@ -303,9 +340,15 @@ class EndToEndTests(unittest.TestCase):
             for key in ('with_direction', 'not_with_direction'):
                 self.assertEqual((skilled[key]['value'], skilled[key]['weight']), (plain[key]['value'], plain[key]['weight']))
             self.assertIsNotNone(report['score']['out_of_sample'])
+            pairs = report['pairs']['benchmark']
+            self.assertEqual((pairs['pairs'], pairs['traded'], pairs['by_bought']['both']['pairs']), (2, 2, 2))
+            self.assertEqual(report['out_of_sample']['pairs']['strategy']['pairs'], 1)
+            self.assertIn('G12_call_put_pairs_tolerate_the_wrong_side', report['out_of_sample']['gates'])
+            self.assertIn('G12_call_put_pairs_tolerate_the_wrong_side', report['gates_in_sample'])
             markdown = ev.render_markdown(report)
             for section in ('## 先看这里', '**综合分：', '### 综合分怎么来的', '对照组', '## 1. 过没过门槛', '## 2. 总体',
-                            '## 3. 分走势看', '## 4. 结果靠不靠得住', '## 5. 逐笔明细', '方向正确时参与率', '80%', '20%'):
+                            '## 3. 分走势看', '## 4. 同一标的 CALL 和 PUT 合起来看', '## 5. 结果靠不靠得住',
+                            '## 6. 逐笔明细', '方向正确时参与率', '80%', '20%'):
                 self.assertIn(section, markdown)
             self.assertEqual(ev.evaluate(Path(tmp) / 'ds', null_draws=20), report)  # deterministic
 

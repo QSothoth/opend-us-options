@@ -25,6 +25,10 @@ class DocsTests(unittest.TestCase):
         self.assertIn('综合分 = %d%% × 收益分 + %d%% × 完成分' %
                       (round(100 * (1 - ev.COMPLETION_SCORE_WEIGHT)), round(100 * ev.COMPLETION_SCORE_WEIGHT)), text)
         self.assertIn('方向正确时参与率', text)
+        self.assertIn('同一标的 CALL 和 PUT 合起来看', text)
+        self.assertIn('亏掉超过一半（%d%%）' % round(-100 * ev.PAIR_BIG_LOSS), text)
+        self.assertIn('| G12 |', text)
+        self.assertIn('不超过 %d%%' % round(100 * ev.PAIR_MAX_BIG_LOSS_SHARE), text)
         self.assertIn('16 分', text)
 
     def test_both_sides_rule_is_written_everywhere_it_applies(self):
@@ -42,10 +46,12 @@ class DocsTests(unittest.TestCase):
                 self.assertEqual(report['strategy']['sha256'], item['sha256'], path)
                 self.assertIn('completion_score', report['summary'], path)
                 self.assertIn('with_direction_participation', report['summary'], path)
+                self.assertEqual(set(report['pairs']), {'strategy', 'benchmark'}, path)
                 for side in ('strategy', 'benchmark', 'strategy_hit_0.6', 'benchmark_hit_0.6'):
                     self.assertEqual(report['score'][side]['completion_weight'], ev.COMPLETION_SCORE_WEIGHT, path)
                     self.assertIn('return_score', report['score'][side], path)
                 self.assertNotIn('G1_completion_100pct', report['gates_in_sample'], path)
+                self.assertIn('G12_call_put_pairs_tolerate_the_wrong_side', report['gates_in_sample'], path)
 
 
 if __name__ == '__main__':
