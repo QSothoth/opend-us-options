@@ -1,0 +1,19 @@
+{
+  "trade_date": "2026-09-18",
+  "market": "A",
+  "source": "schema example only — replace with OpenD freeze before live use",
+  "bars": [
+    {
+      "symbol": "SH.688327",
+      "name": "云从科技",
+      "market": "A",
+      "trade_date": "2026-09-18",
+      "prev_close": 10.0,
+      "open": 10.4,
+      "high": 11.0,
+      "low": 10.35,
+      "close": 10.9,
+      "notes": "placeholder for CI schema; not a claim about 9/18 tape"
+    }
+  ]
+}

@@ -21,6 +21,11 @@
 
 [`studies/hk_near_expiry_flow/`](studies/hk_near_expiry_flow/)（数据说明见该目录 `dataset/manifest.json`）。
 
+
+## 研究切片：A/H 竞价强度 × 当日走势
+
+见 [`studies/auction_strength/`](studies/auction_strength/)（验证集 2026-09-18 智谱 / MiniMax / 阿里）。与 `custody` 主线独立，只读分析、不下单。
+
 ## 快速开始
 
 ```bash
