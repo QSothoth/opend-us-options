@@ -41,6 +41,11 @@
       "file": "open_hold_v2.json",
       "sha256": "b7bdc4956db1c0e354f3b7e8fbba5f399e2ba775fe5e890b059f570a4b887d72",
       "status": "candidate"
+    },
+    "open_hold_v3": {
+      "file": "open_hold_v3.json",
+      "sha256": "6817da2325435db83be33867b144ed0d65962478cee37412eb1546b574483def",
+      "status": "candidate"
     }
   }
 }

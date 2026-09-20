@@ -1,0 +1,40 @@
+{
+  "schema_version": 2,
+  "strategy_id": "open_hold_v3",
+  "engine": "zero_dte_timing",
+  "description": "保证入场线 v3：v6.6 的入场信号 + must_enter_by_minute=60 兜底（开盘 1 小时内必有一单）；离场只保留估算权利金翻倍止盈与浮盈回落锁盈，解除止损、保本、无进展、跟踪与 charm 退出（止损上下限设为 10–20 ATR，实际只在极端行情触发）。R23 候选 M4，21 折交叉验证全部选中。按 STANDARD 第 9b 节（2026-09-20 修订版）判定，结论 PROVISIONAL。",
+  "developed_on": {
+    "release": "custody-0dte-v6.1",
+    "generation": "V6.1",
+    "sessions_through": "2026-09-18"
+  },
+  "params": {
+    "ema_fast": 9,
+    "ema_slow": 21,
+    "atr_period": 14,
+    "opening_minutes": 15,
+    "momentum_lookback": 5,
+    "vwap_buffer_atr": 0.25,
+    "trend_buffer_atr": 0.0,
+    "relax_after_minutes": 0,
+    "stop_lookback": 10,
+    "stop_min_atr": 10.0,
+    "stop_max_atr": 20.0,
+    "fail_minutes": 390,
+    "fail_progress_atr": 1.0,
+    "breakeven_at_atr": 50.0,
+    "trail_activate_atr": 50.0,
+    "trail_atr": 5.0,
+    "flatten_before_close_minutes": 15,
+    "persist_minutes": 0,
+    "protection_needs_moneyness": 1,
+    "otm_stop_shrink": 0.25,
+    "take_profit_premium": 1.0,
+    "min_premium_atr": 5.0,
+    "max_vwap_atr": 2.0,
+    "profit_lock_at": 0.5,
+    "profit_lock_keep": 0.5,
+    "squeeze_lookback": 30,
+    "must_enter_by_minute": 60
+  }
+}

@@ -1,0 +1,2764 @@
+{
+  "standard": "docs/STANDARD.md",
+  "strategy": {
+    "strategy_id": "open_hold_v3",
+    "sha256": "6817da2325435db83be33867b144ed0d65962478cee37412eb1546b574483def",
+    "engine": "zero_dte_timing",
+    "status": "candidate"
+  },
+  "strategy_params": {
+    "ema_fast": 9,
+    "ema_slow": 21,
+    "atr_period": 14,
+    "opening_minutes": 15,
+    "momentum_lookback": 5,
+    "vwap_buffer_atr": 0.25,
+    "trend_buffer_atr": 0.0,
+    "relax_after_minutes": 0,
+    "stop_lookback": 10,
+    "stop_min_atr": 10.0,
+    "stop_max_atr": 20.0,
+    "fail_minutes": 390,
+    "fail_progress_atr": 1.0,
+    "breakeven_at_atr": 50.0,
+    "trail_activate_atr": 50.0,
+    "trail_atr": 5.0,
+    "flatten_before_close_minutes": 15,
+    "persist_minutes": 0,
+    "protection_needs_moneyness": 1,
+    "otm_stop_shrink": 0.25,
+    "take_profit_premium": 1.0,
+    "min_premium_atr": 5.0,
+    "max_vwap_atr": 2.0,
+    "profit_lock_at": 0.5,
+    "profit_lock_keep": 0.5,
+    "squeeze_lookback": 30,
+    "must_enter_by_minute": 60
+  },
+  "developed_on": {
+    "release": "custody-0dte-v6.1",
+    "generation": "V6.1",
+    "sessions_through": "2026-09-18"
+  },
+  "dataset": {
+    "name": "custody-eval-2026-09-18-v2",
+    "checksums_sha256": "fba36ab960189e6fe80660629455774627915d1b8982361a324ec203892fc2c0",
+    "checksums_verified": 45,
+    "cases": 28,
+    "sessions": 1,
+    "window": [
+      "2026-09-18",
+      "2026-09-18"
+    ],
+    "selections": {
+      "both_sides_atm_at_open": 28
+    },
+    "sides": {
+      "symbol_sessions": 14,
+      "both_sides": 14,
+      "ok": true,
+      "missing": []
+    }
+  },
+  "fill_model": {
+    "delay_minutes": 1,
+    "slippage_fraction": 0.25,
+    "fee_per_contract": 0.65,
+    "multiplier": 100
+  },
+  "summary": {
+    "cases": 28,
+    "completed": 27,
+    "completion_rate": 0.964286,
+    "completion_score": 96.428571,
+    "with_direction_participation": {
+      "cases": 12,
+      "traded": 12,
+      "rate": 1.0
+    },
+    "outcomes": {
+      "COMPLETED": 27,
+      "EXIT_NOT_FILLED": 1
+    },
+    "traded": {
+      "n": 28,
+      "expectancy": -0.122944,
+      "win_rate": 0.5,
+      "average_win": 0.512727,
+      "average_loss": 0.758615,
+      "payoff_ratio": 0.675873,
+      "profit_factor": 0.675873
+    },
+    "traded_raw": {
+      "n": 28,
+      "expectancy": -0.122944,
+      "win_rate": 0.5,
+      "average_win": 0.512727,
+      "average_loss": 0.758615,
+      "payoff_ratio": 0.675873,
+      "profit_factor": 0.675873
+    },
+    "failures": {},
+    "balanced": {
+      "n": 28,
+      "expectancy": -0.122944,
+      "win_rate": 0.5,
+      "average_win": 0.512727,
+      "average_loss": 0.758615,
+      "payoff_ratio": 0.675873,
+      "profit_factor": 0.675873
+    },
+    "balanced_dollars": {
+      "n": 28,
+      "expectancy": 156.491071,
+      "win_rate": 0.5,
+      "average_win": 448.996429,
+      "average_loss": 136.014286,
+      "payoff_ratio": 3.301098,
+      "profit_factor": 3.301098
+    },
+    "raw": {
+      "n": 28,
+      "expectancy": -0.122944,
+      "win_rate": 0.5,
+      "average_win": 0.512727,
+      "average_loss": 0.758615,
+      "payoff_ratio": 0.675873,
+      "profit_factor": 0.675873
+    },
+    "dollars_total": 4381.75,
+    "coverage_gaps": [],
+    "by_scenario": {
+      "trend_with": {
+        "n": 8,
+        "expectancy": 0.467621,
+        "win_rate": 0.875,
+        "average_win": 0.582754,
+        "average_loss": 0.33831,
+        "payoff_ratio": 1.722544,
+        "profit_factor": 12.057811,
+        "label_zh": "顺势单边",
+        "traded": 8,
+        "median": 0.425207,
+        "upside_capture": 0.491878
+      },
+      "reversal_with": {
+        "n": 4,
+        "expectancy": 0.613203,
+        "win_rate": 1.0,
+        "average_win": 0.613203,
+        "average_loss": null,
+        "payoff_ratio": null,
+        "profit_factor": null,
+        "label_zh": "先逆后顺",
+        "traded": 4,
+        "median": 0.536705,
+        "upside_capture": 0.27715
+      },
+      "chop": {
+        "n": 4,
+        "expectancy": -0.234773,
+        "win_rate": 0.25,
+        "average_win": 0.459589,
+        "average_loss": 0.466228,
+        "payoff_ratio": 0.985761,
+        "profit_factor": 0.328587,
+        "label_zh": "震荡",
+        "traded": 4,
+        "median": -0.444014,
+        "upside_capture": 0.129026
+      },
+      "reversal_against": {
+        "n": 4,
+        "expectancy": -0.787331,
+        "win_rate": 0.0,
+        "average_win": null,
+        "average_loss": 0.787331,
+        "payoff_ratio": null,
+        "profit_factor": 0.0,
+        "label_zh": "先顺后逆",
+        "traded": 4,
+        "median": -0.774731,
+        "upside_capture": 0.0
+      },
+      "trend_against": {
+        "n": 8,
+        "expectancy": -0.693474,
+        "win_rate": 0.25,
+        "average_win": 0.09325,
+        "average_loss": 0.955715,
+        "payoff_ratio": 0.097571,
+        "profit_factor": 0.032524,
+        "label_zh": "逆势单边",
+        "traded": 8,
+        "median": -0.938564,
+        "upside_capture": 0.035111
+      }
+    },
+    "with_direction": {
+      "n": 12,
+      "expectancy": 0.516148,
+      "win_rate": 0.916667,
+      "average_win": 0.593826,
+      "average_loss": 0.33831,
+      "payoff_ratio": 1.755273,
+      "profit_factor": 19.308004
+    },
+    "not_with_direction": {
+      "n": 16,
+      "expectancy": -0.602263,
+      "win_rate": 0.1875,
+      "average_win": 0.215363,
+      "average_loss": 0.790946,
+      "payoff_ratio": 0.272285,
+      "profit_factor": 0.062835
+    },
+    "hold_minutes_median": 315.0,
+    "entry_reasons": {
+      "deadline_entry": 23,
+      "trend_breakout": 5
+    },
+    "exit_reasons": {
+      "scheduled_flatten": 21,
+      "invalidation_stop": 3,
+      "profit_lock": 4
+    }
+  },
+  "benchmark_open_hold": {
+    "cases": 28,
+    "completed": 27,
+    "completion_rate": 0.964286,
+    "completion_score": 96.428571,
+    "with_direction_participation": {
+      "cases": 12,
+      "traded": 12,
+      "rate": 1.0
+    },
+    "outcomes": {
+      "COMPLETED": 27,
+      "EXIT_NOT_FILLED": 1
+    },
+    "traded": {
+      "n": 28,
+      "expectancy": -0.254618,
+      "win_rate": 0.25,
+      "average_win": 1.168105,
+      "average_loss": 0.728859,
+      "payoff_ratio": 1.602649,
+      "profit_factor": 0.534216
+    },
+    "traded_raw": {
+      "n": 28,
+      "expectancy": -0.254618,
+      "win_rate": 0.25,
+      "average_win": 1.168105,
+      "average_loss": 0.728859,
+      "payoff_ratio": 1.602649,
+      "profit_factor": 0.534216
+    },
+    "failures": {},
+    "balanced": {
+      "n": 28,
+      "expectancy": -0.254618,
+      "win_rate": 0.25,
+      "average_win": 1.168105,
+      "average_loss": 0.728859,
+      "payoff_ratio": 1.602649,
+      "profit_factor": 0.534216
+    },
+    "balanced_dollars": {
+      "n": 28,
+      "expectancy": 231.526786,
+      "win_rate": 0.25,
+      "average_win": 1527.685714,
+      "average_loss": 200.52619,
+      "payoff_ratio": 7.618385,
+      "profit_factor": 2.539462
+    },
+    "raw": {
+      "n": 28,
+      "expectancy": -0.254618,
+      "win_rate": 0.25,
+      "average_win": 1.168105,
+      "average_loss": 0.728859,
+      "payoff_ratio": 1.602649,
+      "profit_factor": 0.534216
+    },
+    "dollars_total": 6482.75,
+    "coverage_gaps": [],
+    "by_scenario": {
+      "trend_with": {
+        "n": 8,
+        "expectancy": 1.003478,
+        "win_rate": 0.875,
+        "average_win": 1.168105,
+        "average_loss": 0.148913,
+        "payoff_ratio": 7.844211,
+        "profit_factor": 54.909474,
+        "label_zh": "顺势单边",
+        "traded": 8,
+        "median": 0.682719,
+        "upside_capture": 0.511487
+      },
+      "reversal_with": {
+        "n": 4,
+        "expectancy": -0.645165,
+        "win_rate": 0.0,
+        "average_win": null,
+        "average_loss": 0.645165,
+        "payoff_ratio": null,
+        "profit_factor": 0.0,
+        "label_zh": "先逆后顺",
+        "traded": 4,
+        "median": -0.648774,
+        "upside_capture": 0.0
+      },
+      "chop": {
+        "n": 4,
+        "expectancy": -0.615993,
+        "win_rate": 0.0,
+        "average_win": null,
+        "average_loss": 0.615993,
+        "payoff_ratio": null,
+        "profit_factor": 0.0,
+        "label_zh": "震荡",
+        "traded": 4,
+        "median": -0.666234,
+        "upside_capture": 0.0
+      },
+      "reversal_against": {
+        "n": 4,
+        "expectancy": -0.568452,
+        "win_rate": 0.0,
+        "average_win": null,
+        "average_loss": 0.568452,
+        "payoff_ratio": null,
+        "profit_factor": 0.0,
+        "label_zh": "先顺后逆",
+        "traded": 4,
+        "median": -0.584831,
+        "upside_capture": 0.0
+      },
+      "trend_against": {
+        "n": 8,
+        "expectancy": -0.979836,
+        "win_rate": 0.0,
+        "average_win": null,
+        "average_loss": 0.979836,
+        "payoff_ratio": null,
+        "profit_factor": 0.0,
+        "label_zh": "逆势单边",
+        "traded": 8,
+        "median": -0.994573,
+        "upside_capture": 0.0
+      }
+    },
+    "with_direction": {
+      "n": 12,
+      "expectancy": 0.45393,
+      "win_rate": 0.583333,
+      "average_win": 1.168105,
+      "average_loss": 0.545914,
+      "payoff_ratio": 2.139723,
+      "profit_factor": 2.995612
+    },
+    "not_with_direction": {
+      "n": 16,
+      "expectancy": -0.786029,
+      "win_rate": 0.0,
+      "average_win": null,
+      "average_loss": 0.786029,
+      "payoff_ratio": null,
+      "profit_factor": 0.0
+    },
+    "hold_minutes_median": 370.0,
+    "entry_reasons": {
+      "benchmark_open": 28
+    },
+    "exit_reasons": {
+      "scheduled_flatten": 28
+    }
+  },
+  "direction_skill_0.6": {
+    "strategy": {
+      "n": 28,
+      "expectancy": -0.01658,
+      "win_rate": 0.564286,
+      "average_win": 0.534639,
+      "average_loss": 0.730454,
+      "payoff_ratio": 0.731926,
+      "profit_factor": 0.947905
+    },
+    "benchmark": {
+      "n": 28,
+      "expectancy": -0.143477,
+      "win_rate": 0.3,
+      "average_win": 1.168105,
+      "average_loss": 0.705584,
+      "payoff_ratio": 1.655515,
+      "profit_factor": 0.709506
+    }
+  },
+  "stress": {
+    "slippage_0": {
+      "fill_model": {
+        "delay_minutes": 1,
+        "slippage_fraction": 0.0,
+        "fee_per_contract": 0.65,
+        "multiplier": 100
+      },
+      "strategy": {
+        "n": 28,
+        "expectancy": -0.078178,
+        "win_rate": 0.5,
+        "average_win": 0.586246,
+        "average_loss": 0.742603,
+        "payoff_ratio": 0.789448,
+        "profit_factor": 0.789448
+      },
+      "benchmark": {
+        "n": 28,
+        "expectancy": -0.21195,
+        "win_rate": 0.25,
+        "average_win": 1.2863,
+        "average_loss": 0.711367,
+        "payoff_ratio": 1.808209,
+        "profit_factor": 0.602736
+      }
+    },
+    "slippage_0.5": {
+      "fill_model": {
+        "delay_minutes": 1,
+        "slippage_fraction": 0.5,
+        "fee_per_contract": 0.65,
+        "multiplier": 100
+      },
+      "strategy": {
+        "n": 28,
+        "expectancy": -0.16047,
+        "win_rate": 0.464286,
+        "average_win": 0.491011,
+        "average_loss": 0.725087,
+        "payoff_ratio": 0.677175,
+        "profit_factor": 0.586885
+      },
+      "benchmark": {
+        "n": 28,
+        "expectancy": -0.287382,
+        "win_rate": 0.25,
+        "average_win": 1.075987,
+        "average_loss": 0.741839,
+        "payoff_ratio": 1.450433,
+        "profit_factor": 0.483478
+      }
+    },
+    "delay_2m": {
+      "fill_model": {
+        "delay_minutes": 2,
+        "slippage_fraction": 0.25,
+        "fee_per_contract": 0.65,
+        "multiplier": 100
+      },
+      "strategy": {
+        "n": 28,
+        "expectancy": -0.173666,
+        "win_rate": 0.464286,
+        "average_win": 0.48746,
+        "average_loss": 0.746642,
+        "payoff_ratio": 0.65287,
+        "profit_factor": 0.56582
+      },
+      "benchmark": {
+        "n": 28,
+        "expectancy": -0.272959,
+        "win_rate": 0.25,
+        "average_win": 1.110482,
+        "average_loss": 0.734106,
+        "payoff_ratio": 1.5127,
+        "profit_factor": 0.504233
+      }
+    }
+  },
+  "shuffle_null": {
+    "draws": 1000,
+    "p_expectancy": 0.010989,
+    "p_payoff_ratio": 0.826174
+  },
+  "prefix_consistency": {
+    "passed": true,
+    "mismatches": []
+  },
+  "bootstrap_by_day": {
+    "draws": 1000,
+    "strategy_expectancy": [
+      -0.122944,
+      -0.122944
+    ],
+    "strategy_payoff_ratio": [
+      0.675873,
+      0.675873
+    ],
+    "benchmark_expectancy": [
+      -0.254618,
+      -0.254618
+    ],
+    "expectancy_minus_benchmark": [
+      0.131674,
+      0.131674
+    ],
+    "strategy_score": [
+      37.386466,
+      37.386466
+    ],
+    "score_minus_benchmark": [
+      -4.236978,
+      -4.236978
+    ]
+  },
+  "market_shapes": {
+    "平开低走|LONG": {
+      "n": 2,
+      "strategy_mean": -0.359638,
+      "benchmark_mean": -0.889114
+    },
+    "平开低走|SHORT": {
+      "n": 2,
+      "strategy_mean": -0.494646,
+      "benchmark_mean": -0.230669
+    },
+    "平开震荡|LONG": {
+      "n": 2,
+      "strategy_mean": -0.041031,
+      "benchmark_mean": -0.484349
+    },
+    "平开震荡|SHORT": {
+      "n": 2,
+      "strategy_mean": -0.704568,
+      "benchmark_mean": -0.771926
+    },
+    "高开低走|LONG": {
+      "n": 5,
+      "strategy_mean": -0.122528,
+      "benchmark_mean": -0.936223
+    },
+    "高开低走|SHORT": {
+      "n": 5,
+      "strategy_mean": 0.344016,
+      "benchmark_mean": 0.886384
+    },
+    "高开震荡|LONG": {
+      "n": 2,
+      "strategy_mean": 0.133723,
+      "benchmark_mean": -0.59131
+    },
+    "高开震荡|SHORT": {
+      "n": 2,
+      "strategy_mean": -0.247281,
+      "benchmark_mean": -0.784903
+    },
+    "高开高走|LONG": {
+      "n": 3,
+      "strategy_mean": 0.571162,
+      "benchmark_mean": 1.188208
+    },
+    "高开高走|SHORT": {
+      "n": 3,
+      "strategy_mean": -0.94549,
+      "benchmark_mean": -0.980063
+    }
+  },
+  "pairs": {
+    "strategy": {
+      "pairs": 14,
+      "traded": 14,
+      "profitable": 6,
+      "losing": 8,
+      "big_loss": 4,
+      "profitable_share": 0.428571,
+      "profitable_share_traded": 0.428571,
+      "losing_share_traded": 0.571429,
+      "big_loss_share_traded": 0.285714,
+      "median_return": -0.135704,
+      "worst_return": -0.720843,
+      "dollars_mean": 312.982143,
+      "by_bought": {
+        "both": {
+          "pairs": 14,
+          "profitable": 6,
+          "mean_return": -0.055234
+        },
+        "with_only": {
+          "pairs": 0,
+          "profitable": 0,
+          "mean_return": null
+        },
+        "against_only": {
+          "pairs": 0,
+          "profitable": 0,
+          "mean_return": null
+        },
+        "chop_only": {
+          "pairs": 0,
+          "profitable": 0,
+          "mean_return": null
+        },
+        "none": {
+          "pairs": 0,
+          "profitable": 0,
+          "mean_return": null
+        }
+      },
+      "rows": [
+        {
+          "symbol": "US.AAPL",
+          "trade_date": "2026-09-18",
+          "strike": 337.5,
+          "bought": "both",
+          "net_pnl": -270.35,
+          "net_return": -0.592223
+        },
+        {
+          "symbol": "US.AMD",
+          "trade_date": "2026-09-18",
+          "strike": 547.5,
+          "bought": "both",
+          "net_pnl": -29.1,
+          "net_return": -0.047336
+        },
+        {
+          "symbol": "US.AMZN",
+          "trade_date": "2026-09-18",
+          "strike": 252.5,
+          "bought": "both",
+          "net_pnl": -55.85,
+          "net_return": -0.224072
+        },
+        {
+          "symbol": "US.GOOGL",
+          "trade_date": "2026-09-18",
+          "strike": 357.5,
+          "bought": "both",
+          "net_pnl": 58.9,
+          "net_return": 0.079648
+        },
+        {
+          "symbol": "US.INTC",
+          "trade_date": "2026-09-18",
+          "strike": 110.0,
+          "bought": "both",
+          "net_pnl": 132.4,
+          "net_return": 0.834016
+        },
+        {
+          "symbol": "US.IWM",
+          "trade_date": "2026-09-18",
+          "strike": 285.0,
+          "bought": "both",
+          "net_pnl": -66.6,
+          "net_return": -0.360976
+        },
+        {
+          "symbol": "US.META",
+          "trade_date": "2026-09-18",
+          "strike": 687.5,
+          "bought": "both",
+          "net_pnl": 1079.05,
+          "net_return": 0.944877
+        },
+        {
+          "symbol": "US.MSFT",
+          "trade_date": "2026-09-18",
+          "strike": 497.5,
+          "bought": "both",
+          "net_pnl": -360.6,
+          "net_return": -0.623606
+        },
+        {
+          "symbol": "US.MU",
+          "trade_date": "2026-09-18",
+          "strike": 985.0,
+          "bought": "both",
+          "net_pnl": 837.15,
+          "net_return": 0.539836
+        },
+        {
+          "symbol": "US.NVDA",
+          "trade_date": "2026-09-18",
+          "strike": 220.0,
+          "bought": "both",
+          "net_pnl": -83.6,
+          "net_return": -0.470323
+        },
+        {
+          "symbol": "US.QQQ",
+          "trade_date": "2026-09-18",
+          "strike": 719.0,
+          "bought": "both",
+          "net_pnl": -230.85,
+          "net_return": -0.720843
+        },
+        {
+          "symbol": "US.SNDK",
+          "trade_date": "2026-09-18",
+          "strike": 1625.0,
+          "bought": "both",
+          "net_pnl": 3466.9,
+          "net_return": 0.439558
+        },
+        {
+          "symbol": "US.SPY",
+          "trade_date": "2026-09-18",
+          "strike": 761.0,
+          "bought": "both",
+          "net_pnl": -178.85,
+          "net_return": -0.693889
+        },
+        {
+          "symbol": "US.TSLA",
+          "trade_date": "2026-09-18",
+          "strike": 370.0,
+          "bought": "both",
+          "net_pnl": 83.15,
+          "net_return": 0.122055
+        }
+      ]
+    },
+    "benchmark": {
+      "pairs": 14,
+      "traded": 14,
+      "profitable": 5,
+      "losing": 9,
+      "big_loss": 4,
+      "profitable_share": 0.357143,
+      "profitable_share_traded": 0.357143,
+      "losing_share_traded": 0.642857,
+      "big_loss_share_traded": 0.285714,
+      "median_return": -0.294055,
+      "worst_return": -0.717981,
+      "dollars_mean": 463.053571,
+      "by_bought": {
+        "both": {
+          "pairs": 14,
+          "profitable": 5,
+          "mean_return": -0.094676
+        },
+        "with_only": {
+          "pairs": 0,
+          "profitable": 0,
+          "mean_return": null
+        },
+        "against_only": {
+          "pairs": 0,
+          "profitable": 0,
+          "mean_return": null
+        },
+        "chop_only": {
+          "pairs": 0,
+          "profitable": 0,
+          "mean_return": null
+        },
+        "none": {
+          "pairs": 0,
+          "profitable": 0,
+          "mean_return": null
+        }
+      },
+      "rows": [
+        {
+          "symbol": "US.AAPL",
+          "trade_date": "2026-09-18",
+          "strike": 337.5,
+          "bought": "both",
+          "net_pnl": -133.1,
+          "net_return": -0.400904
+        },
+        {
+          "symbol": "US.AMD",
+          "trade_date": "2026-09-18",
+          "strike": 547.5,
+          "bought": "both",
+          "net_pnl": -626.35,
+          "net_return": -0.672771
+        },
+        {
+          "symbol": "US.AMZN",
+          "trade_date": "2026-09-18",
+          "strike": 252.5,
+          "bought": "both",
+          "net_pnl": -76.35,
+          "net_return": -0.28304
+        },
+        {
+          "symbol": "US.GOOGL",
+          "trade_date": "2026-09-18",
+          "strike": 357.5,
+          "bought": "both",
+          "net_pnl": 336.4,
+          "net_return": 0.728139
+        },
+        {
+          "symbol": "US.INTC",
+          "trade_date": "2026-09-18",
+          "strike": 110.0,
+          "bought": "both",
+          "net_pnl": -77.85,
+          "net_return": -0.299423
+        },
+        {
+          "symbol": "US.IWM",
+          "trade_date": "2026-09-18",
+          "strike": 285.0,
+          "bought": "both",
+          "net_pnl": -47.85,
+          "net_return": -0.288688
+        },
+        {
+          "symbol": "US.META",
+          "trade_date": "2026-09-18",
+          "strike": 687.5,
+          "bought": "both",
+          "net_pnl": 891.8,
+          "net_return": 0.695496
+        },
+        {
+          "symbol": "US.MSFT",
+          "trade_date": "2026-09-18",
+          "strike": 497.5,
+          "bought": "both",
+          "net_pnl": -203.35,
+          "net_return": -0.419928
+        },
+        {
+          "symbol": "US.MU",
+          "trade_date": "2026-09-18",
+          "strike": 985.0,
+          "bought": "both",
+          "net_pnl": 566.4,
+          "net_return": 0.310953
+        },
+        {
+          "symbol": "US.NVDA",
+          "trade_date": "2026-09-18",
+          "strike": 220.0,
+          "bought": "both",
+          "net_pnl": -157.6,
+          "net_return": -0.626018
+        },
+        {
+          "symbol": "US.QQQ",
+          "trade_date": "2026-09-18",
+          "strike": 719.0,
+          "bought": "both",
+          "net_pnl": -227.6,
+          "net_return": -0.717981
+        },
+        {
+          "symbol": "US.SNDK",
+          "trade_date": "2026-09-18",
+          "strike": 1625.0,
+          "bought": "both",
+          "net_pnl": 6382.15,
+          "net_return": 1.283618
+        },
+        {
+          "symbol": "US.SPY",
+          "trade_date": "2026-09-18",
+          "strike": 761.0,
+          "bought": "both",
+          "net_pnl": -195.1,
+          "net_return": -0.712044
+        },
+        {
+          "symbol": "US.TSLA",
+          "trade_date": "2026-09-18",
+          "strike": 370.0,
+          "bought": "both",
+          "net_pnl": 51.15,
+          "net_return": 0.07712
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "symbol": "US.AAPL",
+      "contract": "US.AAPL260918C337500",
+      "trade_date": "2026-09-18",
+      "direction": "LONG",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 61,
+        "price": 0.135,
+        "bar_close": 0.13
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 376,
+        "price": 0.305,
+        "bar_close": 0.32
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": 1.162963,
+      "net_pnl": 15.7,
+      "hold_minutes": 315,
+      "best_net_return": 1.922222,
+      "benchmark_net_return": -0.7664,
+      "scenario": "reversal_with",
+      "first_hour_move": -0.739,
+      "rest_move": 0.43,
+      "day_range_pct": 1.764,
+      "market_shape": "高开低走"
+    },
+    {
+      "symbol": "US.AAPL",
+      "contract": "US.AAPL260918P337500",
+      "trade_date": "2026-09-18",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 62,
+        "price": 4.43,
+        "bar_close": 4.43
+      },
+      "exit": {
+        "minute": 340,
+        "reason": "invalidation_stop",
+        "fill_minute": 341,
+        "price": 1.5825,
+        "bar_close": 1.59
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.645711,
+      "net_pnl": -286.05,
+      "hold_minutes": 279,
+      "best_net_return": 0.123476,
+      "benchmark_net_return": -0.180193,
+      "scenario": "reversal_against",
+      "first_hour_move": 0.739,
+      "rest_move": -0.43,
+      "day_range_pct": 1.764,
+      "market_shape": "高开低走"
+    },
+    {
+      "symbol": "US.AMD",
+      "contract": "US.AMD260918C547500",
+      "trade_date": "2026-09-18",
+      "direction": "LONG",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 61,
+        "price": 3.2275,
+        "bar_close": 3.1
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 376,
+        "price": 1.6075,
+        "bar_close": 1.66
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.505964,
+      "net_pnl": -163.3,
+      "hold_minutes": 315,
+      "best_net_return": 2.71402,
+      "benchmark_net_return": -0.693954,
+      "scenario": "chop",
+      "first_hour_move": 0.084,
+      "rest_move": -0.079,
+      "day_range_pct": 2.086,
+      "market_shape": "高开震荡"
+    },
+    {
+      "symbol": "US.AMD",
+      "contract": "US.AMD260918P547500",
+      "trade_date": "2026-09-18",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 59,
+        "reason": "trend_breakout",
+        "fill_minute": 60,
+        "price": 2.92,
+        "bar_close": 2.82
+      },
+      "exit": {
+        "minute": 138,
+        "reason": "profit_lock",
+        "fill_minute": 139,
+        "price": 4.275,
+        "bar_close": 4.3
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 59,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": 0.459589,
+      "net_pnl": 134.2,
+      "hold_minutes": 79,
+      "best_net_return": 1.187329,
+      "benchmark_net_return": -0.645854,
+      "scenario": "chop",
+      "first_hour_move": -0.084,
+      "rest_move": 0.079,
+      "day_range_pct": 2.086,
+      "market_shape": "高开震荡"
+    },
+    {
+      "symbol": "US.AMZN",
+      "contract": "US.AMZN260918C252500",
+      "trade_date": "2026-09-18",
+      "direction": "LONG",
+      "entry": {
+        "minute": 24,
+        "reason": "trend_breakout",
+        "fill_minute": 25,
+        "price": 1.3375,
+        "bar_close": 1.26
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 376,
+        "price": 1.8825,
+        "bar_close": 1.9
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 24,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": 0.397757,
+      "net_pnl": 53.2,
+      "hold_minutes": 351,
+      "best_net_return": 1.160374,
+      "benchmark_net_return": 0.35471,
+      "scenario": "trend_with",
+      "first_hour_move": -0.076,
+      "rest_move": 0.465,
+      "day_range_pct": 1.404,
+      "market_shape": "高开高走"
+    },
+    {
+      "symbol": "US.AMZN",
+      "contract": "US.AMZN260918P252500",
+      "trade_date": "2026-09-18",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 30,
+        "reason": "trend_breakout",
+        "fill_minute": 31,
+        "price": 1.155,
+        "bar_close": 1.12
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 376,
+        "price": 0.0775,
+        "bar_close": 0.08
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 30,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.944156,
+      "net_pnl": -109.05,
+      "hold_minutes": 345,
+      "best_net_return": 0.094805,
+      "benchmark_net_return": -0.951044,
+      "scenario": "trend_against",
+      "first_hour_move": 0.076,
+      "rest_move": -0.465,
+      "day_range_pct": 1.404,
+      "market_shape": "高开高走"
+    },
+    {
+      "symbol": "US.GOOGL",
+      "contract": "US.GOOGL260918C357500",
+      "trade_date": "2026-09-18",
+      "direction": "LONG",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 61,
+        "price": 0.145,
+        "bar_close": 0.14
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 376,
+        "price": 0.01,
+        "bar_close": 0.01
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -1.02069,
+      "net_pnl": -14.8,
+      "hold_minutes": 315,
+      "best_net_return": 0.22069,
+      "benchmark_net_return": -1.001132,
+      "scenario": "trend_against",
+      "first_hour_move": -0.642,
+      "rest_move": 0.077,
+      "day_range_pct": 2.953,
+      "market_shape": "高开低走"
+    },
+    {
+      "symbol": "US.GOOGL",
+      "contract": "US.GOOGL260918P357500",
+      "trade_date": "2026-09-18",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 62,
+        "price": 7.25,
+        "bar_close": 7.25
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 382,
+        "price": 8.0,
+        "bar_close": 8.0
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": 0.101655,
+      "net_pnl": 73.7,
+      "hold_minutes": 320,
+      "best_net_return": 0.159586,
+      "benchmark_net_return": 3.054315,
+      "scenario": "trend_with",
+      "first_hour_move": 0.642,
+      "rest_move": -0.077,
+      "day_range_pct": 2.953,
+      "market_shape": "高开低走"
+    },
+    {
+      "symbol": "US.INTC",
+      "contract": "US.INTC260918C110000",
+      "trade_date": "2026-09-18",
+      "direction": "LONG",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 61,
+        "price": 0.2475,
+        "bar_close": 0.24
+      },
+      "exit": {
+        "minute": 176,
+        "reason": "invalidation_stop",
+        "fill_minute": 177,
+        "price": 0.0275,
+        "bar_close": 0.03
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.941414,
+      "net_pnl": -23.3,
+      "hold_minutes": 116,
+      "best_net_return": -0.10303,
+      "benchmark_net_return": -0.909914,
+      "scenario": "trend_against",
+      "first_hour_move": -0.458,
+      "rest_move": 0.086,
+      "day_range_pct": 3.725,
+      "market_shape": "高开低走"
+    },
+    {
+      "symbol": "US.INTC",
+      "contract": "US.INTC260918P110000",
+      "trade_date": "2026-09-18",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 22,
+        "reason": "trend_breakout",
+        "fill_minute": 23,
+        "price": 1.34,
+        "bar_close": 1.3
+      },
+      "exit": {
+        "minute": 249,
+        "reason": "profit_lock",
+        "fill_minute": 253,
+        "price": 2.91,
+        "bar_close": 2.91
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 22,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": 1.16194,
+      "net_pnl": 155.7,
+      "hold_minutes": 230,
+      "best_net_return": 1.645149,
+      "benchmark_net_return": 0.192361,
+      "scenario": "trend_with",
+      "first_hour_move": 0.458,
+      "rest_move": -0.086,
+      "day_range_pct": 3.725,
+      "market_shape": "高开低走"
+    },
+    {
+      "symbol": "US.IWM",
+      "contract": "US.IWM260918C285000",
+      "trade_date": "2026-09-18",
+      "direction": "LONG",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 61,
+        "price": 0.07,
+        "bar_close": 0.07
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 376,
+        "price": 0.0175,
+        "bar_close": 0.02
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.935714,
+      "net_pnl": -6.55,
+      "hold_minutes": 315,
+      "best_net_return": -0.221429,
+      "benchmark_net_return": -0.983784,
+      "scenario": "trend_against",
+      "first_hour_move": -0.623,
+      "rest_move": 0.22,
+      "day_range_pct": 0.958,
+      "market_shape": "平开低走"
+    },
+    {
+      "symbol": "US.IWM",
+      "contract": "US.IWM260918P285000",
+      "trade_date": "2026-09-18",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 61,
+        "price": 1.775,
+        "bar_close": 1.75
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 376,
+        "price": 1.1875,
+        "bar_close": 1.2
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.33831,
+      "net_pnl": -60.05,
+      "hold_minutes": 315,
+      "best_net_return": 0.378592,
+      "benchmark_net_return": -0.148913,
+      "scenario": "trend_with",
+      "first_hour_move": 0.623,
+      "rest_move": -0.22,
+      "day_range_pct": 0.958,
+      "market_shape": "平开低走"
+    },
+    {
+      "symbol": "US.META",
+      "contract": "US.META260918C687500",
+      "trade_date": "2026-09-18",
+      "direction": "LONG",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 61,
+        "price": 0.42,
+        "bar_close": 0.42
+      },
+      "exit": {
+        "minute": 100,
+        "reason": "profit_lock",
+        "fill_minute": 101,
+        "price": 0.48,
+        "bar_close": 0.49
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": 0.111905,
+      "net_pnl": 4.7,
+      "hold_minutes": 40,
+      "best_net_return": 1.635714,
+      "benchmark_net_return": -1.001602,
+      "scenario": "trend_against",
+      "first_hour_move": -0.693,
+      "rest_move": -0.2,
+      "day_range_pct": 3.145,
+      "market_shape": "高开低走"
+    },
+    {
+      "symbol": "US.META",
+      "contract": "US.META260918P687500",
+      "trade_date": "2026-09-18",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 81,
+        "price": 11.0,
+        "bar_close": 11.0
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 390,
+        "price": 21.75,
+        "bar_close": null,
+        "settled_at_expiry": true
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "EXIT_NOT_FILLED",
+      "failure": null,
+      "net_return": 0.976682,
+      "net_pnl": 1074.35,
+      "hold_minutes": 309,
+      "best_net_return": 0.695182,
+      "benchmark_net_return": 0.985708,
+      "scenario": "trend_with",
+      "first_hour_move": 0.693,
+      "rest_move": 0.2,
+      "day_range_pct": 3.145,
+      "market_shape": "高开低走"
+    },
+    {
+      "symbol": "US.MSFT",
+      "contract": "US.MSFT260918C497500",
+      "trade_date": "2026-09-18",
+      "direction": "LONG",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 61,
+        "price": 0.1825,
+        "bar_close": 0.17
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 376,
+        "price": 0.235,
+        "bar_close": 0.24
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": 0.216438,
+      "net_pnl": 3.95,
+      "hold_minutes": 315,
+      "best_net_return": 2.791781,
+      "benchmark_net_return": -0.794444,
+      "scenario": "reversal_with",
+      "first_hour_move": -0.735,
+      "rest_move": 0.364,
+      "day_range_pct": 1.516,
+      "market_shape": "平开低走"
+    },
+    {
+      "symbol": "US.MSFT",
+      "contract": "US.MSFT260918P497500",
+      "trade_date": "2026-09-18",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 61,
+        "price": 5.6,
+        "bar_close": 5.6
+      },
+      "exit": {
+        "minute": 318,
+        "reason": "invalidation_stop",
+        "fill_minute": 319,
+        "price": 1.9675,
+        "bar_close": 1.99
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.650982,
+      "net_pnl": -364.55,
+      "hold_minutes": 258,
+      "best_net_return": 0.140536,
+      "benchmark_net_return": -0.312425,
+      "scenario": "reversal_against",
+      "first_hour_move": 0.735,
+      "rest_move": -0.364,
+      "day_range_pct": 1.516,
+      "market_shape": "平开低走"
+    },
+    {
+      "symbol": "US.MU",
+      "contract": "US.MU260918C985000",
+      "trade_date": "2026-09-18",
+      "direction": "LONG",
+      "entry": {
+        "minute": 58,
+        "reason": "trend_breakout",
+        "fill_minute": 59,
+        "price": 12.8025,
+        "bar_close": 12.67
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 376,
+        "price": 23.865,
+        "bar_close": 23.91
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 58,
+        "reason": "trend_breakout"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": 0.863074,
+      "net_pnl": 1104.95,
+      "hold_minutes": 317,
+      "best_net_return": 1.418434,
+      "benchmark_net_return": 1.360416,
+      "scenario": "trend_with",
+      "first_hour_move": 0.315,
+      "rest_move": 0.412,
+      "day_range_pct": 3.24,
+      "market_shape": "高开高走"
+    },
+    {
+      "symbol": "US.MU",
+      "contract": "US.MU260918P985000",
+      "trade_date": "2026-09-18",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 61,
+        "price": 2.705,
+        "bar_close": 2.63
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 376,
+        "price": 0.04,
+        "bar_close": 0.04
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.990018,
+      "net_pnl": -267.8,
+      "hold_minutes": 315,
+      "best_net_return": 0.129205,
+      "benchmark_net_return": -0.996671,
+      "scenario": "trend_against",
+      "first_hour_move": -0.315,
+      "rest_move": -0.412,
+      "day_range_pct": 3.24,
+      "market_shape": "高开高走"
+    },
+    {
+      "symbol": "US.NVDA",
+      "contract": "US.NVDA260918C220000",
+      "trade_date": "2026-09-18",
+      "direction": "LONG",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 61,
+        "price": 0.5575,
+        "bar_close": 0.53
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 376,
+        "price": 0.3575,
+        "bar_close": 0.37
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.382063,
+      "net_pnl": -21.3,
+      "hold_minutes": 315,
+      "best_net_return": 3.012556,
+      "benchmark_net_return": -0.437551,
+      "scenario": "chop",
+      "first_hour_move": 0.059,
+      "rest_move": 0.089,
+      "day_range_pct": 1.304,
+      "market_shape": "平开震荡"
+    },
+    {
+      "symbol": "US.NVDA",
+      "contract": "US.NVDA260918P220000",
+      "trade_date": "2026-09-18",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 61,
+        "price": 1.22,
+        "bar_close": 1.19
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 376,
+        "price": 0.61,
+        "bar_close": 0.63
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.510656,
+      "net_pnl": -62.3,
+      "hold_minutes": 315,
+      "best_net_return": 0.15123,
+      "benchmark_net_return": -0.686614,
+      "scenario": "chop",
+      "first_hour_move": -0.059,
+      "rest_move": -0.089,
+      "day_range_pct": 1.304,
+      "market_shape": "平开震荡"
+    },
+    {
+      "symbol": "US.QQQ",
+      "contract": "US.QQQ260918C719000",
+      "trade_date": "2026-09-18",
+      "direction": "LONG",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 61,
+        "price": 0.4325,
+        "bar_close": 0.42
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 376,
+        "price": 0.78,
+        "bar_close": 0.81
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": 0.77341,
+      "net_pnl": 33.45,
+      "hold_minutes": 315,
+      "best_net_return": 4.819653,
+      "benchmark_net_return": -0.488667,
+      "scenario": "reversal_with",
+      "first_hour_move": -0.464,
+      "rest_move": 0.63,
+      "day_range_pct": 0.636,
+      "market_shape": "高开震荡"
+    },
+    {
+      "symbol": "US.QQQ",
+      "contract": "US.QQQ260918P719000",
+      "trade_date": "2026-09-18",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 61,
+        "price": 2.77,
+        "bar_close": 2.75
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 376,
+        "price": 0.14,
+        "bar_close": 0.15
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.954152,
+      "net_pnl": -264.3,
+      "hold_minutes": 315,
+      "best_net_return": 0.330144,
+      "benchmark_net_return": -0.923952,
+      "scenario": "reversal_against",
+      "first_hour_move": 0.464,
+      "rest_move": -0.63,
+      "day_range_pct": 0.636,
+      "market_shape": "高开震荡"
+    },
+    {
+      "symbol": "US.SNDK",
+      "contract": "US.SNDK260918C1625000",
+      "trade_date": "2026-09-18",
+      "direction": "LONG",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 66,
+        "price": 78.11,
+        "bar_close": 78.11
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 379,
+        "price": 113.48,
+        "bar_close": 113.48
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": 0.452657,
+      "net_pnl": 3535.7,
+      "hold_minutes": 313,
+      "best_net_return": 1.17113,
+      "benchmark_net_return": 1.849498,
+      "scenario": "trend_with",
+      "first_hour_move": 0.583,
+      "rest_move": 0.266,
+      "day_range_pct": 7.997,
+      "market_shape": "高开高走"
+    },
+    {
+      "symbol": "US.SNDK",
+      "contract": "US.SNDK260918P1625000",
+      "trade_date": "2026-09-18",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 61,
+        "price": 0.7625,
+        "bar_close": 0.75
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 386,
+        "price": 0.0875,
+        "bar_close": 0.1
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.902295,
+      "net_pnl": -68.8,
+      "hold_minutes": 325,
+      "best_net_return": -0.099016,
+      "benchmark_net_return": -0.992475,
+      "scenario": "trend_against",
+      "first_hour_move": -0.583,
+      "rest_move": -0.266,
+      "day_range_pct": 7.997,
+      "market_shape": "高开高走"
+    },
+    {
+      "symbol": "US.SPY",
+      "contract": "US.SPY260918C761000",
+      "trade_date": "2026-09-18",
+      "direction": "LONG",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 61,
+        "price": 0.44,
+        "bar_close": 0.43
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 376,
+        "price": 0.585,
+        "bar_close": 0.61
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": 0.3,
+      "net_pnl": 13.2,
+      "hold_minutes": 315,
+      "best_net_return": 1.129545,
+      "benchmark_net_return": -0.531148,
+      "scenario": "reversal_with",
+      "first_hour_move": -0.511,
+      "rest_move": 0.542,
+      "day_range_pct": 0.507,
+      "market_shape": "平开震荡"
+    },
+    {
+      "symbol": "US.SPY",
+      "contract": "US.SPY260918P761000",
+      "trade_date": "2026-09-18",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 61,
+        "price": 2.1375,
+        "bar_close": 2.11
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 376,
+        "price": 0.23,
+        "bar_close": 0.24
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": -0.89848,
+      "net_pnl": -192.05,
+      "hold_minutes": 315,
+      "best_net_return": 0.385731,
+      "benchmark_net_return": -0.857237,
+      "scenario": "reversal_against",
+      "first_hour_move": 0.511,
+      "rest_move": -0.542,
+      "day_range_pct": 0.507,
+      "market_shape": "平开震荡"
+    },
+    {
+      "symbol": "US.TSLA",
+      "contract": "US.TSLA260918C370000",
+      "trade_date": "2026-09-18",
+      "direction": "LONG",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 61,
+        "price": 0.4625,
+        "bar_close": 0.39
+      },
+      "exit": {
+        "minute": 102,
+        "reason": "profit_lock",
+        "fill_minute": 103,
+        "price": 0.51,
+        "bar_close": 0.52
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": 0.074595,
+      "net_pnl": 3.45,
+      "hold_minutes": 42,
+      "best_net_return": 2.020541,
+      "benchmark_net_return": -1.002065,
+      "scenario": "trend_against",
+      "first_hour_move": -0.383,
+      "rest_move": -0.246,
+      "day_range_pct": 2.75,
+      "market_shape": "高开低走"
+    },
+    {
+      "symbol": "US.TSLA",
+      "contract": "US.TSLA260918P370000",
+      "trade_date": "2026-09-18",
+      "direction": "SHORT",
+      "entry": {
+        "minute": 60,
+        "reason": "deadline_entry",
+        "fill_minute": 61,
+        "price": 6.35,
+        "bar_close": 6.35
+      },
+      "exit": {
+        "minute": 375,
+        "reason": "scheduled_flatten",
+        "fill_minute": 376,
+        "price": 7.16,
+        "bar_close": 7.16
+      },
+      "decisions": null,
+      "entry_signal": {
+        "minute": 60,
+        "reason": "deadline_entry"
+      },
+      "outcome": "COMPLETED",
+      "failure": null,
+      "net_return": 0.125512,
+      "net_pnl": 79.7,
+      "hold_minutes": 315,
+      "best_net_return": 0.314488,
+      "benchmark_net_return": 0.37973,
+      "scenario": "trend_with",
+      "first_hour_move": 0.383,
+      "rest_move": 0.246,
+      "day_range_pct": 2.75,
+      "market_shape": "高开低走"
+    }
+  ],
+  "robustness": {
+    "halves": {
+      "first_half": {
+        "days": null,
+        "cases": 0,
+        "strategy_mean": null,
+        "benchmark_mean": null
+      },
+      "second_half": {
+        "days": [
+          "2026-09-18",
+          "2026-09-18"
+        ],
+        "cases": 28,
+        "strategy_mean": -0.122944,
+        "benchmark_mean": -0.254618
+      },
+      "passed": null
+    },
+    "leave_one_day_out": {
+      "passed": null,
+      "failed_days": [],
+      "runs": [
+        {
+          "dropped": "2026-09-18",
+          "passed": null,
+          "strategy_expectancy": null,
+          "strategy_payoff_ratio": null,
+          "benchmark_expectancy": null,
+          "benchmark_payoff_ratio": null
+        }
+      ]
+    },
+    "neighbors": {
+      "passed": false,
+      "count": 41,
+      "failed": [
+        {
+          "param": "atr_period",
+          "from": 14,
+          "to": 10,
+          "passed": false,
+          "expectancy": -0.172754,
+          "payoff_ratio": 0.635443
+        },
+        {
+          "param": "atr_period",
+          "from": 14,
+          "to": 18,
+          "passed": false,
+          "expectancy": -0.128711,
+          "payoff_ratio": 0.662698
+        },
+        {
+          "param": "breakeven_at_atr",
+          "from": 50.0,
+          "to": 37.5,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "ema_fast",
+          "from": 9,
+          "to": 7,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "ema_fast",
+          "from": 9,
+          "to": 11,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "ema_slow",
+          "from": 21,
+          "to": 16,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "ema_slow",
+          "from": 21,
+          "to": 26,
+          "passed": false,
+          "expectancy": -0.12794,
+          "payoff_ratio": 0.667086
+        },
+        {
+          "param": "fail_minutes",
+          "from": 390,
+          "to": 292,
+          "passed": false,
+          "expectancy": -0.128421,
+          "payoff_ratio": 0.666251
+        },
+        {
+          "param": "fail_progress_atr",
+          "from": 1.0,
+          "to": 0.75,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "fail_progress_atr",
+          "from": 1.0,
+          "to": 1.25,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "flatten_before_close_minutes",
+          "from": 15,
+          "to": 19,
+          "passed": false,
+          "expectancy": -0.192831,
+          "payoff_ratio": 0.681177
+        },
+        {
+          "param": "max_vwap_atr",
+          "from": 2.0,
+          "to": 1.5,
+          "passed": false,
+          "expectancy": -0.126053,
+          "payoff_ratio": 0.667676
+        },
+        {
+          "param": "max_vwap_atr",
+          "from": 2.0,
+          "to": 2.5,
+          "passed": false,
+          "expectancy": -0.126428,
+          "payoff_ratio": 0.666686
+        },
+        {
+          "param": "min_premium_atr",
+          "from": 5.0,
+          "to": 3.75,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "min_premium_atr",
+          "from": 5.0,
+          "to": 6.25,
+          "passed": false,
+          "expectancy": -0.125003,
+          "payoff_ratio": 0.670444
+        },
+        {
+          "param": "momentum_lookback",
+          "from": 5,
+          "to": 4,
+          "passed": false,
+          "expectancy": -0.113929,
+          "payoff_ratio": 0.699638
+        },
+        {
+          "param": "momentum_lookback",
+          "from": 5,
+          "to": 6,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "must_enter_by_minute",
+          "from": 60,
+          "to": 45,
+          "passed": false,
+          "expectancy": -0.098077,
+          "payoff_ratio": 1.001262
+        },
+        {
+          "param": "must_enter_by_minute",
+          "from": 60,
+          "to": 75,
+          "passed": false,
+          "expectancy": -0.120607,
+          "payoff_ratio": 0.770238
+        },
+        {
+          "param": "opening_minutes",
+          "from": 15,
+          "to": 11,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "opening_minutes",
+          "from": 15,
+          "to": 19,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "otm_stop_shrink",
+          "from": 0.25,
+          "to": 0.1875,
+          "passed": false,
+          "expectancy": -0.125469,
+          "payoff_ratio": 0.671403
+        },
+        {
+          "param": "otm_stop_shrink",
+          "from": 0.25,
+          "to": 0.3125,
+          "passed": false,
+          "expectancy": -0.122358,
+          "payoff_ratio": 0.676918
+        },
+        {
+          "param": "profit_lock_at",
+          "from": 0.5,
+          "to": 0.375,
+          "passed": false,
+          "expectancy": -0.196952,
+          "payoff_ratio": 0.48076
+        },
+        {
+          "param": "profit_lock_at",
+          "from": 0.5,
+          "to": 0.625,
+          "passed": false,
+          "expectancy": -0.228729,
+          "payoff_ratio": 0.629388
+        },
+        {
+          "param": "profit_lock_keep",
+          "from": 0.5,
+          "to": 0.375,
+          "passed": false,
+          "expectancy": -0.126855,
+          "payoff_ratio": 0.888214
+        },
+        {
+          "param": "profit_lock_keep",
+          "from": 0.5,
+          "to": 0.625,
+          "passed": false,
+          "expectancy": -0.09205,
+          "payoff_ratio": 0.75732
+        },
+        {
+          "param": "protection_needs_moneyness",
+          "from": 1,
+          "to": 0,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "squeeze_lookback",
+          "from": 30,
+          "to": 22,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "squeeze_lookback",
+          "from": 30,
+          "to": 38,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "stop_lookback",
+          "from": 10,
+          "to": 8,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "stop_lookback",
+          "from": 10,
+          "to": 12,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "stop_max_atr",
+          "from": 20.0,
+          "to": 15.0,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "stop_min_atr",
+          "from": 10.0,
+          "to": 7.5,
+          "passed": false,
+          "expectancy": -0.123359,
+          "payoff_ratio": 0.774524
+        },
+        {
+          "param": "take_profit_premium",
+          "from": 1.0,
+          "to": 0.75,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "take_profit_premium",
+          "from": 1.0,
+          "to": 1.25,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "trail_activate_atr",
+          "from": 50.0,
+          "to": 37.5,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "trail_atr",
+          "from": 5.0,
+          "to": 3.75,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "trail_atr",
+          "from": 5.0,
+          "to": 6.25,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "vwap_buffer_atr",
+          "from": 0.25,
+          "to": 0.1875,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "vwap_buffer_atr",
+          "from": 0.25,
+          "to": 0.3125,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        }
+      ],
+      "runs": [
+        {
+          "param": "atr_period",
+          "from": 14,
+          "to": 10,
+          "passed": false,
+          "expectancy": -0.172754,
+          "payoff_ratio": 0.635443
+        },
+        {
+          "param": "atr_period",
+          "from": 14,
+          "to": 18,
+          "passed": false,
+          "expectancy": -0.128711,
+          "payoff_ratio": 0.662698
+        },
+        {
+          "param": "breakeven_at_atr",
+          "from": 50.0,
+          "to": 37.5,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "ema_fast",
+          "from": 9,
+          "to": 7,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "ema_fast",
+          "from": 9,
+          "to": 11,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "ema_slow",
+          "from": 21,
+          "to": 16,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "ema_slow",
+          "from": 21,
+          "to": 26,
+          "passed": false,
+          "expectancy": -0.12794,
+          "payoff_ratio": 0.667086
+        },
+        {
+          "param": "fail_minutes",
+          "from": 390,
+          "to": 292,
+          "passed": false,
+          "expectancy": -0.128421,
+          "payoff_ratio": 0.666251
+        },
+        {
+          "param": "fail_progress_atr",
+          "from": 1.0,
+          "to": 0.75,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "fail_progress_atr",
+          "from": 1.0,
+          "to": 1.25,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "flatten_before_close_minutes",
+          "from": 15,
+          "to": 19,
+          "passed": false,
+          "expectancy": -0.192831,
+          "payoff_ratio": 0.681177
+        },
+        {
+          "param": "max_vwap_atr",
+          "from": 2.0,
+          "to": 1.5,
+          "passed": false,
+          "expectancy": -0.126053,
+          "payoff_ratio": 0.667676
+        },
+        {
+          "param": "max_vwap_atr",
+          "from": 2.0,
+          "to": 2.5,
+          "passed": false,
+          "expectancy": -0.126428,
+          "payoff_ratio": 0.666686
+        },
+        {
+          "param": "min_premium_atr",
+          "from": 5.0,
+          "to": 3.75,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "min_premium_atr",
+          "from": 5.0,
+          "to": 6.25,
+          "passed": false,
+          "expectancy": -0.125003,
+          "payoff_ratio": 0.670444
+        },
+        {
+          "param": "momentum_lookback",
+          "from": 5,
+          "to": 4,
+          "passed": false,
+          "expectancy": -0.113929,
+          "payoff_ratio": 0.699638
+        },
+        {
+          "param": "momentum_lookback",
+          "from": 5,
+          "to": 6,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "must_enter_by_minute",
+          "from": 60,
+          "to": 45,
+          "passed": false,
+          "expectancy": -0.098077,
+          "payoff_ratio": 1.001262
+        },
+        {
+          "param": "must_enter_by_minute",
+          "from": 60,
+          "to": 75,
+          "passed": false,
+          "expectancy": -0.120607,
+          "payoff_ratio": 0.770238
+        },
+        {
+          "param": "opening_minutes",
+          "from": 15,
+          "to": 11,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "opening_minutes",
+          "from": 15,
+          "to": 19,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "otm_stop_shrink",
+          "from": 0.25,
+          "to": 0.1875,
+          "passed": false,
+          "expectancy": -0.125469,
+          "payoff_ratio": 0.671403
+        },
+        {
+          "param": "otm_stop_shrink",
+          "from": 0.25,
+          "to": 0.3125,
+          "passed": false,
+          "expectancy": -0.122358,
+          "payoff_ratio": 0.676918
+        },
+        {
+          "param": "profit_lock_at",
+          "from": 0.5,
+          "to": 0.375,
+          "passed": false,
+          "expectancy": -0.196952,
+          "payoff_ratio": 0.48076
+        },
+        {
+          "param": "profit_lock_at",
+          "from": 0.5,
+          "to": 0.625,
+          "passed": false,
+          "expectancy": -0.228729,
+          "payoff_ratio": 0.629388
+        },
+        {
+          "param": "profit_lock_keep",
+          "from": 0.5,
+          "to": 0.375,
+          "passed": false,
+          "expectancy": -0.126855,
+          "payoff_ratio": 0.888214
+        },
+        {
+          "param": "profit_lock_keep",
+          "from": 0.5,
+          "to": 0.625,
+          "passed": false,
+          "expectancy": -0.09205,
+          "payoff_ratio": 0.75732
+        },
+        {
+          "param": "protection_needs_moneyness",
+          "from": 1,
+          "to": 0,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "squeeze_lookback",
+          "from": 30,
+          "to": 22,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "squeeze_lookback",
+          "from": 30,
+          "to": 38,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "stop_lookback",
+          "from": 10,
+          "to": 8,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "stop_lookback",
+          "from": 10,
+          "to": 12,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "stop_max_atr",
+          "from": 20.0,
+          "to": 15.0,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "stop_min_atr",
+          "from": 10.0,
+          "to": 7.5,
+          "passed": false,
+          "expectancy": -0.123359,
+          "payoff_ratio": 0.774524
+        },
+        {
+          "param": "take_profit_premium",
+          "from": 1.0,
+          "to": 0.75,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "take_profit_premium",
+          "from": 1.0,
+          "to": 1.25,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "trail_activate_atr",
+          "from": 50.0,
+          "to": 37.5,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "trail_atr",
+          "from": 5.0,
+          "to": 3.75,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "trail_atr",
+          "from": 5.0,
+          "to": 6.25,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "vwap_buffer_atr",
+          "from": 0.25,
+          "to": 0.1875,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        },
+        {
+          "param": "vwap_buffer_atr",
+          "from": 0.25,
+          "to": 0.3125,
+          "passed": false,
+          "expectancy": -0.122944,
+          "payoff_ratio": 0.675873
+        }
+      ]
+    }
+  },
+  "score": {
+    "strategy": {
+      "score": 37.386466,
+      "return_score": 22.625939,
+      "completion_score": 96.428571,
+      "completion_weight": 0.2,
+      "components": {
+        "payoff_ratio": {
+          "value": 0.675873,
+          "utility": 0.0,
+          "weight": 2
+        },
+        "profit_factor": {
+          "value": 0.675873,
+          "utility": 0.217412,
+          "weight": 1
+        },
+        "with_direction": {
+          "value": 0.516148,
+          "utility": 0.516148,
+          "weight": 1
+        },
+        "not_with_direction": {
+          "value": -0.602263,
+          "utility": 0.397737,
+          "weight": 1
+        }
+      },
+      "missing": []
+    },
+    "benchmark": {
+      "score": 41.623443,
+      "return_score": 27.922161,
+      "completion_score": 96.428571,
+      "completion_weight": 0.2,
+      "components": {
+        "payoff_ratio": {
+          "value": 1.602649,
+          "utility": 0.340229,
+          "weight": 2
+        },
+        "profit_factor": {
+          "value": 0.534216,
+          "utility": 0.047748,
+          "weight": 1
+        },
+        "with_direction": {
+          "value": 0.45393,
+          "utility": 0.45393,
+          "weight": 1
+        },
+        "not_with_direction": {
+          "value": -0.786029,
+          "utility": 0.213971,
+          "weight": 1
+        }
+      },
+      "missing": []
+    },
+    "strategy_hit_0.6": {
+      "score": 41.290389,
+      "return_score": 27.505844,
+      "completion_score": 96.428571,
+      "completion_weight": 0.2,
+      "components": {
+        "payoff_ratio": {
+          "value": 0.731926,
+          "utility": 0.0,
+          "weight": 2
+        },
+        "profit_factor": {
+          "value": 0.947905,
+          "utility": 0.461407,
+          "weight": 1
+        },
+        "with_direction": {
+          "value": 0.516148,
+          "utility": 0.516148,
+          "weight": 1
+        },
+        "not_with_direction": {
+          "value": -0.602263,
+          "utility": 0.397737,
+          "weight": 1
+        }
+      },
+      "missing": []
+    },
+    "benchmark_hit_0.6": {
+      "score": 45.647709,
+      "return_score": 32.952494,
+      "completion_score": 96.428571,
+      "completion_weight": 0.2,
+      "components": {
+        "payoff_ratio": {
+          "value": 1.655515,
+          "utility": 0.36364,
+          "weight": 2
+        },
+        "profit_factor": {
+          "value": 0.709506,
+          "utility": 0.252444,
+          "weight": 1
+        },
+        "with_direction": {
+          "value": 0.45393,
+          "utility": 0.45393,
+          "weight": 1
+        },
+        "not_with_direction": {
+          "value": -0.786029,
+          "utility": 0.213971,
+          "weight": 1
+        }
+      },
+      "missing": []
+    },
+    "out_of_sample": null,
+    "out_of_sample_benchmark": null
+  },
+  "coverage": {
+    "cases_per_scenario": {
+      "trend_with": 8,
+      "reversal_with": 4,
+      "chop": 4,
+      "reversal_against": 4,
+      "trend_against": 8
+    },
+    "minimum": 5,
+    "ok": false
+  },
+  "gates_in_sample": {
+    "G3_expectancy_beats_benchmark": false,
+    "G4_payoff_ratio_at_least_2": false,
+    "G5_trend_against_loss_smaller_than_benchmark": true,
+    "G6_with_direction_expectancy_positive": true,
+    "G7_payoff_ratio_beats_benchmark": false,
+    "G8_both_halves_beat_benchmark": null,
+    "G9_leave_one_day_out_stable": null,
+    "G10_parameter_neighbors_beat_benchmark": false,
+    "G11_profit_factor_above_1": false,
+    "G12_call_put_pairs_tolerate_the_wrong_side": false
+  },
+  "out_of_sample": null,
+  "verdict": "REJECT"
+}
