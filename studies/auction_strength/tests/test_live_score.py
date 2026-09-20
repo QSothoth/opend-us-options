@@ -3,7 +3,13 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
-from live_score import rank_watchlist, score_series  # noqa: E402
+from live_score import (  # noqa: E402
+    FACTOR_FIELDS,
+    ROW_FIELDS,
+    format_live_table,
+    rank_watchlist,
+    score_series,
+)
 
 
 def _series(prices, **kw):
@@ -53,6 +59,17 @@ class TestLiveScore(unittest.TestCase):
         }
         ranked = rank_watchlist(cap, market="HK", names={"HK.00100": "MM"})
         self.assertEqual(ranked[0].code, "HK.00100")
+        self.assertEqual(ranked[0].rank, 1)
+        self.assertEqual(ranked[1].rank, 2)
+        row = ranked[0].to_row()
+        for key in ROW_FIELDS:
+            self.assertIn(key, row)
+        self.assertEqual(row["label"], ranked[0].label)
+        self.assertEqual(row["data_grade"], ranked[0].data_grade)
+        self.assertEqual(set(row["factors"]), set(FACTOR_FIELDS))
+        table = format_live_table(ranked)
+        self.assertIn("rank", table.splitlines()[0])
+        self.assertIn("HK.00100", table)
 
 
 if __name__ == "__main__":
