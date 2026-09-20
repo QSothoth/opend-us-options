@@ -32,7 +32,8 @@ python3 -m custody evaluate --strategy zero_dte_timing_v6.5 \
 
 ## 当前状态
 
-- 默认策略和生命周期以 [注册表](custody/strategies/index.json) 为准；默认策略为 v6.5（2026-09-18 起，用户破例设为 `accepted`），其余版本为 candidate。
+- 默认策略和生命周期以 [注册表](custody/strategies/index.json) 为准。**2026-09-20 起默认策略与研究比较基线都是 v6.6**（状态 `candidate`）；v6.5 保留 `accepted`，其余版本为 candidate。
+- ⚠️ **默认策略是 candidate，`custody run --mode live` 会拒绝执行**（live 只接受 `accepted`，见 `custody/service.py`）。实盘下单需要显式指定 `--strategy zero_dte_timing_v6.5`，或由用户决定把 v6.6 破例改为 `accepted`。`dryrun` 与 `--mode paper` 不受影响，默认跑 v6.6。
 - 2026-09-20 换用新数据：训练集 `custody-0dte-v6.1`（146 case / 21 个交易日，吸收了原 09-16 验证日），验证集 `custody-eval-2026-09-18-v2`（2026-09-18，28 个 case，含实盘当天的 SNDK），见 [DATA](docs/DATA.md)。五个已注册策略在两个新数据集上各重跑一次，参数和默认版本未改。
 - **没有一份报告是 ACCEPT**，样本外交易日仍是 0 个。换数据后 v6.5 不再像 V5 时期那样全门槛通过（G12 未通过），验证集那一天它排在最后。完整表格和门槛见 [策略说明](docs/STRATEGY.md#当前结果)。
 - **已知问题**：用户 2026-09-18 实盘发现 SNDK 单边上涨（+10.25%）全天没有买入信号。逐分钟回放确认，09:46 时 v6.5 其他条件都满足，只被 v6.4 引入的「突破要来自波动压缩」（`squeeze_lookback`）挡住；之后全天被「不追离开 VWAP 超过 2 ATR」（`max_vwap_atr`）挡住。没有这两条过滤的 v6.1 / v6.2 / v6.3 都在 09:50 买入并拿到 +135.9%。验证集当天对照组涨幅最大的三张（SNDK CALL +184.9%、GOOGL PUT +305.4%、META PUT +98.6%）v6.5 一张都没买。诊断与影响面见 [策略说明](docs/STRATEGY.md#sndk-2026-09-18-没出买入信号的诊断)。

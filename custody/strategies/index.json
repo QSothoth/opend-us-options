@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "default": "zero_dte_timing_v6.5",
+  "default": "zero_dte_timing_v6.6",
   "strategies": {
     "zero_dte_timing_v6.1": {
       "file": "zero_dte_timing_v6.1.json",
