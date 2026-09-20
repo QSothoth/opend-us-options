@@ -14,7 +14,8 @@
 ```text
 <dataset>/
   manifest.json          数据集名、角色、窗口、跳过记录等元数据
-  cases.json             {"cases": [ 每个期权合约一条 ]}
+  cases.json             {"cases": [ 每个期权合约一条 ]}；可选每条含 ex-post `labels`
+  case_labels.json       可选：标签汇总与计数（统计用，禁止喂策略）
   CHECKSUMS.sha256       每个数据文件一行 "<sha256>  <相对路径>"
   underlying/<SYMBOL>.csv   正股 1m K 线（可包含多个交易日）
   option/<CONTRACT>.csv     期权 1m K 线
@@ -74,31 +75,63 @@ python3 -m custody check --dataset <训练目录> --validation <验证目录>
 
 | 名称 | 角色 | 用途 |
 |---|---|---|
-| `custody-0dte-v5`（V5） | `train/custody` | 当前唯一训练数据 |
-| `custody-eval-2026-09-16-v2` | `validation/custody` | 留出验证，只评测，绝不调参 |
+| `custody-0dte-v6.1`（V6.1） | `train/custody` | **当前唯一训练集**（含 case 事后标签） |
+| `custody-eval-2026-09-18-v2` | `validation/custody` | **当前唯一留出验证**（含事后标签；只评测，绝不调参） |
+| `custody-stress-v1` | `diagnostic/stress` | 压力诊断包；禁止调参、不作正式门槛 |
 
-只使用此处登记的数据集。新数据按下文流程冻结并发布，训练集 tag 从 `custody-0dte-v6` 起递增。`custody check --dataset data/custody-0dte-v5 --validation data/custody-eval-2026-09-16-v2` 通过（无重叠交易日或会话）。
+只使用此处登记的数据集。训练集只保留一个正式 tag（当前 V6.1）；验证可以另增日期，但正式验证登记为 `custody-eval-2026-09-18-v2`（同日行情 + 标签）。`custody check --dataset data/custody-0dte-v6.1 --validation data/custody-eval-2026-09-18-v2` 通过（无重叠交易日或会话）。
 
-### V5 详情
+### V6.1 详情（唯一训练）
 
-- zip SHA256 `5676241cb2498f711977e7c207572ca66f316a0b76bac68b416b2a2f439ad73c`
-- `CHECKSUMS.sha256` 的 SHA256 `35875e44318c78ab5b09cd53cac3b22ce26a8a12cb468aeed5efd72e43e97c69`
-- 20 个交易日（2026-08-18 → 2026-09-15），126 个 case，63 组 CALL / PUT 两边齐全：SPY 40、QQQ 14、IWM 10、AAPL 10、META 10、MSFT 10、AMD 6、NVDA 6、TSLA 6、AMZN 4、AVGO 4、MU 4、GOOGL 2
-- 合约：开盘第一根 K 线价格最近的挂牌行权价（`both_sides_atm_at_open`）；每个 case 都带 `prev_close`、`session_close`；`custody check` 通过
-- 按评测标准的场景分布：顺势单边 43、逆势单边 43、震荡 20、先逆后顺 10、先顺后逆 10
-- 行情来源：OpenD 期权历史缓存 82 个 case，另 44 个 case（2026-09-10 / 09-11 / 09-14 / 09-15）因期权历史配额用尽改用只读订阅 K_1M 流（已与同合约历史逐 bar 对比一致）
-- 跳过：2026-08-17（OpenD 历史 `NN_ProtoRet_SvrFailed`）、2026-09-16（留出验证）；另有 26 个个股会话因当日无对应到期合约或过期链不可查而跳过（见 `manifest.skipped`）
-- 来源：2026-09-17 上传到旧 tag `custody-train-0dte` 的附件（zip `e043bf00…`），只把 `manifest.json` 的数据集名改为 `custody-0dte-v5` 并重算其哈希行，行情文件逐字节不变
+- zip SHA256 `49032a1b9f8cc5fef3c9a7d7fee9fef99e220e06e12c7f89d849ce70fddc04c1`
+- `CHECKSUMS.sha256` 的 SHA256 `38b2d5d8b852deae9bc1aa599b41fb57410274c283834ea86367177960656206`
+- 行情与 case 集合同 V6：21 个交易日（2026-08-18 → 2026-09-16），146 个 case，73 组双边
+- **新增事后标签**（`cases.json` 每条的 `labels`，以及汇总文件 `case_labels.json`）：走势五类、开盘缺口/市场形态、振幅分桶、ORB15、盘中时段方向、成交量与首小时占比等；一律 `ex_post: true`，**禁止**喂给策略
+- 重新生成：`python3 -m custody label --dataset <目录>`
+- 与唯一验证集 `custody-eval-2026-09-18` 无日期/会话重叠
+- 发布：https://github.com/QSothoth/opend-us-options/releases/tag/custody-0dte-v6.1
 
-### 验证集 custody-eval-2026-09-16-v2
+### 标签字段（统计用）
 
-- zip SHA256 `5758f49dd9c16fcfea85c9cc41160f01e71f7a341dd6a44214c738a41654dfd7`；文件哈希在 `manifest.json` 的 `series` 里
-- 2026-09-16 一个交易日，10 个个股各一组 CALL / PUT（共 20 个 case）：INTC、AMD、TSLA、NVDA、MU、AVGO、AMZN、GOOGL、META、MSFT；`custody check` 通过，与 V5 没有重叠交易日或会话
-- 场景分布：顺势单边 8、逆势单边 8、先逆后顺 2、先顺后逆 2、震荡 0，场景覆盖不足
-- 当前策略开发截止为 2026-09-16，这份数据不属于它的样本外
-- 来源：2026-09-17 上传到旧 tag `custody-eval-2026-09-16` 的附件（zip `ac041ab6…`），只改了 `manifest.json` 的数据集名
+| 字段 | 含义 |
+|---|---|
+| `path_scenario` / `_zh` | 相对合约方向的走势（顺势单边 / 先逆后顺 / 震荡 / 先顺后逆 / 逆势单边） |
+| `market_shape` / `gap` | 高开低开×走法；缺口 up/down/flat/unknown |
+| `range_bucket` | quiet (&lt;1.5%) / normal / wide / extreme（≥5%） |
+| `orb15` | 收盘相对开盘 15 分钟区间：break_up / break_down / inside |
+| `periods` | 盘中分段 open_drive / morning / midday / afternoon / power_hour 的 up/down/flat |
+| `first_hour_volume_share` 等 | 正股成交量、首小时占比、相对中位 bar 的 rvol；期权成交 bar 数与量 |
 
-### 已停用的数据集
+### 已替代的训练 tag
+
+- `custody-0dte-v6`：无标签的同内容前身，已由 V6.1 替代为唯一训练登记
+
+### 验证集 custody-eval-2026-09-18-v2（唯一正式验证）
+
+- zip SHA256 `8bf9eb37d7372dce30c4ca37188e11c45a5fddb744ef0c5de120a61f3d139253`
+- `CHECKSUMS.sha256` 的 SHA256 `fba36ab960189e6fe80660629455774627915d1b8982361a324ec203892fc2c0`
+- 行情与 case 同 `custody-eval-2026-09-18`：2026-09-18，14 标的双边共 28 case；另含与训练集相同的事后 `labels` / `case_labels.json`
+- 只评测，绝不调参；标签禁止喂策略
+- 发布：https://github.com/QSothoth/opend-us-options/releases/tag/custody-eval-2026-09-18-v2
+
+无标签前身 `custody-eval-2026-09-18` 已由本 tag 替代为正式验证登记。
+
+### 诊断包 custody-stress-v1
+
+- 角色 `diagnostic/stress`：不是正式验证，禁止调参
+- zip SHA256 `1b59427186381b380fa1f690babaa306a879da77a956c3d264aa13e07616a525`
+- `CHECKSUMS.sha256` 的 SHA256 `ca3dcf912b1ab46b56c1ecfbe958b035835260caf1a1c5cb5f817b4f18945667`
+- 2026-09-18，SNDK 大涨日 ATM + SKHY 180 双边（4 case）
+- 发布：https://github.com/QSothoth/opend-us-options/releases/tag/custody-stress-v1
+
+### 已吸收 / 停用
+
+- `custody-0dte-v5`：已并入 V6/V6.1（V5 + 2026-09-16）
+- `custody-0dte-v6`：无标签版本，已由 `custody-0dte-v6.1` 替代
+- `custody-eval-2026-09-16-v2`：不再作正式验证；该日已吸收进 V6 训练集
+- 更旧的单边 tag（`custody-train-0dte`、`custody-eval-2026-09-16` 等）仍停用；不得原地替换附件
+
+### 已停用的数据集（历史说明）
 
 旧 tag `custody-train-0dte`（V4，单边 36 个 case）和 `custody-eval-2026-09-16`（单边 10 个 CALL）的附件在 2026-09-17 被原地替换，与原登记的哈希（`65398673…`、`58f0af99…`）不再一致，已停用；原内容与结论查 Git 历史。今后不得原地替换附件，数据变化一律发新 tag，也不以本地目录代替 Release。
 
@@ -106,26 +139,37 @@ python3 -m custody check --dataset <训练目录> --validation <验证目录>
 
 以下 Bash 步骤遇错即停止；使用尚未下载、解压的目标目录，已有 Release 不覆盖。
 
-训练集：
+训练集（唯一）：
 
 ```bash
 set -euo pipefail
-test ! -e data/custody-0dte-v5
+test ! -e data/custody-0dte-v6.1
 mkdir -p data
-gh release download custody-0dte-v5 --repo QSothoth/opend-us-options --pattern custody-0dte-v5.zip --dir data
-echo "5676241cb2498f711977e7c207572ca66f316a0b76bac68b416b2a2f439ad73c  data/custody-0dte-v5.zip" | sha256sum -c
-python3 -m zipfile -e data/custody-0dte-v5.zip data      # -> data/custody-0dte-v5/
+gh release download custody-0dte-v6.1 --repo QSothoth/opend-us-options --pattern custody-0dte-v6.1.zip --dir data
+echo "49032a1b9f8cc5fef3c9a7d7fee9fef99e220e06e12c7f89d849ce70fddc04c1  data/custody-0dte-v6.1.zip" | sha256sum -c
+python3 -m zipfile -e data/custody-0dte-v6.1.zip data      # -> data/custody-0dte-v6.1/
 ```
 
-验证集：
+验证集（唯一正式）：
 
 ```bash
 set -euo pipefail
-test ! -e data/custody-eval-2026-09-16-v2
+test ! -e data/custody-eval-2026-09-18-v2
 mkdir -p data
-gh release download custody-eval-2026-09-16-v2 --repo QSothoth/opend-us-options --pattern custody-eval-2026-09-16-v2.zip --dir data
-echo "5758f49dd9c16fcfea85c9cc41160f01e71f7a341dd6a44214c738a41654dfd7  data/custody-eval-2026-09-16-v2.zip" | sha256sum -c
-python3 -m zipfile -e data/custody-eval-2026-09-16-v2.zip data
+gh release download custody-eval-2026-09-18-v2 --repo QSothoth/opend-us-options --pattern custody-eval-2026-09-18-v2.zip --dir data
+echo "8bf9eb37d7372dce30c4ca37188e11c45a5fddb744ef0c5de120a61f3d139253  data/custody-eval-2026-09-18-v2.zip" | sha256sum -c
+python3 -m zipfile -e data/custody-eval-2026-09-18-v2.zip data
+```
+
+诊断包（禁止调参）：
+
+```bash
+set -euo pipefail
+test ! -e data/custody-stress-v1
+mkdir -p data
+gh release download custody-stress-v1 --repo QSothoth/opend-us-options --pattern custody-stress-v1.zip --dir data
+echo "1b59427186381b380fa1f690babaa306a879da77a956c3d264aa13e07616a525  data/custody-stress-v1.zip" | sha256sum -c
+python3 -m zipfile -e data/custody-stress-v1.zip data
 ```
 
 ## 4. 每日冻结（V5 起的数据来源）

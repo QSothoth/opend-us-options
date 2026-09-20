@@ -24,7 +24,7 @@ python3 -m custody strategies
 
 # 下载后离线评测，显式指定策略，避免默认值与报告目录错配
 python3 -m custody evaluate --strategy zero_dte_timing_v6.1 \
-  --dataset data/custody-0dte-v5 --out reports/zero_dte_timing_v6.1/custody-0dte-v5
+  --dataset data/custody-0dte-v6.1 --out reports/zero_dte_timing_v6.5/custody-0dte-v6
 ```
 
 数据获取、每日冻结及发布只按 [数据流程](docs/DATA.md) 操作；盘中观察见 [dryrun](docs/RUNTIME.md#4-dryrun)，模拟账户与实盘下单见 [run](docs/RUNTIME.md#5-run)。所有命令：`python3 -m custody`。
@@ -39,6 +39,7 @@ python3 -m custody evaluate --strategy zero_dte_timing_v6.1 \
 - 新研究候选 v6.3（非默认）在 v6.2 上增加突破量能确认和 10 分钟无进展退出。[训练报告](reports/zero_dte_timing_v6.3/custody-0dte-v5/REPORT.md) 综合分 63.0、完成分 35.7、盈亏比 4.43、平均收益 −0.33%，但利润因子 0.96，仍为 REJECT；方向正确时只参与 22/53（41.5%）。[R11 选择交叉验证](reports/zero_dte_timing_v6.3/custody-0dte-v5/selection.json) 保留当时未纳入完成分的旧口径，未证明稳定优于 v6.2；本次评分调整不重新选择候选。仅供显式指定 `--strategy zero_dte_timing_v6.3` 研究使用。
 - 研究候选 v6.4（非默认）在 v6.2 上只接受波动压缩后的突破，加 10 分钟无进展离场和估算浮盈 +50% 后锁住一半。[训练报告](reports/zero_dte_timing_v6.4/custody-0dte-v5/REPORT.md) 是第一个 G3–G12 全部通过的已注册版本（PROVISIONAL，没有样本外交易日）：综合分 66.6、盈亏比 4.80、平均收益 +2.34%、利润因子 1.53，但只做 29/126 笔；[验证集](reports/zero_dte_timing_v6.4/custody-eval-2026-09-16-v2/REPORT.md) 那一天仍亏 6.4%。R15 [选择审计](reports/zero_dte_timing_v6.4/custody-0dte-v5/selection.json) 显示 20 折中 19 折选中它，但相对 v6.3 的配对区间跨零。使用时显式指定 `--strategy zero_dte_timing_v6.4`。
 - 默认策略与研究基线 v6.5 = v6.4 去掉「VWAP 有利侧站稳 5 根」，交易从 29 笔增加到 68 笔。[训练报告](reports/zero_dte_timing_v6.5/custody-0dte-v5/REPORT.md) 门槛全部通过（PROVISIONAL）：综合分 71.9、盈亏比 4.68、平均收益 +3.24%、利润因子 1.32；[验证集](reports/zero_dte_timing_v6.5/custody-eval-2026-09-16-v2/REPORT.md) 那一天亏 15.2%，差于 v6.4。它未满足 R16 预登记的选择规则，由用户决定登记（见 [审计](reports/zero_dte_timing_v6.5/custody-0dte-v5/selection.json)）。2026-09-18 用户决定未经 ACCEPT 把它改为 `accepted`，只用于每单 1 张的实盘链路试运行（见 [策略说明](docs/STRATEGY.md)）。
+- 当前唯一训练集 `custody-0dte-v6.1`（含原 V5 + 已吸收的 2026-09-16）；唯一正式验证集 `custody-eval-2026-09-18-v2`；`custody-stress-v1` 仅诊断。历史报告路径仍可能写 V5 / 09-16-v2，那是当时研究记录。
 - 下一步每天冻结同一行权价的 CALL / PUT，积累样本外交易日；验证集不得用于调参。
 - `custody run` 通过 OpenD 下单：`--mode paper` 用模拟账户，`--mode live` 只接受 accepted 策略；dryrun 只读行情、记录模拟成交。
 
