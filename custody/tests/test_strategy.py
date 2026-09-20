@@ -213,7 +213,8 @@ class DeterminismTests(unittest.TestCase):
         for item in registry.list():
             doc = json.loads((registry.root / (item['strategy_id'] + '.json')).read_text(encoding='utf-8'))
             self.assertEqual(set(doc), {'schema_version', 'strategy_id', 'engine', 'description', 'developed_on', 'params'})
-            self.assertEqual(doc['developed_on']['release'], 'custody-0dte-v5')
+            # registered train Releases: V5 for v6.x, V6.1 since 2026-09-20 (see docs/DATA.md)
+            self.assertIn(doc['developed_on']['release'], {'custody-0dte-v5', 'custody-0dte-v6.1'})
         self.assertIn(registry.default_id, [i['strategy_id'] for i in registry.list() if i['status'] != 'retired'])
 
 
