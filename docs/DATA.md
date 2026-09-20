@@ -4,7 +4,7 @@
 
 ## 1. Release 是什么
 
-- 数据只通过 GitHub 仓库 `QSothoth/opend-us-options` 的 **Release** 发布：一个 git tag + 一个 zip 附件（附 SHA256）。
+- 数据只通过 GitHub 仓库 `QSothoth/s-alpha` 的 **Release** 发布：一个 git tag + 一个 zip 附件（附 SHA256）。
 - Release **不可变**：发布后不改文件、不换附件。数据有任何变化都发新 tag。
 - 代码不走 Release；代码只在 git 分支里。
 - 解压后的 Release 目录就是一个**数据集**，评测直接读取它。
@@ -118,7 +118,7 @@ python3 -m custody check --dataset <训练目录> --validation <验证目录>
 set -euo pipefail
 test ! -e data/custody-0dte-v6.1
 mkdir -p data
-gh release download custody-0dte-v6.1 --repo QSothoth/opend-us-options --pattern 'custody-0dte-v6.1.zip' --dir data
+gh release download custody-0dte-v6.1 --repo QSothoth/s-alpha --pattern 'custody-0dte-v6.1.zip' --dir data
 echo "49032a1b9f8cc5fef3c9a7d7fee9fef99e220e06e12c7f89d849ce70fddc04c1  data/custody-0dte-v6.1.zip" | sha256sum -c
 python3 -m zipfile -e data/custody-0dte-v6.1.zip data      # -> data/custody-0dte-v6.1/
 ```
@@ -129,7 +129,7 @@ python3 -m zipfile -e data/custody-0dte-v6.1.zip data      # -> data/custody-0dt
 set -euo pipefail
 test ! -e data/custody-eval-2026-09-18-v2
 mkdir -p data
-gh release download custody-eval-2026-09-18-v2 --repo QSothoth/opend-us-options --pattern 'custody-eval-2026-09-18-v2.zip' --dir data
+gh release download custody-eval-2026-09-18-v2 --repo QSothoth/s-alpha --pattern 'custody-eval-2026-09-18-v2.zip' --dir data
 echo "8bf9eb37d7372dce30c4ca37188e11c45a5fddb744ef0c5de120a61f3d139253  data/custody-eval-2026-09-18-v2.zip" | sha256sum -c
 python3 -m zipfile -e data/custody-eval-2026-09-18-v2.zip data
 ```
@@ -191,7 +191,7 @@ cat data/custody-0dte-v6.zip.sha256
 
 ```bash
 gh release create custody-0dte-v6 data/custody-0dte-v6.zip data/custody-0dte-v6.zip.sha256 \
-  --repo QSothoth/opend-us-options --title "Custody 0DTE dataset V6 (both sides)" --notes "<窗口、标的、case 数、两个 SHA256>"
+  --repo QSothoth/s-alpha --title "Custody 0DTE dataset V6 (both sides)" --notes "<窗口、标的、case 数、两个 SHA256>"
 ```
 
 发布后只在本文件登记 tag、角色、窗口和两个 SHA256（zip 与 `CHECKSUMS.sha256`）。若正式替换当前训练集，再更新 `AGENTS.md` 的可用数据约束；发布验证集不会自动使它成为训练集。
