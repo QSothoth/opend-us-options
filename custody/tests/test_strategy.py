@@ -386,3 +386,36 @@ class BreakoutFilterTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class DeadlineEntryTests(unittest.TestCase):
+    """must_enter_by_minute: the guaranteed-entry line buys anyway when no signal fires."""
+
+    FLAT = piecewise([(1, 100.0), (390, 100.0)])          # nothing ever triggers a signal
+
+    def test_off_by_default(self):
+        self.assertIsNone(validate_params(PARAMS)['must_enter_by_minute'])
+        self.assertEqual(first(run(self.FLAT), 'ENTER'), (None, None))
+
+    def test_buys_at_the_deadline_when_no_signal_fired(self):
+        forced = {**PARAMS, 'must_enter_by_minute': 60}
+        self.assertEqual(first(run(self.FLAT, params=forced), 'ENTER'), (60, 'deadline_entry'))
+
+    def test_a_real_signal_still_wins_and_the_deadline_changes_nothing_before_it(self):
+        rally = piecewise([(1, 100.0), (15, 100.0), (60, 103.0), (390, 108.0)])
+        plain = first(run(rally), 'ENTER')
+        forced = first(run(rally, params={**PARAMS, 'must_enter_by_minute': 60}), 'ENTER')
+        self.assertEqual(forced, plain)
+        self.assertIsNotNone(plain[0])
+        self.assertLess(plain[0], 60)
+
+    def test_deadline_entry_is_managed_by_the_usual_exits(self):
+        forced = {**PARAMS, 'must_enter_by_minute': 60}
+        actions = run(self.FLAT, params=forced)
+        exits = [(m, r) for m, a, r in actions if a == 'EXIT']
+        self.assertTrue(exits, 'a forced entry must still be closed')
+
+    def test_deadline_must_follow_the_opening_range(self):
+        for bad in (PARAMS['opening_minutes'], 1, 0, True):
+            with self.assertRaises(ValueError, msg=str(bad)):
+                validate_params({**PARAMS, 'must_enter_by_minute': bad})

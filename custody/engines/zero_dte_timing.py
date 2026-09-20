@@ -22,6 +22,12 @@ clock (AGENTS.md: no fixed-time entry logic). With ``charm_exit_before_close_min
 there is no entry that the charm exit would sell on the next bar (out of the money
 inside the charm window).
 
+``must_enter_by_minute`` (off by default) is the one exception, and it belongs to the
+guaranteed-entry line rather than to timing (AGENTS.md records the exception): the
+position must exist by that minute, so if no signal has fired the engine buys anyway
+with reason ``deadline_entry``. Every exit rule then applies as usual. It does not
+loosen the signal - before the deadline the conditions are exactly the same.
+
 Optional entry filter (off by default): ``max_vwap_atr`` - no entry while the close is
 more than this many ATR beyond VWAP. A buyer should not chase a move that has already
 run away from VWAP: a stop of at most ``stop_max_atr`` ATR would then sit above VWAP,
@@ -114,6 +120,7 @@ OPTIONAL = {
     'max_vwap_or': ((float, 0.05, 10.0), None),      # same cap measured in opening-range heights
     'min_breakout_volume_ratio': ((float, 0.1, 5.0), None),  # current volume / prior breakout window mean
     'squeeze_lookback': ((int, 1, 60), None),        # entry needs a volatility squeeze within the last N bars
+    'must_enter_by_minute': ((int, 1, 389), None),   # deadline: buy anyway if no signal has fired by then
 }
 OTM_STOP_FLOOR = 0.5
 SQUEEZE_PERIOD, SQUEEZE_BAND_SD, SQUEEZE_CHANNEL_ATR = 20, 2.0, 1.5
@@ -150,6 +157,8 @@ def validate_params(params):
         raise ValueError('max_vwap_atr must exceed vwap_buffer_atr')
     if (out['profit_lock_at'] is None) != (out['profit_lock_keep'] is None):
         raise ValueError('profit_lock_at and profit_lock_keep go together')
+    if out['must_enter_by_minute'] is not None and out['must_enter_by_minute'] <= out['opening_minutes']:
+        raise ValueError('must_enter_by_minute must fall after the opening range')
     return out
 
 
@@ -214,7 +223,10 @@ class ZeroDteTiming:
             return Decision('WAIT', None, self._diagnostics(minute))
         reason = self._entry_reason(bar, minute)
         if reason is None:
-            return Decision('WAIT', None, self._diagnostics(minute))
+            deadline = self.p['must_enter_by_minute']
+            if deadline is None or minute < deadline:
+                return Decision('WAIT', None, self._diagnostics(minute))
+            reason = 'deadline_entry'
         self.phase, self.entry_reason = 'ENTERING', reason
         self._plan_risk()
         return Decision('ENTER', reason, self._diagnostics(minute))
