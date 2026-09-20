@@ -2,8 +2,21 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence
+
+ROW_FIELDS = ("rank", "code", "name", "market", "score", "label", "data_grade")
+FACTOR_FIELDS = (
+    "premium_pct",
+    "path_late_spike",
+    "path_stability",
+    "volume",
+    "turnover",
+    "volume_ratio",
+    "book_imbalance",
+    "bid_ask_ratio",
+    "float_turnover",
+)
 
 
 @dataclass
@@ -24,6 +37,23 @@ class LiveAuctionScore:
     score: float
     label: str  # strong | medium | weak | unknown
     notes: str
+    rank: int = 0
+
+    def factors(self) -> Dict[str, Optional[float]]:
+        return {name: getattr(self, name) for name in FACTOR_FIELDS}
+
+    def to_row(self) -> Dict[str, Any]:
+        return {
+            "rank": self.rank,
+            "code": self.code,
+            "name": self.name,
+            "market": self.market,
+            "score": self.score,
+            "label": self.label,
+            "data_grade": self.data_grade,
+            "factors": self.factors(),
+            "notes": self.notes,
+        }
 
 
 def _last(series: Sequence[dict], key: str) -> Optional[float]:
@@ -205,21 +235,25 @@ def rank_watchlist(
         for code, series in capture.items()
     ]
     scores.sort(key=lambda s: s.score, reverse=True)
+    for i, s in enumerate(scores, 1):
+        s.rank = i
     return scores
 
 
 def format_live_table(scores: Sequence[LiveAuctionScore]) -> str:
     lines = [
-        f"{'#':>2} {'code':<12} {'name':<8} {'score':>5} {'lbl':<7} {'prem%':>7} "
-        f"{'imb':>6} {'vr':>5} {'grade':<7}",
-        "-" * 72,
+        f"{'rank':>4} {'code':<12} {'name':<8} {'score':>5} {'label':<7} "
+        f"{'grade':<7} {'prem%':>7} {'imb':>6} {'vr':>5} {'late':>5}",
+        "-" * 80,
     ]
-    for i, s in enumerate(scores, 1):
-        prem = f"{s.premium_pct*100:.2f}" if s.premium_pct is not None else "n/a"
+    for s in scores:
+        rank = s.rank if s.rank else 0
+        prem = f"{s.premium_pct * 100:.2f}" if s.premium_pct is not None else "n/a"
         imb = f"{s.book_imbalance:.2f}" if s.book_imbalance is not None else "n/a"
         vr = f"{s.volume_ratio:.2f}" if s.volume_ratio is not None else "n/a"
+        late = f"{s.path_late_spike:.2f}" if s.path_late_spike is not None else "n/a"
         lines.append(
-            f"{i:>2} {s.code:<12} {s.name:<8} {s.score:5.1f} {s.label:<7} {prem:>7} "
-            f"{imb:>6} {vr:>5} {s.data_grade:<7}"
+            f"{rank:>4} {s.code:<12} {s.name:<8} {s.score:5.1f} {s.label:<7} "
+            f"{s.data_grade:<7} {prem:>7} {imb:>6} {vr:>5} {late:>5}"
         )
     return "\n".join(lines)

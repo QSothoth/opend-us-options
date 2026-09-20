@@ -1,0 +1,136 @@
+{
+  "captured_at": "2026-09-18T09:19:20",
+  "market": "HK",
+  "host": "127.0.0.1",
+  "port": 11111,
+  "source": "fixture",
+  "codes": ["HK.00100", "HK.09988", "HK.02513"],
+  "series": {
+    "HK.00100": [
+      {
+        "ts": "2026-09-18 09:19:00",
+        "code": "HK.00100",
+        "last_price": 260.0,
+        "prev_close": 254.8,
+        "volume": 2000000,
+        "turnover": 520000000,
+        "volume_ratio": 2.5,
+        "book_imbalance": 0.40,
+        "bid_ask_ratio": 1.6,
+        "circular_market_val": 1.2e11,
+        "raw": {"name": "MiniMax"}
+      },
+      {
+        "ts": "2026-09-18 09:19:05",
+        "code": "HK.00100",
+        "last_price": 262.0,
+        "prev_close": 254.8,
+        "volume": 2800000,
+        "turnover": 730000000,
+        "volume_ratio": 2.6,
+        "book_imbalance": 0.42,
+        "bid_ask_ratio": 1.7,
+        "circular_market_val": 1.2e11,
+        "raw": {"name": "MiniMax"}
+      },
+      {
+        "ts": "2026-09-18 09:19:10",
+        "code": "HK.00100",
+        "last_price": 265.0,
+        "prev_close": 254.8,
+        "volume": 3600000,
+        "turnover": 950000000,
+        "volume_ratio": 2.7,
+        "book_imbalance": 0.45,
+        "bid_ask_ratio": 1.8,
+        "circular_market_val": 1.2e11,
+        "raw": {"name": "MiniMax"}
+      },
+      {
+        "ts": "2026-09-18 09:19:15",
+        "code": "HK.00100",
+        "last_price": 268.0,
+        "prev_close": 254.8,
+        "volume": 4500000,
+        "turnover": 1200000000,
+        "volume_ratio": 2.8,
+        "book_imbalance": 0.44,
+        "bid_ask_ratio": 1.7,
+        "circular_market_val": 1.2e11,
+        "raw": {"name": "MiniMax"}
+      },
+      {
+        "ts": "2026-09-18 09:19:20",
+        "code": "HK.00100",
+        "last_price": 270.0,
+        "prev_close": 254.8,
+        "volume": 5200000,
+        "turnover": 1400000000,
+        "volume_ratio": 2.9,
+        "book_imbalance": 0.46,
+        "bid_ask_ratio": 1.9,
+        "circular_market_val": 1.2e11,
+        "raw": {"name": "MiniMax"}
+      }
+    ],
+    "HK.09988": [
+      {
+        "ts": "2026-09-18 09:19:20",
+        "code": "HK.09988",
+        "last_price": 106.4,
+        "prev_close": 105.1,
+        "raw": {"name": "阿里"}
+      }
+    ],
+    "HK.02513": [
+      {
+        "ts": "2026-09-18 09:19:00",
+        "code": "HK.02513",
+        "last_price": 760.0,
+        "prev_close": 740.0,
+        "volume": 800000,
+        "turnover": 610000000,
+        "volume_ratio": 1.4,
+        "book_imbalance": 0.10,
+        "circular_market_val": 1.5e11,
+        "raw": {"name": "智谱"}
+      },
+      {
+        "ts": "2026-09-18 09:19:07",
+        "code": "HK.02513",
+        "last_price": 763.0,
+        "prev_close": 740.0,
+        "volume": 1100000,
+        "turnover": 840000000,
+        "volume_ratio": 1.5,
+        "book_imbalance": 0.12,
+        "circular_market_val": 1.5e11,
+        "raw": {"name": "智谱"}
+      },
+      {
+        "ts": "2026-09-18 09:19:14",
+        "code": "HK.02513",
+        "last_price": 765.0,
+        "prev_close": 740.0,
+        "volume": 1400000,
+        "turnover": 1070000000,
+        "volume_ratio": 1.6,
+        "book_imbalance": 0.11,
+        "circular_market_val": 1.5e11,
+        "raw": {"name": "智谱"}
+      },
+      {
+        "ts": "2026-09-18 09:19:20",
+        "code": "HK.02513",
+        "last_price": 766.5,
+        "prev_close": 740.0,
+        "volume": 1700000,
+        "turnover": 1300000000,
+        "volume_ratio": 1.6,
+        "book_imbalance": 0.13,
+        "circular_market_val": 1.5e11,
+        "raw": {"name": "智谱"}
+      }
+    ]
+  }
+}
