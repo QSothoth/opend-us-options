@@ -1,0 +1,15 @@
+{
+  "schema_version": 2,
+  "strategy_id": "open_hold_v1",
+  "engine": "open_hold",
+  "description": "不择时执行策略：开盘后第 1 分钟（09:31 K 线收盘）买入，持有到平台强制平仓，中间不做任何决策。R21 候选 O1，按盈亏平衡命中率在训练集 custody-0dte-v6.1 上胜出。按 STANDARD 第 9b 节判定，须配合上游方向命中率的独立估计使用。",
+  "developed_on": {
+    "release": "custody-0dte-v6.1",
+    "generation": "V6.1",
+    "sessions_through": "2026-09-18"
+  },
+  "params": {
+    "entry_minute": 1,
+    "flatten_before_close_minutes": 15
+  }
+}

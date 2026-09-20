@@ -31,6 +31,11 @@
       "file": "zero_dte_timing_v6.6.json",
       "sha256": "2fc2ba2c1856d3a51ffdec09a19efd7412bbc9d507d0a28d2b81a78863b435c2",
       "status": "candidate"
+    },
+    "open_hold_v1": {
+      "file": "open_hold_v1.json",
+      "sha256": "3dcd7617ab766676fdf1906b5e18a5257912a087fc34da3567c39b264ce3fb23",
+      "status": "candidate"
     }
   }
 }
