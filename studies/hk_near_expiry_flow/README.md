@@ -1,6 +1,6 @@
 # 港股近月正股期权流量研究（HK near-expiry equity options）
 
-本目录是挂在 `opend-us-options` 下的**研究切片**，与美股 0DTE custody 主线并列，不另开仓库。  
+本目录是挂在 `s-alpha` 下的**研究切片**，与美股 0DTE custody 主线并列，不另开仓库。  
 研究对象是港股**上市正股期权**（如 `HK.MNX260918C235000`），**不是涡轮**。
 
 ## 目录
