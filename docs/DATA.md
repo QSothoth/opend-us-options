@@ -76,10 +76,10 @@ python3 -m custody check --dataset <训练目录> --validation <验证目录>
 | 名称 | 角色 | 用途 |
 |---|---|---|
 | `custody-0dte-v6.1`（V6.1） | `train/custody` | **当前唯一训练集**（含 case 事后标签） |
-| `custody-eval-2026-09-18` | `validation/custody` | **当前唯一留出验证**（只评测，绝不调参） |
+| `custody-eval-2026-09-18-v2` | `validation/custody` | **当前唯一留出验证**（含事后标签；只评测，绝不调参） |
 | `custody-stress-v1` | `diagnostic/stress` | 压力诊断包；禁止调参、不作正式门槛 |
 
-只使用此处登记的数据集。训练集只保留一个正式 tag（当前 V6.1）；验证可以另增日期，但 2026-09-18 是当前唯一正式验证日。`custody check --dataset data/custody-0dte-v6.1 --validation data/custody-eval-2026-09-18` 通过（无重叠交易日或会话）。
+只使用此处登记的数据集。训练集只保留一个正式 tag（当前 V6.1）；验证可以另增日期，但正式验证登记为 `custody-eval-2026-09-18-v2`（同日行情 + 标签）。`custody check --dataset data/custody-0dte-v6.1 --validation data/custody-eval-2026-09-18-v2` 通过（无重叠交易日或会话）。
 
 ### V6.1 详情（唯一训练）
 
@@ -106,13 +106,15 @@ python3 -m custody check --dataset <训练目录> --validation <验证目录>
 
 - `custody-0dte-v6`：无标签的同内容前身，已由 V6.1 替代为唯一训练登记
 
-### 验证集 custody-eval-2026-09-18（唯一正式验证）
+### 验证集 custody-eval-2026-09-18-v2（唯一正式验证）
 
-- zip SHA256 `7b0abb604607d720ed016469d43afcfb13cc28e652c50aece8104ea5a49be13b`
-- `CHECKSUMS.sha256` 的 SHA256 `589f1055c6e32539645b2f65bfa43d4bc528f4f65354b75d74bb9f65e0c17d65`
-- 2026-09-18 一个交易日，14 个标的各一组 CALL / PUT（共 28 个 case）：SPY、QQQ、IWM、AAPL、MSFT、NVDA、TSLA、META、AMZN、GOOGL、AMD、MU、INTC、SNDK；AVGO 因配额未纳入
-- 只评测，绝不调参
-- 发布：https://github.com/QSothoth/opend-us-options/releases/tag/custody-eval-2026-09-18
+- zip SHA256 `8bf9eb37d7372dce30c4ca37188e11c45a5fddb744ef0c5de120a61f3d139253`
+- `CHECKSUMS.sha256` 的 SHA256 `fba36ab960189e6fe80660629455774627915d1b8982361a324ec203892fc2c0`
+- 行情与 case 同 `custody-eval-2026-09-18`：2026-09-18，14 标的双边共 28 case；另含与训练集相同的事后 `labels` / `case_labels.json`
+- 只评测，绝不调参；标签禁止喂策略
+- 发布：https://github.com/QSothoth/opend-us-options/releases/tag/custody-eval-2026-09-18-v2
+
+无标签前身 `custody-eval-2026-09-18` 已由本 tag 替代为正式验证登记。
 
 ### 诊断包 custody-stress-v1
 
@@ -152,11 +154,11 @@ python3 -m zipfile -e data/custody-0dte-v6.1.zip data      # -> data/custody-0dt
 
 ```bash
 set -euo pipefail
-test ! -e data/custody-eval-2026-09-18
+test ! -e data/custody-eval-2026-09-18-v2
 mkdir -p data
-gh release download custody-eval-2026-09-18 --repo QSothoth/opend-us-options --pattern custody-eval-2026-09-18.zip --dir data
-echo "7b0abb604607d720ed016469d43afcfb13cc28e652c50aece8104ea5a49be13b  data/custody-eval-2026-09-18.zip" | sha256sum -c
-python3 -m zipfile -e data/custody-eval-2026-09-18.zip data
+gh release download custody-eval-2026-09-18-v2 --repo QSothoth/opend-us-options --pattern custody-eval-2026-09-18-v2.zip --dir data
+echo "8bf9eb37d7372dce30c4ca37188e11c45a5fddb744ef0c5de120a61f3d139253  data/custody-eval-2026-09-18-v2.zip" | sha256sum -c
+python3 -m zipfile -e data/custody-eval-2026-09-18-v2.zip data
 ```
 
 诊断包（禁止调参）：
