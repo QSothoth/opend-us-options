@@ -3,6 +3,7 @@
     python3 -m custody strategies                                        # registered strategies
     python3 -m custody check    --dataset DIR                            # release requirements (both sides, pins)
     python3 -m custody evaluate --dataset DIR --out DIR [--strategy ID]  # offline evaluation on frozen history
+    python3 -m custody label    --dataset DIR                            # ex-post case labels for stats
     python3 -m custody freeze   --dataset DIR [--date D] [--symbols ...] # daily read-only OpenD freeze
     python3 -m custody dryrun   --symbol S --direction D --contract C    # live quotes, simulated fills, no orders
     python3 -m custody run      --mode paper|live --acc-id N --symbol S --direction D --contract C  # OpenD orders
@@ -12,7 +13,7 @@
 import json
 import sys
 
-COMMANDS = ('strategies', 'check', 'evaluate', 'freeze', 'dryrun', 'run', 'status', 'stop')
+COMMANDS = ('strategies', 'check', 'evaluate', 'label', 'freeze', 'dryrun', 'run', 'status', 'stop')
 
 
 def main(argv=None):
@@ -26,6 +27,9 @@ def main(argv=None):
         registry = Registry()
         print(json.dumps({'default': registry.default_id, 'strategies': registry.list()}, indent=2, ensure_ascii=False))
         return 0
+    if command == 'label':
+        from .case_labels import main as entry
+        return entry(rest)
     if command == 'check':
         from .dataset import main as entry
     elif command == 'evaluate':

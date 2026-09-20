@@ -14,7 +14,8 @@
 ```text
 <dataset>/
   manifest.json          数据集名、角色、窗口、跳过记录等元数据
-  cases.json             {"cases": [ 每个期权合约一条 ]}
+  cases.json             {"cases": [ 每个期权合约一条 ]}；可选每条含 ex-post `labels`
+  case_labels.json       可选：标签汇总与计数（统计用，禁止喂策略）
   CHECKSUMS.sha256       每个数据文件一行 "<sha256>  <相对路径>"
   underlying/<SYMBOL>.csv   正股 1m K 线（可包含多个交易日）
   option/<CONTRACT>.csv     期权 1m K 线
@@ -74,21 +75,36 @@ python3 -m custody check --dataset <训练目录> --validation <验证目录>
 
 | 名称 | 角色 | 用途 |
 |---|---|---|
-| `custody-0dte-v6`（V6） | `train/custody` | **当前唯一训练集** |
+| `custody-0dte-v6.1`（V6.1） | `train/custody` | **当前唯一训练集**（含 case 事后标签） |
 | `custody-eval-2026-09-18` | `validation/custody` | **当前唯一留出验证**（只评测，绝不调参） |
 | `custody-stress-v1` | `diagnostic/stress` | 压力诊断包；禁止调参、不作正式门槛 |
 
-只使用此处登记的数据集。训练集只保留一个正式 tag；验证可以另增日期，但 2026-09-18 是当前唯一正式验证日。`custody check --dataset data/custody-0dte-v6 --validation data/custody-eval-2026-09-18` 通过（无重叠交易日或会话）。
+只使用此处登记的数据集。训练集只保留一个正式 tag（当前 V6.1）；验证可以另增日期，但 2026-09-18 是当前唯一正式验证日。`custody check --dataset data/custody-0dte-v6.1 --validation data/custody-eval-2026-09-18` 通过（无重叠交易日或会话）。
 
-### V6 详情（唯一训练）
+### V6.1 详情（唯一训练）
 
-- zip SHA256 `786248b6659a180beab7a0c4eed87e0d9deb71b6c4014724a9595b4b50f262a6`
-- `CHECKSUMS.sha256` 的 SHA256 `8e3020967a074ce551581bcd508483410503910b45fdf443417d3c0924a8ee3a`
-- 21 个交易日（2026-08-18 → 2026-09-16），146 个 case，73 组 CALL / PUT 两边齐全
-- 构成：原 V5（20 日 / 126 case）+ 吸收原验证日 2026-09-16（10 标的双边 / 20 case）
-- 合约：开盘第一根 K 线价格最近的挂牌行权价（`both_sides_atm_at_open`）；`custody check` 通过
+- zip SHA256 `49032a1b9f8cc5fef3c9a7d7fee9fef99e220e06e12c7f89d849ce70fddc04c1`
+- `CHECKSUMS.sha256` 的 SHA256 `38b2d5d8b852deae9bc1aa599b41fb57410274c283834ea86367177960656206`
+- 行情与 case 集合同 V6：21 个交易日（2026-08-18 → 2026-09-16），146 个 case，73 组双边
+- **新增事后标签**（`cases.json` 每条的 `labels`，以及汇总文件 `case_labels.json`）：走势五类、开盘缺口/市场形态、振幅分桶、ORB15、盘中时段方向、成交量与首小时占比等；一律 `ex_post: true`，**禁止**喂给策略
+- 重新生成：`python3 -m custody label --dataset <目录>`
 - 与唯一验证集 `custody-eval-2026-09-18` 无日期/会话重叠
-- 发布：https://github.com/QSothoth/opend-us-options/releases/tag/custody-0dte-v6
+- 发布：https://github.com/QSothoth/opend-us-options/releases/tag/custody-0dte-v6.1
+
+### 标签字段（统计用）
+
+| 字段 | 含义 |
+|---|---|
+| `path_scenario` / `_zh` | 相对合约方向的走势（顺势单边 / 先逆后顺 / 震荡 / 先顺后逆 / 逆势单边） |
+| `market_shape` / `gap` | 高开低开×走法；缺口 up/down/flat/unknown |
+| `range_bucket` | quiet (&lt;1.5%) / normal / wide / extreme（≥5%） |
+| `orb15` | 收盘相对开盘 15 分钟区间：break_up / break_down / inside |
+| `periods` | 盘中分段 open_drive / morning / midday / afternoon / power_hour 的 up/down/flat |
+| `first_hour_volume_share` 等 | 正股成交量、首小时占比、相对中位 bar 的 rvol；期权成交 bar 数与量 |
+
+### 已替代的训练 tag
+
+- `custody-0dte-v6`：无标签的同内容前身，已由 V6.1 替代为唯一训练登记
 
 ### 验证集 custody-eval-2026-09-18（唯一正式验证）
 
@@ -108,7 +124,8 @@ python3 -m custody check --dataset <训练目录> --validation <验证目录>
 
 ### 已吸收 / 停用
 
-- `custody-0dte-v5`：已被 V6 替代为唯一训练；内容已并入 V6（V6 = V5 + 2026-09-16）
+- `custody-0dte-v5`：已并入 V6/V6.1（V5 + 2026-09-16）
+- `custody-0dte-v6`：无标签版本，已由 `custody-0dte-v6.1` 替代
 - `custody-eval-2026-09-16-v2`：不再作正式验证；该日已吸收进 V6 训练集
 - 更旧的单边 tag（`custody-train-0dte`、`custody-eval-2026-09-16` 等）仍停用；不得原地替换附件
 
@@ -124,11 +141,11 @@ python3 -m custody check --dataset <训练目录> --validation <验证目录>
 
 ```bash
 set -euo pipefail
-test ! -e data/custody-0dte-v6
+test ! -e data/custody-0dte-v6.1
 mkdir -p data
-gh release download custody-0dte-v6 --repo QSothoth/opend-us-options --pattern custody-0dte-v6.zip --dir data
-echo "786248b6659a180beab7a0c4eed87e0d9deb71b6c4014724a9595b4b50f262a6  data/custody-0dte-v6.zip" | sha256sum -c
-python3 -m zipfile -e data/custody-0dte-v6.zip data      # -> data/custody-0dte-v6/
+gh release download custody-0dte-v6.1 --repo QSothoth/opend-us-options --pattern custody-0dte-v6.1.zip --dir data
+echo "49032a1b9f8cc5fef3c9a7d7fee9fef99e220e06e12c7f89d849ce70fddc04c1  data/custody-0dte-v6.1.zip" | sha256sum -c
+python3 -m zipfile -e data/custody-0dte-v6.1.zip data      # -> data/custody-0dte-v6.1/
 ```
 
 验证集（唯一正式）：

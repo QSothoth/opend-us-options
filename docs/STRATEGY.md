@@ -1,6 +1,6 @@
 # 策略说明
 
-> **数据登记（2026-09-20）**：唯一训练 `custody-0dte-v6`；唯一正式验证 `custody-eval-2026-09-18`。下文表格里的 V5 / `custody-eval-2026-09-16-v2` 是历史研究记录，不是当前登记。
+> **数据登记（2026-09-20）**：唯一训练 `custody-0dte-v6.1`（含事后 labels）；唯一正式验证 `custody-eval-2026-09-18`。下文表格里的 V5 / `custody-eval-2026-09-16-v2` 是历史研究记录，不是当前登记。
 
 
 原默认策略（2026-09-18 前）：**`zero_dte_timing_v6.1`（candidate）**，参数见 [注册文件](../custody/strategies/zero_dte_timing_v6.1.json)。v6.1 = v6 + 研究轮次 R9 的候选 K2：确认根数 20 → 5、入场前的价格止损收回到 1–2 ATR、取消估算权利金保本。
