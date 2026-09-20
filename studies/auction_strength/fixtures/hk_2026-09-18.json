@@ -1,0 +1,49 @@
+{
+  "trade_date": "2026-09-18",
+  "market": "HK",
+  "source": "Webull EOD + public notes; auction_price unavailable → open used as IEP proxy",
+  "bars": [
+    {
+      "symbol": "HK.02513",
+      "name": "智谱",
+      "market": "HK",
+      "trade_date": "2026-09-18",
+      "prev_close": 740.0,
+      "open": 766.5,
+      "high": 795.0,
+      "low": 746.0,
+      "close": 780.0,
+      "volume": 8430000,
+      "turnover": 6530000000,
+      "notes": "GLM-5.3-FlashX / ARR; gap then dip-hold"
+    },
+    {
+      "symbol": "HK.00100",
+      "name": "MiniMax",
+      "market": "HK",
+      "trade_date": "2026-09-18",
+      "prev_close": 254.8,
+      "open": 264.8,
+      "high": 303.0,
+      "low": 263.6,
+      "close": 303.0,
+      "volume": 22200000,
+      "turnover": 6420000000,
+      "notes": "gap-and-go; close at day high"
+    },
+    {
+      "symbol": "HK.09988",
+      "name": "阿里",
+      "market": "HK",
+      "trade_date": "2026-09-18",
+      "prev_close": 105.1,
+      "open": 106.4,
+      "high": 110.7,
+      "low": 106.1,
+      "close": 109.3,
+      "volume": 90080000,
+      "turnover": 9830000000,
+      "notes": "mild gap + grind higher"
+    }
+  ]
+}
