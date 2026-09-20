@@ -195,3 +195,10 @@ gh release create custody-0dte-v6 data/custody-0dte-v6.zip data/custody-0dte-v6.
 ```
 
 发布后只在本文件登记 tag、角色、窗口和两个 SHA256（zip 与 `CHECKSUMS.sha256`）。若正式替换当前训练集，再更新 `AGENTS.md` 的可用数据约束；发布验证集不会自动使它成为训练集。
+
+## 附录：港股近月流量研究数据（非 custody Release）
+
+与上文 0DTE custody 冻结/Release 流程无关。港股正股期权排行与异动研究切片放在仓库内：
+
+[`studies/hk_near_expiry_flow/dataset/`](../studies/hk_near_expiry_flow/dataset/)（`manifest.json` + CSV）。不走 `data/` Release 规则；仅供后续自行筛选，不接入 `custody check`。
+

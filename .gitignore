@@ -60,3 +60,6 @@ data/
 
 # 本地探索脚本和中间结果；正式研究记录在 docs/STRATEGY.md
 /research/
+
+# HK/US multi-market research studies (tracked; distinct from ignored /research/ scratch)
+# studies/
