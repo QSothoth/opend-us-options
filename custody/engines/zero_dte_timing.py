@@ -26,6 +26,10 @@ Optional entry filter (off by default): ``max_vwap_atr`` - no entry while the cl
 more than this many ATR beyond VWAP. A buyer should not chase a move that has already
 run away from VWAP: a stop of at most ``stop_max_atr`` ATR would then sit above VWAP,
 inside an ordinary pullback, and the premium already pays for the finished move.
+``max_vwap_or`` is the same cap measured against the opening range height instead of the
+1m ATR. The ATR shrinks as a trend extends, so the same price distance from VWAP keeps
+growing when divided by it, and the cap tightens exactly on the days the move is real;
+the opening range is fixed once the opening minutes are over and does not drift.
 ``min_breakout_volume_ratio`` requires current volume to reach a multiple of the
 prior breakout window's mean volume. It defaults to off.
 ``squeeze_lookback`` (off by default) only lets a breakout through when the move comes out
@@ -107,6 +111,7 @@ OPTIONAL = {
     'profit_lock_keep': ((float, 0.05, 0.95), None),  # armed: sell at this share of the best estimated premium return
     'min_premium_atr': ((float, 0.1, 100.0), None),  # no entry while the estimated premium is below N x 1m ATR
     'max_vwap_atr': ((float, 0.1, 20.0), None),      # no entry while the close is more than N ATR beyond VWAP
+    'max_vwap_or': ((float, 0.05, 10.0), None),      # same cap measured in opening-range heights
     'min_breakout_volume_ratio': ((float, 0.1, 5.0), None),  # current volume / prior breakout window mean
     'squeeze_lookback': ((int, 1, 60), None),        # entry needs a volatility squeeze within the last N bars
 }
@@ -285,6 +290,8 @@ class ZeroDteTiming:
         if not (vwap_side and trend):
             return None
         if p['max_vwap_atr'] is not None and close > s * ind.vwap + p['max_vwap_atr'] * atr:
+            return None
+        if p['max_vwap_or'] is not None and close > s * ind.vwap + p['max_vwap_or'] * (ind.or_high - ind.or_low):
             return None
         if self._in_charm_window(minute):
             return None

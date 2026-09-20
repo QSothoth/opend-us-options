@@ -344,6 +344,20 @@ class OptionalRuleTests(unittest.TestCase):
             with self.assertRaises(ValueError, msg=str(bad)):
                 validate_params({**PARAMS, 'max_vwap_atr': bad})
 
+    def test_the_vwap_cap_can_be_measured_in_opening_range_heights(self):
+        burst = piecewise([(1, 100.0), (15, 100.0), (30, 103.0), (60, 102.0), (390, 108.0)])
+        steady = piecewise([(1, 100.0), (15, 100.0), (390, 110.0)])
+        self.assertIsNone(validate_params(PARAMS)['max_vwap_or'])       # off by default
+        loose = {**PARAMS, 'max_vwap_or': 5.0}
+        tight = {**PARAMS, 'max_vwap_or': 0.05}
+        self.assertEqual(first(run(burst, params=loose), 'ENTER'), first(run(burst), 'ENTER'))
+        self.assertEqual(first(run(burst, params=tight), 'ENTER'), (None, None))
+        self.assertEqual(first(run([200 - c for c in burst], 'SHORT', params=tight), 'ENTER'), (None, None))
+        self.assertEqual(first(run(steady, params=tight), 'ENTER'), (None, None))
+        for bad in (0.0, 20.0, True):
+            with self.assertRaises(ValueError, msg=str(bad)):
+                validate_params({**PARAMS, 'max_vwap_or': bad})
+
 
 class BreakoutFilterTests(unittest.TestCase):
     def breakout_action(self, direction, extra, prior_volume=100.0, **last):
