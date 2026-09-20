@@ -13,6 +13,12 @@
 | [docs/RUNTIME.md](docs/RUNTIME.md) | 状态机、dryrun、下单（run）、status / stop |
 | [docs/OPEND_SETUP.md](docs/OPEND_SETUP.md) | 本地 OpenD |
 
+## 其他研究：港股近月期权流量
+
+美股 0DTE custody 是主线。港股**上市正股期权**（非涡轮）近月流量的扫描器、数据集与中文笔记在：
+
+[`studies/hk_near_expiry_flow/`](studies/hk_near_expiry_flow/)（数据说明见该目录 `dataset/manifest.json`）。
+
 ## 快速开始
 
 ```bash

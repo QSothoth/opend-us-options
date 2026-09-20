@@ -1,0 +1,32 @@
+{
+  "name": "hk-near-expiry-flow-2026-08-07_2026-09-18",
+  "market": "HK",
+  "instrument": "listed_equity_options",
+  "not": "warrants",
+  "source": "Futu OpenD get_option_rank / get_option_event (read-only)",
+  "window": {
+    "rank_validated_trading_days": {"from": "2026-08-07", "to": "2026-09-18", "n_sessions": 31},
+    "event_call_buy_approx": "about 1y pull still-listed contracts only"
+  },
+  "files": {
+    "hk_option_rank_raw.csv": "Daily get_option_rank pages (TURNOVER), validated trading_date, computed dte from YYMMDD, owner mapped; includes expired contracts on hist days",
+    "hk_option_alerts.csv": "Aggressive preset owner-day alerts from rank (includes day_chg, ret_1d, ret_2d)",
+    "hk_option_daily_rollup.csv": "Daily near-expiry CALL rollup by owner",
+    "horizon_T1_T3.csv": "T+1/T+2/T+3 and max_up summaries for several filters",
+    "open_vs_close_horizon.csv": "oi_increment vs oi_decrement filter horizon stats",
+    "hk_call_buy_365d_raw.csv": "get_option_event CALL BUY history (still-listed bias)",
+    "hk_put_buy_365d_raw.csv": "get_option_event PUT BUY history",
+    "hk_call_sell_365d_raw.csv": "get_option_event CALL SELL history",
+    "klines_day.csv": "Underlying day K used in threshold study",
+    "threshold_grid_results.csv.gz": "Large threshold grid from event-era study"
+  },
+  "caveats": [
+    "Rank history before ~2026-08-07 silently returns latest day — always check trading_date column",
+    "get_option_event purges expired near-expiry contracts from history",
+    "LEFT_DAYS server filter is vs today not trading_date; client DTE used",
+    "T+1/T+2/T+3 close win rates near coin-flip on this window; not a proven edge",
+    "MiniMax MNX260918C235 on 2026-09-16 was oi_decrement-dominated (close-like)"
+  ],
+  "created": "2026-09-20",
+  "created_by": "cc / Grok Build HK option-flow work"
+}
