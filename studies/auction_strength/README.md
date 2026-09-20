@@ -1,53 +1,53 @@
-# 竞价强度 × 当日走势筛选（A 股 + 港股）
+# 竞价强度 × 当日走势（A 股 + 港股）
 
-挂在 `s-alpha` 下的研究切片，与美股 0DTE `custody` 主线并列。目标：在**开市竞价阶段**找出相对强的标的，并与**当日实际走势质量**对齐，供后续盯盘筛股（先历史验证，再接 OpenD 实盘只读）。
+目标：在**竞价尚未最终撮合的最后一分钟**，用 OpenD 拉尽量全的快照/盘口，对 watchlist **打分排序**，省得人肉盯盘。
 
-## 验证集（2026-09-18 港股）
+## 定时节奏（约定）
 
-| 标的 | 代码 | 开盘≈竞价 | 收盘 | 标签倾向 |
-|---|---|---|---|---|
-| MiniMax | `HK.00100` | +3.92% | +18.92% 收最高 | **gap-and-go**（典型正例） |
-| 智谱 | `HK.02513` | +3.58% | +5.41% | 高开回踩再走强 |
-| 阿里 | `HK.09988` | +1.24% | +4.00% | 竞价偏弱、全日温和偏强 |
-
-公开渠道未拿到三只当日 IEP/IEV，fixture 用**开盘价相对昨收**作竞价代理（`auction_field=open_proxy`）。有 OpenD 后应写入真实 `auction_price` / `auction_volume`。
-
-默认门槛（可改）：竞价 ≥ **+1.5%**、全日 ≥ **+2.5%**、跟随（收−开）/昨收 ≥ 0、综合分 ≥ 55。  
-在该门槛下：**选出 MiniMax、智谱；阿里因竞价不足落选**。
-
-## 市场时序（同为 UTC+8）
-
-| | 港股 POS | A 股集合竞价 |
+| 市场 | 触发 | 含义 |
 |---|---|---|
-| 可撤单 | 09:00–09:15 | 09:15–09:20 |
-| 不可撤单 | 09:15–09:20 | 09:20–09:25 |
-| 撮合 | 09:20–≤09:22 随机 IEP | **09:25 定点** |
-| 连续竞价 | 09:30 | 09:30 |
+| 港股 POS | **09:19** | 不可撤段末、随机撮合前约 1 分钟 |
+| A 股 | **09:24** | 不可撤段末、09:25 定点撮合前约 1 分钟 |
 
-港股竞价信号更早；跨市盯盘不要套用 A 股 9:25 逻辑。
+由 Grok Bot 例程触发；执行机需本机 OpenD（默认 `127.0.0.1:11111`）且有对应行情权限。
 
-## 怎么跑
+## 强度怎么算（不是只看涨幅）
+
+`live_score.py` 多因子（缺量会标 `data_grade=thin` 并**压分**）：
+
+- 溢价 vs 昨收（权重有限）
+- 量比 `volume_ratio`、成交额 / 流通市值
+- 盘口失衡 `book_imbalance`（order book 或 L1 bid/ask vol）
+- 竞价窗价格路径：尾盘脉冲惩罚、路径稳定性
+
+OpenD 文档**没有**官方 IEP/IEV 字段名；竞价中 `last_price`/volume 语义以实盘为准，报告里会标 `data_grade`。
+
+## Watchlist
+
+- `config/watchlist_hk.json`
+- `config/watchlist_a.json`
+
+改名单即可，无需改代码。
+
+## 命令
 
 ```bash
-# 仓库根目录
-python3 studies/auction_strength/code/run_screen.py \
-  --fixture studies/auction_strength/fixtures/hk_2026-09-18.json
+# 港股 9:19 脉冲（采样约 20s）
+python3 studies/auction_strength/code/run_auction_pulse.py \
+  --market HK \
+  --watchlist studies/auction_strength/config/watchlist_hk.json \
+  --duration 20 --out /tmp/auction_hk.json
 
+# A 股 9:24
+python3 studies/auction_strength/code/run_auction_pulse.py \
+  --market A \
+  --watchlist studies/auction_strength/config/watchlist_a.json \
+  --duration 20 --out /tmp/auction_a.json
+
+# 无 OpenD 的单测
 python3 -m unittest discover -s studies/auction_strength/tests
 ```
 
-## 指标（简版）
+## 历史 EOD 脚手架
 
-- `auction_pct`：竞价价（或开盘代理）相对昨收  
-- `day_pct`：收盘相对昨收  
-- `follow_through_pct`：(收−开)/昨收  
-- `close_location`：收盘在当日高低区间位置（1=最高）  
-- `combined_score`：竞价强度与走势质量加权  
-
-## 下一步（盯盘）
-
-1. OpenD 只读拉取竞价快照（A：09:20–09:25；港：09:15–09:22）写入同 schema。  
-2. 盘中把「竞价入选」与分钟走势再打分（回撤、是否跌破开盘）。  
-3. A 股 watchlist（如云从/汉得等）用同一 CLI，换 fixture 或 live adapter。  
-
-本包**不下单**；`custody/broker.py` 交易边界不变。
+`run_screen.py` + `fixtures/hk_2026-09-18.json` 仍可用作「开盘代理 × 全日走势」对照；**不能**替代 OpenD 竞价脉冲。

@@ -1,0 +1,12 @@
+{
+  "market": "HK",
+  "note": "Edit this list anytime; pulse routine reads it from the repo/local copy.",
+  "symbols": [
+    {"code": "HK.00100", "name": "MiniMax"},
+    {"code": "HK.02513", "name": "智谱"},
+    {"code": "HK.09988", "name": "阿里"},
+    {"code": "HK.01810", "name": "小米"},
+    {"code": "HK.00772", "name": "阅文"},
+    {"code": "HK.02228", "name": "晶泰"}
+  ]
+}
