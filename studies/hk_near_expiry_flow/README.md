@@ -10,6 +10,7 @@
 | `code/` | 只读扫描器 `scan_hk_option_flow.py`（默认 `--source rank`，需 OpenD）；离线研究台 `flow_research.py`（只用标准库 + 已冻结 CSV） |
 | `dataset/` | 已拉取的排行 / 异动 / 日 K 等 CSV + `manifest.json` |
 | `reports/` | 中文回测与审计笔记 |
+| [DATA_REQUEST.md](DATA_REQUEST.md) | **要补的数据规格**：拉什么、怎么存、补多少算够 |
 | `notes/` | 预注册（`R*_PREREG.md`）：假设、候选、判定规则，跑数之前写死 |
 
 ## 数据怎么用

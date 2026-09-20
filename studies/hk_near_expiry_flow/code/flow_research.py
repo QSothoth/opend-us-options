@@ -40,8 +40,8 @@ def load_klines(path):
     return bars
 
 
-def load_rank(path, bars):
-    """Owner-days of near-expiry CALL rows, plus every rank row keyed by contract/day.
+def load_rank(path, bars, side="CALL"):
+    """Owner-days of near-expiry rows on one side, plus every rank row by contract/day.
 
     The prior-day lookup needs the *full* file: a contract at 15 DTE yesterday is
     near-expiry today.
@@ -51,6 +51,8 @@ def load_rank(path, bars):
     with open(path, newline="", encoding="utf-8") as fh:
         for row in csv.DictReader(fh):
             by_contract[row["code"]][row["trading_date"]] = row
+            if side != "ALL" and row["option_type"] != side:
+                continue
             dte = _num(row["dte"])
             if dte is None or not 0 <= dte <= MAX_DTE:
                 continue
@@ -384,17 +386,20 @@ def diagnostics(records, panel):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--dataset", default=DATASET)
+    ap.add_argument("--side", default="CALL", choices=("CALL", "PUT", "ALL"),
+                    help="option side the candidates run on (the rank file may hold both)")
     ap.add_argument("--permutations", type=int, default=PERMUTATIONS)
     ap.add_argument("--csv", help="write the result table here")
     ap.add_argument("--diagnostics", action="store_true", help="also print the post-hoc descriptions")
     args = ap.parse_args(argv)
 
     bars = load_klines(os.path.join(args.dataset, "klines_day.csv"))
-    owner_days, by_contract = load_rank(os.path.join(args.dataset, "hk_option_rank_raw.csv"), bars)
+    owner_days, by_contract = load_rank(
+        os.path.join(args.dataset, "hk_option_rank_raw.csv"), bars, args.side)
     panel = Panel(bars)
     records = build_features(owner_days, panel, by_contract)
 
-    print(f"owner-days={len(records)} owners={len({o for _, o in records})} "
+    print(f"side={args.side} owner-days={len(records)} owners={len({o for _, o in records})} "
           f"days={len({d for d, _ in records})} panel_days={len(panel.days)}")
 
     out = []
