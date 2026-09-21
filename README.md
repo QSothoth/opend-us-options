@@ -22,6 +22,12 @@
 [`studies/hk_near_expiry_flow/`](studies/hk_near_expiry_flow/)（数据说明见该目录 `dataset/manifest.json`）。
 
 
+## 盯盘
+
+盘中只读 OpenD 行情，终端里画走势 / 成交量 / 信号，可同时盯多个标的。**不下单**，与 0DTE 主线独立、不进策略注册表。
+
+见 [`watch/`](watch/)：VWAP + EMA9/21 + RSI14 定方向，BOS / FVG / SWEEP 触发，标注分「普通」和「带量」两档。该目录的 README 里记着四轮研究的完整结果——**包括这些信号在 4 个标的 × 40 个交易日上量不出正期望**，别当策略用。
+
 ## 研究切片：A/H 竞价强度 × 当日走势
 
 见 [`studies/auction_strength/`](studies/auction_strength/)（验证集 2026-09-18 智谱 / MiniMax / 阿里）。与 `custody` 主线独立，只读分析、不下单。
