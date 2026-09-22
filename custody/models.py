@@ -75,7 +75,12 @@ class Contract:
     def validate(self, request):
         if self.code != request.contract or symbol(self.underlying) != request.symbol:
             raise ValueError('resolved contract does not match request')
-        if self.expiry != request.trade_date: raise ValueError('contract must expire on trade_date (0DTE only)')
+        # TEMP 2026-09-22 live: allow 0–1 DTE (user-approved INTC 119P exp 2026-09-23 while trade_date=2026-09-22)
+        from datetime import date as _date, timedelta as _timedelta
+        _td = _date.fromisoformat(request.trade_date)
+        _ex = _date.fromisoformat(self.expiry)
+        if _ex < _td or _ex > _td + _timedelta(days=1):
+            raise ValueError('contract must expire on trade_date or next day (0-1 DTE only)')
         if self.right != ('CALL' if request.direction == 'LONG' else 'PUT'): raise ValueError('contract right/direction mismatch')
         positive(self.strike, 'strike')
         if self.currency != 'USD' or self.tradable is not True: raise ValueError('contract not tradable USD option')

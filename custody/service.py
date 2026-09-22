@@ -42,7 +42,7 @@ ACTIVE = {'CREATED', 'DISPATCHING', 'UNKNOWN', 'OPEN', 'PARTIAL'}
 
 @dataclass(frozen=True)
 class ExecutionPolicy:
-    quote_max_age_seconds: float = 5
+    quote_max_age_seconds: float = 30  # TEMP 2026-09-22 live: Futu option update_time often lags >5s
     frame_max_age_seconds: float = 15
     entry_timeout_seconds: float = 30
     exit_timeout_seconds: float = 30
@@ -221,6 +221,10 @@ class CustodyService:
         with self._tx() as db:
             job = self._load(db, job_id)
             self._clock(db, job, now, quote)
+            # TEMP 2026-09-22: after deadline_entry, keep retrying on every poll while quote gate blocks
+            if (job['state'] == 'WATCH' and job.get('attention') == 'ENTRY_WAITING_VALID_QUOTE'
+                    and job.get('entry_reason') and quote is not None):
+                self._enter(db, job, now, quote, job['entry_reason'], job.get('entry_diagnostics'))
             self._save(db, job)
         return self.get_job(job_id)
 

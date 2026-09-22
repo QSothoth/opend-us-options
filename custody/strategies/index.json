@@ -45,7 +45,7 @@
     "open_hold_v3": {
       "file": "open_hold_v3.json",
       "sha256": "6817da2325435db83be33867b144ed0d65962478cee37412eb1546b574483def",
-      "status": "candidate"
+      "status": "accepted"
     }
   }
 }
