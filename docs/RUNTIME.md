@@ -73,10 +73,12 @@ python3 -m custody run --mode paper --acc-id <模拟账户 acc_id> \
 ```
 
 - `--acc-id` 必须是 OpenD 里对应环境（paper = SIMULATE，live = REAL）的美股账户，不匹配时报错并列出可用账户。券商主体用 `--security-firm`，缺省 `FUTUSECURITIES`（moomoo 美国为 `FUTUINC`）。
-- live 需要解锁交易：设置环境变量 `FUTU_TRADE_PASSWORD` 或 `FUTU_TRADE_PASSWORD_MD5`，或事先在 OpenD 界面解锁。密码不走命令行参数。
+- live **必须**设置环境变量 `FUTU_TRADE_PASSWORD` 或 `FUTU_TRADE_PASSWORD_MD5`（缺省直接拒绝启动）。不要用 `env -u` 剥掉密码后依赖 GUI 解锁：GUI 解锁会过期，`place_order` 随后失败。密码不走命令行参数。
 - 订单是美股限价单（`NORMAL`、当日有效、只在常规时段），买入价 = ask，卖出价 = bid。每单的 `remark` 写入客户端订单号；订单号由账户、合约和交易日确定，提交前先在 OpenD 订单列表里查找，已有就沿用，所以超时、重启或换库后同一订单号都不会重复下单。
 - 卖出前查询持仓，只卖账户实际持有的多头数量，不会卖出开仓。持仓查询失败时本次卖单记为被拒、下一轮重试；持仓少于要卖的数量时不发单、标记 `RECONCILE_ORDER_STATUS`，按下一条的 2 分钟规则再试。
-- `place_order` 失败时订单记为 `UNKNOWN`，不重发，之后每轮按客户端订单号查找。找到就按真实状态继续；意图创建 2 分钟后刷新订单列表仍找不到，才判定没有下单（`REJECTED`），允许重新入场或重新卖出。
+- 每次 live 提交前会 best-effort 调用 `unlock_trade`；若失败信息像解锁相关且环境变量有密码，再解锁并重试一次 `place_order`。
+- `place_order` **明确被拒**（OpenD 返回错误且订单列表无该 client id，含解锁失败）→ 立即 `REJECTED`，attention 为 `ENTRY_ORDER_REJECTED` / `EXIT_ORDER_REJECTED` / `TRADE_UNLOCK_REQUIRED`，并写入 `last_error`；下一笔用**新的** client order id。
+- `place_order` **结果不明**（超时等，可能已进簿）→ 订单记为 `UNKNOWN`，attention `RECONCILE_ORDER_STATUS`，同样记录完整错误；不重发同一 id。之后每轮按客户端订单号查找。找到就按真实状态继续；意图创建 2 分钟后刷新订单列表仍找不到，才判定没有下单（`REJECTED`），允许重新入场或重新卖出。
 - 订单状态靠每轮轮询 OpenD 订单列表获得。成交时间和入场时的正股价格按发现成交的那一轮记录，最多晚一个轮询间隔（缺省 5 秒）。
 - 每次订单状态或成交数量变化记日志 `order`；配置了 WxPusher SPT 时推送到手机（失败不影响循环）。行情或 K 线暂时缺失只记日志（`quote_error` / `frame_error`），循环继续。
 - 任务结束（`DONE`）后进程自动退出。Ctrl-C 只停止轮询：OpenD 上的挂单和持仓保持不变，日志 `stopped` 列出未完成订单和持仓；重跑同一条命令即可接着管理。

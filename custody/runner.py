@@ -192,6 +192,9 @@ class Runner:
         except Exception as exc:  # noqa: BLE001 - the worker must keep managing an open position
             self.log('step_error', job_id=self.job_id, error=repr(exc))
             return None
+        dispatch = getattr(self.controller, 'last_dispatch', None)
+        if isinstance(dispatch, dict) and (dispatch.get('error') or dispatch.get('unknown') or dispatch.get('rejected')):
+            self.log('dispatch_result', job_id=self.job_id, **{k: dispatch[k] for k in dispatch})
         self._log_orders(state)
         if self.simulate_fills:
             state = self._simulate_fills(state, now, mark)
@@ -318,7 +321,11 @@ def main(command, argv=None):
         registry = Registry()
         calendar = OpenDTradingCalendar(market)
         if command == 'run':
-            from .broker import OpenDBroker
+            from .broker import OpenDBroker, trade_password_present
+            if mode == 'live' and not trade_password_present():
+                raise SystemExit(
+                    'live mode requires FUTU_TRADE_PASSWORD or FUTU_TRADE_PASSWORD_MD5 in the environment; '
+                    'do not strip them with env -u — GUI unlock expires and place_order then fails silently')
             broker = OpenDBroker.connect(market, mode, args.acc_id, args.security_firm)
         service = CustodyService(args.db or 'custody-%s.sqlite' % mode, broker.account if broker else args.account,
                                  OpenDContractResolver(market), calendar, registry=registry, mode=mode)

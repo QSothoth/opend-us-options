@@ -1,9 +1,11 @@
 import tempfile
 import unittest
+import unittest.mock
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from custody.broker import OpenDBroker, order_update
+from custody.broker import OpenDBroker, order_update, trade_password_present
+from custody.models import HardSubmitError, UnlockRequiredError
 from custody.controller import Controller
 from custody.models import ET, Contract, Frame, Quote, Session
 from custody.registry import Registry
@@ -20,6 +22,7 @@ class FakeTradeContext:
 
     def __init__(self):
         self.orders, self.positions, self.placed, self.cancelled, self.fail = [], {}, [], [], set()
+        self.unlock_calls = 0
 
     def get_acc_list(self):
         return 0, [{'acc_id': SIM, 'trd_env': 'SIMULATE', 'acc_type': 'MARGIN'},
@@ -46,6 +49,12 @@ class FakeTradeContext:
     def modify_order(self, op, order_id, qty, price, trd_env, acc_id):
         self.cancelled.append((op, order_id))
         return 0, []
+
+    def unlock_trade(self, password=None, password_md5=None):
+        self.unlock_calls += 1
+        if 'unlock_trade' in self.fail:
+            return -1, 'please unlock trade first'
+        return 0, 'unlocked'
 
     def close(self):
         pass
@@ -122,21 +131,65 @@ class BrokerTests(unittest.TestCase):
         self.assertEqual(self.broker.submit(intent('SELL_CLOSE', 'job:SELL_1'), T).status, 'OPEN')
         self.assertEqual(self.ctx.placed[0]['trd_side'], 'SELL')
 
-    def test_failed_placement_is_settled_from_the_order_list_never_resent(self):
+    def test_failed_placement_is_hard_reject_when_absent_from_order_list(self):
         self.ctx.fail.add('place_order')
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(HardSubmitError):
             self.broker.submit(intent(), T)
         unknown = intent(status='UNKNOWN')
         self.assertIsNone(self.broker.lookup(unknown, T + timedelta(seconds=30)))
         self.assertIsNone(self.broker.lookup(dict(unknown, status='OPEN'), T + timedelta(minutes=3)))
         rejected = self.broker.lookup(unknown, T + timedelta(minutes=3))
         self.assertEqual((rejected.status, rejected.sequence), ('REJECTED', 1))
+
+    def test_lost_place_reply_recovers_from_order_list(self):
         self.ctx.fail = {'response_lost'}  # the order exists, only the reply was lost
-        with self.assertRaises(RuntimeError):
-            self.broker.submit(intent(key='job:BUY_2'), T)
-        self.assertEqual(self.broker.lookup(intent(key='job:BUY_2', status='UNKNOWN'), T + timedelta(minutes=3)).status,
-                         'OPEN')
-        self.assertEqual(len(self.ctx.placed), 2)
+        update = self.broker.submit(intent(key='job:BUY_2'), T)
+        self.assertEqual(update.status, 'OPEN')
+        self.assertEqual(len(self.ctx.placed), 1)
+
+    def test_unlock_error_retries_once_and_succeeds(self):
+        live = OpenDBroker(self.ctx, Market(), 'live', 1001)
+        self.ctx.fail.add('place_order')
+        # First failure message looks like unlock; password present → unlock + retry once.
+        original_place = self.ctx.place_order
+        calls = {'n': 0}
+
+        def flaky(**order):
+            calls['n'] += 1
+            self.ctx.placed.append(order)
+            if calls['n'] == 1:
+                return -1, 'please unlock trade first'
+            return original_place(**order)
+
+        self.ctx.place_order = flaky
+        with unittest.mock.patch.dict('os.environ', {'FUTU_TRADE_PASSWORD': 'x'}, clear=False):
+            # clear place_order fail set so retry can succeed via flaky's second call
+            self.ctx.fail.discard('place_order')
+            update = live.submit(intent(key='job:BUY_3'), T)
+        self.assertEqual(update.status, 'OPEN')
+        self.assertGreaterEqual(self.ctx.unlock_calls, 1)
+        self.assertEqual(calls['n'], 2)
+
+    def test_unlock_failure_without_recovery_is_unlock_required(self):
+        live = OpenDBroker(self.ctx, Market(), 'live', 1001)
+        self.ctx.fail.add('place_order')
+        original_place = self.ctx.place_order
+
+        def always_locked(**order):
+            self.ctx.placed.append(order)
+            return -1, 'please unlock trade first'
+
+        self.ctx.place_order = always_locked
+        with unittest.mock.patch.dict('os.environ', {'FUTU_TRADE_PASSWORD': 'x'}, clear=False):
+            with self.assertRaises(UnlockRequiredError):
+                live.submit(intent(key='job:BUY_4'), T)
+        self.assertGreaterEqual(self.ctx.unlock_calls, 1)
+
+    def test_trade_password_present_ignores_empty(self):
+        with unittest.mock.patch.dict('os.environ', {'FUTU_TRADE_PASSWORD': '', 'FUTU_TRADE_PASSWORD_MD5': ''}, clear=False):
+            self.assertFalse(trade_password_present())
+        with unittest.mock.patch.dict('os.environ', {'FUTU_TRADE_PASSWORD': 'secret'}, clear=False):
+            self.assertTrue(trade_password_present())
 
     def test_cancel_targets_working_orders_only(self):
         self.broker.submit(intent(), T)

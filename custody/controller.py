@@ -17,6 +17,7 @@ class Controller:
         elif broker.account != service.account or broker.mode != service.mode:
             raise ValueError('broker binding mismatch')
         self.service, self.broker = service, broker
+        self.last_dispatch = None
 
     def step(self, job_id, now, quote=None, frame=None):
         # Clock first: flatten must never wait for a bar.
@@ -37,8 +38,9 @@ class Controller:
         self.service.heartbeat(job_id, now, quote)
         if frame is not None:
             self.service.on_frame(job_id, frame, now, quote)
+        self.last_dispatch = None
         if self.broker is not None:
-            self.service.dispatch_next(self.broker, now)
+            self.last_dispatch = self.service.dispatch_next(self.broker, now)
         if failed:
             self.service.flag_attention(job_id, 'RECONCILE_ORDER_STATUS')
         return self.service.get_job(job_id)

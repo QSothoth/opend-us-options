@@ -24,7 +24,8 @@ class Broker(Protocol):
 
         An id the broker already holds returns that order instead of a new one. Must enforce
         close-only owned quantity. A returned rejection must be authoritative (nothing was
-        sent); an unknown outcome must raise, never be reported as rejected.
+        sent). A hard pre-accept failure raises HardSubmitError (safe new client id); an
+        ambiguous outcome must raise a plain exception, never be reported as rejected.
         """
         ...
 

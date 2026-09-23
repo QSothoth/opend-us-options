@@ -11,7 +11,7 @@
 - Python：`/opt/futu-opend/venv/bin/python`（已装 `futu-api`）；评测和单元测试不需要。`custody freeze` / `dryrun` / `run` 用这个解释器。端口也可用 `FUTU_HOST` / `FUTU_PORT` 或 `--host` / `--port` 覆盖。
 
 - `freeze` / `dryrun` 只用 `OpenQuoteContext`。只有 `custody run` 通过 `custody/broker.py` 使用 `OpenSecTradeContext` 下单，账户需要美股期权交易权限；其他模块不得出现 `OpenSecTradeContext`、`unlock_trade`、`place_order`、`modify_order`（测试静态扫描）。
-- `run --mode paper` 用 OpenD 模拟账户，不需要解锁；`--mode live` 用真实账户，需要 `FUTU_TRADE_PASSWORD` / `FUTU_TRADE_PASSWORD_MD5` 环境变量或在 OpenD 界面解锁交易。账户 id 填 `--acc-id`，填错时报错信息会列出 OpenD 里的可用账户。
+- `run --mode paper` 用 OpenD 模拟账户，不需要解锁；`--mode live` 用真实账户，**必须**提供 `FUTU_TRADE_PASSWORD` / `FUTU_TRADE_PASSWORD_MD5`（启动时校验；进程内在每次下单前会再 unlock，解锁相关失败会重试一次）。不要依赖 GUI 解锁长期有效。账户 id 填 `--acc-id`，填错时报错信息会列出 OpenD 里的可用账户。
 
 配额提醒：
 

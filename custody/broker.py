@@ -7,18 +7,21 @@ The only module that uses the OpenD trade API. It implements :class:`custody.por
   restart - even with a lost or different database - and is never placed twice;
 * US limit orders only (``NORMAL``, DAY, regular hours); BUY opens, SELL only closes what
   the account holds (checked right before sending);
-* a failed ``place_order`` raises: the service keeps the order UNKNOWN and never resends
-  it, and :meth:`OpenDBroker.lookup` settles it from the order list.
+* a failed ``place_order`` that OpenD clearly rejected (or that never reached the book)
+  raises :class:`HardSubmitError` so the service can mint a new client order id; an
+  ambiguous outcome (timeout mid-flight with no order row yet) still raises a plain
+  exception so the service keeps the order UNKNOWN and reconciles via :meth:`lookup`.
 
 Order state is polled; a fill is stamped with the poll that first sees it.
 """
 from __future__ import annotations
 
 import os
+import re
 
 from .dataset import parse_option_code
 from .marketdata import _num
-from .models import OrderUpdate, instant
+from .models import HardSubmitError, OrderUpdate, UnlockRequiredError, instant
 from .opend import _futu, _records
 
 MODES = {'paper': 'SIMULATE', 'live': 'REAL'}
@@ -28,6 +31,30 @@ WORKING = {'N/A', 'UNSUBMITTED', 'WAITING_SUBMIT', 'SUBMITTING', 'SUBMITTED', 'T
 CANCELLED = {'CANCELLED_PART', 'CANCELLED_ALL'}
 FAILED = {'SUBMIT_FAILED', 'FAILED', 'DISABLED', 'DELETED'}
 MISSING_AFTER_SECONDS = 120
+
+# OpenD / Futu unlock and permission failure fingerprints (EN + ZH).
+_UNLOCK_RE = re.compile(
+    r'unlock|未解锁|解锁|trade.?pwd|trading.?password|password.*trade|需要.*交易密码|请先解锁',
+    re.IGNORECASE,
+)
+
+
+
+def trade_password_present():
+    """True when ``FUTU_TRADE_PASSWORD`` or ``FUTU_TRADE_PASSWORD_MD5`` is non-empty."""
+    password, digest = _credentials()
+    return bool(password or digest)
+
+
+def _credentials():
+    password = (os.environ.get('FUTU_TRADE_PASSWORD') or '').strip() or None
+    digest = (os.environ.get('FUTU_TRADE_PASSWORD_MD5') or '').strip() or None
+    return password, digest
+
+
+def _is_unlock_error(exc_or_msg):
+    text = str(exc_or_msg or '')
+    return bool(_UNLOCK_RE.search(text))
 
 
 def _rows(result, what):
@@ -70,15 +97,19 @@ class OpenDBroker:
                 acc_id, self.env, [(a['acc_id'], a['trd_env'], a.get('acc_type')) for a in accounts]))
 
     @classmethod
-    def connect(cls, market, mode, acc_id, security_firm='FUTUSECURITIES'):
+    def connect(cls, market, mode, acc_id, security_firm='FUTUSECURITIES', require_live_password=True):
         futu = _futu()
         context = futu.OpenSecTradeContext(filter_trdmarket=futu.TrdMarket.US, host=market.host, port=market.port,
                                            security_firm=security_firm)
         try:
             broker = cls(context, market, mode, acc_id)
-            password, digest = os.environ.get('FUTU_TRADE_PASSWORD'), os.environ.get('FUTU_TRADE_PASSWORD_MD5')
-            if mode == 'live' and (password or digest):
-                _rows(context.unlock_trade(password=password or None, password_md5=digest or None), 'unlock_trade')
+            if mode == 'live':
+                if require_live_password and not trade_password_present():
+                    raise ValueError(
+                        'live mode requires FUTU_TRADE_PASSWORD or FUTU_TRADE_PASSWORD_MD5; '
+                        'GUI unlock alone expires and leaves place_order stuck until restarted')
+                if trade_password_present():
+                    broker.unlock_trade()
             return broker
         except BaseException:
             context.close()
@@ -86,6 +117,16 @@ class OpenDBroker:
 
     def close(self):
         self.ctx.close()
+
+    def unlock_trade(self):
+        """Unlock the live trade context using env credentials. No-op for paper / missing env."""
+        if self.mode != 'live':
+            return False
+        password, digest = _credentials()
+        if not (password or digest):
+            return False
+        _rows(self.ctx.unlock_trade(password=password or None, password_md5=digest or None), 'unlock_trade')
+        return True
 
     def submit(self, intent, now):
         cid, code, qty = intent['client_order_id'], intent['contract'], intent['quantity']
@@ -100,18 +141,47 @@ class OpenDBroker:
                 return OrderUpdate(cid, 1, 'REJECTED', 0, now)
             if held < qty:
                 raise ValueError('close-only: account %s can sell %d of %s, not %d' % (self.account, held, code, qty))
-        rows = _rows(self.ctx.place_order(price=intent['limit_price'], qty=qty, code=code, trd_side=side,
-                                          order_type='NORMAL', trd_env=self.env, acc_id=self.acc_id, remark=cid,
-                                          time_in_force='DAY', fill_outside_rth=False), 'place_order')
-        return self._update(cid, rows[0], now)
+        # Best-effort unlock before every live submit so a GUI unlock expiry cannot stall entries/exits.
+        try:
+            self.unlock_trade()
+        except Exception:  # noqa: BLE001 - place_order still runs; unlock errors classify below
+            pass
+        try:
+            return self._place(intent, side, code, qty, cid, now)
+        except Exception as first:  # noqa: BLE001 - may be hard reject, unlock, or ambiguous
+            recovered = self._recover_after_place_failure(cid, now)
+            if recovered is not None:
+                return recovered
+            if _is_unlock_error(first) and trade_password_present():
+                try:
+                    self.unlock_trade()
+                    return self._place(intent, side, code, qty, cid, now)
+                except Exception as second:  # noqa: BLE001
+                    recovered = self._recover_after_place_failure(cid, now)
+                    if recovered is not None:
+                        return recovered
+                    raise self._classify_submit_error(second) from second
+            raise self._classify_submit_error(first) from first
 
     def cancel(self, target_client_order_id, cancel_id):
         row = self._find(target_client_order_id)
         if row is None:
             raise RuntimeError('OpenD has no order ' + target_client_order_id)
         if row.get('order_status') in WORKING:  # finished orders need no cancel; lookup reports their final state
-            _rows(self.ctx.modify_order('CANCEL', row['order_id'], 0, 0, trd_env=self.env, acc_id=self.acc_id),
-                  'modify_order')
+            try:
+                self.unlock_trade()
+            except Exception:  # noqa: BLE001 - cancel may still work if already unlocked
+                pass
+            try:
+                _rows(self.ctx.modify_order('CANCEL', row['order_id'], 0, 0, trd_env=self.env, acc_id=self.acc_id),
+                      'modify_order')
+            except Exception as exc:  # noqa: BLE001
+                if _is_unlock_error(exc) and trade_password_present():
+                    self.unlock_trade()
+                    _rows(self.ctx.modify_order('CANCEL', row['order_id'], 0, 0, trd_env=self.env, acc_id=self.acc_id),
+                          'modify_order')
+                else:
+                    raise
 
     def lookup(self, order, now):
         cid = order['client_order_id']
@@ -124,6 +194,27 @@ class OpenDBroker:
                 # an OpenD delay longer than that would need a manual reconcile.
                 return OrderUpdate(cid, 1, 'REJECTED', 0, now)
         return None if row is None else self._update(cid, row, now)
+
+    def _place(self, intent, side, code, qty, cid, now):
+        rows = _rows(self.ctx.place_order(price=intent['limit_price'], qty=qty, code=code, trd_side=side,
+                                          order_type='NORMAL', trd_env=self.env, acc_id=self.acc_id, remark=cid,
+                                          time_in_force='DAY', fill_outside_rth=False), 'place_order')
+        return self._update(cid, rows[0], now)
+
+    def _recover_after_place_failure(self, cid, now):
+        """If the order row exists despite an error reply, treat submission as acknowledged."""
+        row = self._find(cid) or self._find(cid, refresh=True)
+        return None if row is None else self._update(cid, row, now)
+
+    def _classify_submit_error(self, exc):
+        if _is_unlock_error(exc):
+            return UnlockRequiredError(str(exc))
+        # OpenD API ret!=0 (order not on the book) is a hard reject; other exceptions stay ambiguous.
+        if isinstance(exc, RuntimeError) and str(exc).startswith('OpenD place_order failed:'):
+            return HardSubmitError(str(exc))
+        if isinstance(exc, HardSubmitError):
+            return exc
+        return exc if isinstance(exc, BaseException) else RuntimeError(str(exc))
 
     def _find(self, client_order_id, refresh=False):
         rows = _rows(self.ctx.order_list_query(trd_env=self.env, acc_id=self.acc_id, refresh_cache=refresh),

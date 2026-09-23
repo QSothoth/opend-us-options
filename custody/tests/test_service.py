@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from custody.controller import Controller
-from custody.models import ET, Contract, Frame, JobRequest, OrderUpdate, Quote, Session
+from custody.models import ET, Contract, Frame, HardSubmitError, JobRequest, OrderUpdate, Quote, Session, UnlockRequiredError
 from custody.registry import Registry
 from custody.service import CustodyService
 
@@ -94,7 +94,7 @@ class ServiceTests(unittest.TestCase):
                 JobRequest.parse(bad, T)
 
     def test_only_same_day_contracts_matching_the_direction(self):
-        with self.assertRaisesRegex(ValueError, '0DTE'):
+        with self.assertRaisesRegex(ValueError, '0-1 DTE'):
             self.service.create_job(dict(self.request, contract='US.SPY260918C600000'), T)
         with self.assertRaisesRegex(ValueError, 'right/direction'):
             self.service.create_job(dict(self.request, contract=PUT), T)
@@ -246,10 +246,48 @@ class ServiceTests(unittest.TestCase):
                 self.calls.append(order)
                 raise TimeoutError()
         adapter = Timeout()
-        self.assertIn('unknown', self.service.dispatch_next(adapter, T))
+        result = self.service.dispatch_next(adapter, T)
+        self.assertIn('unknown', result)
+        self.assertIn('TimeoutError', result['error'])
+        self.assertEqual(result['attention'], 'RECONCILE_ORDER_STATUS')
         self.assertIsNone(self.service.dispatch_next(adapter, T))
         self.assertEqual(len(adapter.calls), 1)
         self.assertEqual(self.orders(j)[0]['status'], 'UNKNOWN')
+        self.assertIn('TimeoutError', self.service.get_job(j['id'])['last_error'])
+
+    def test_hard_submit_failure_rejects_and_allows_new_client_id(self):
+        j = self.job()
+        self.service.on_frame(j['id'], self.frame(), T, self.quote())
+
+        class HardFail(Adapter):
+            def submit(self, order, now):
+                self.calls.append(order)
+                raise HardSubmitError('OpenD place_order failed: rejected by broker')
+        adapter = HardFail()
+        result = self.service.dispatch_next(adapter, T)
+        self.assertIn('rejected', result)
+        self.assertEqual(result['attention'], 'ENTRY_ORDER_REJECTED')
+        state = self.service.get_job(j['id'])
+        self.assertEqual(state['orders'][0]['status'], 'REJECTED')
+        self.assertEqual(state['attention'], 'ENTRY_ORDER_REJECTED')
+        self.assertIn('place_order', state['last_error'])
+        # Next ENTER mints BUY_2 — never reconciles the dead client id.
+        nxt = T + timedelta(minutes=1)
+        self.service.on_frame(j['id'], self.frame(nxt), nxt, self.quote(nxt))
+        self.assertEqual([o['client_order_id'].rsplit(':', 1)[1] for o in self.orders(j, 'BUY_OPEN')],
+                         ['BUY_1', 'BUY_2'])
+
+    def test_unlock_required_sets_trade_unlock_attention(self):
+        j = self.job()
+        self.service.on_frame(j['id'], self.frame(), T, self.quote())
+
+        class Locked(Adapter):
+            def submit(self, order, now):
+                self.calls.append(order)
+                raise UnlockRequiredError('OpenD place_order failed: please unlock trade first')
+        result = self.service.dispatch_next(Locked(), T)
+        self.assertEqual(result['attention'], 'TRADE_UNLOCK_REQUIRED')
+        self.assertEqual(self.service.get_job(j['id'])['attention'], 'TRADE_UNLOCK_REQUIRED')
 
     def test_restart_keeps_job_and_outbox(self):
         j, adapter, key = self.entry()

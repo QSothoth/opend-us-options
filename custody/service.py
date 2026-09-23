@@ -18,7 +18,8 @@ Guarantees
   Unfilled entries may retry on another ENTER frame before flatten; a partial
   entry is still the day's only trade.
 * Every intent is persisted before broker I/O. An ambiguous submission becomes
-  UNKNOWN and is never blindly resubmitted.
+  UNKNOWN and is never blindly resubmitted. A hard broker reject (never accepted)
+  becomes REJECTED immediately so the next retry uses a new client order id.
 * Exit cancels any live entry remainder first and sells only the owned quantity.
   Flatten does not depend on bars arriving. Missing quotes or unknown order status
   leave the job in EXIT with an attention flag, never a false DONE.
@@ -31,7 +32,7 @@ import hashlib
 import json
 import sqlite3
 
-from .models import ET, JobRequest, OrderUpdate, instant, positive, symbol
+from .models import ET, HardSubmitError, JobRequest, OrderUpdate, UnlockRequiredError, instant, positive, symbol
 from .registry import Registry
 from .strategy import ACTIONS, flatten_minute
 
@@ -375,15 +376,48 @@ class CustodyService:
                 self.apply_update(event, now)
             return {'submitted': order['client_order_id']}
         except Exception as exc:
+            return self._dispatch_failure(order, now, exc)
+
+    def _dispatch_failure(self, order, now, exc):
+        """Classify a submit/cancel failure: hard reject vs ambiguous UNKNOWN.
+
+        Always records the full broker/OpenD message on the job (``last_error``) and
+        sets a specific attention code. Never swallows the error into a silent reconcile.
+        """
+        message = '%s: %s' % (type(exc).__name__, exc)
+        unlock = isinstance(exc, UnlockRequiredError) or (
+            isinstance(exc, Exception) and 'unlock' in str(exc).lower())
+        hard = isinstance(exc, HardSubmitError) or getattr(exc, 'never_submitted', False)
+        if order['kind'] == 'CANCEL':
+            attention = 'TRADE_UNLOCK_REQUIRED' if unlock else 'RECONCILE_ORDER_STATUS'
+        elif order['side'] == 'BUY_OPEN':
+            attention = 'TRADE_UNLOCK_REQUIRED' if unlock else (
+                'ENTRY_ORDER_REJECTED' if hard else 'RECONCILE_ORDER_STATUS')
+        else:
+            attention = 'TRADE_UNLOCK_REQUIRED' if unlock else (
+                'EXIT_ORDER_REJECTED' if hard else 'RECONCILE_ORDER_STATUS')
+        if hard and order['kind'] == 'LIMIT':
+            # Authoritative: nothing reached the book. Reject so a fresh client id can be minted.
+            self.apply_update(OrderUpdate(order['client_order_id'], 1, 'REJECTED', 0, now), now)
             with self._tx() as db:
-                current = json.loads(db.execute('SELECT body FROM orders WHERE id=?', (order['client_order_id'],)).fetchone()[0])
-                if current['status'] == 'DISPATCHING':
-                    current['status'] = 'UNKNOWN'
-                    self._store_order(db, current)
                 job = self._load(db, order['job_id'])
-                job['attention'] = 'RECONCILE_ORDER_STATUS'
+                job['attention'] = attention
+                job['last_error'] = message
                 self._save(db, job)
-            return {'unknown': order['client_order_id'], 'error_type': type(exc).__name__}
+            return {'rejected': order['client_order_id'], 'attention': attention,
+                    'error': message, 'error_type': type(exc).__name__}
+        with self._tx() as db:
+            current = json.loads(db.execute(
+                'SELECT body FROM orders WHERE id=?', (order['client_order_id'],)).fetchone()[0])
+            if current['status'] == 'DISPATCHING':
+                current['status'] = 'UNKNOWN'
+                self._store_order(db, current)
+            job = self._load(db, order['job_id'])
+            job['attention'] = attention
+            job['last_error'] = message
+            self._save(db, job)
+        return {'unknown': order['client_order_id'], 'attention': attention,
+                'error': message, 'error_type': type(exc).__name__}
 
     # ------------------------------------------------------------ rules
     def _quote_ok(self, job, quote, now, allow_wide=False):
