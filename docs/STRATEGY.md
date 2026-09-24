@@ -1569,7 +1569,7 @@ R23 确定这条线的离场只保留翻倍止盈（`take_profit_premium`=1.0）
 
 ## 修改策略
 
-1. 先记录假设、少量候选和选择规则，遵守 [研究方法](../AGENTS.md#研究方法全仓库通用) 与 [custody 策略与评测](../custody/AGENTS.md#策略与评测)。
+1. 先记录假设、少量候选和选择规则，遵守 [研究方法](../AGENTS.md#研究方法) 与 [custody 策略与评测](../custody/AGENTS.md#策略与评测)。
 2. 引擎实现 `__init__(params, direction, session, strike)`、`on_bar(bar)`、`on_entry_filled(at, underlying_mark)` 和严格参数校验；支持 `flatten_before_close_minutes`。
 3. 参数修改使用新的 strategy_id 和文件，在 `index.json` 登记 SHA256 与 candidate 状态。
 4. 跑完整测试与统一评测，报告和研究结果随代码提交。

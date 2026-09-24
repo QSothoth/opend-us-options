@@ -1,6 +1,6 @@
 # 数据规范（DATA）
 
-实现：`custody/dataset.py`（读取与校验）、`custody/freeze.py`（每日冻结）。总则见 [custody 数据约束](../custody/AGENTS.md#数据约束) 与根规范的 [数据](../AGENTS.md#数据)。
+实现：`custody/dataset.py`（读取与校验）、`custody/freeze.py`（每日冻结）。总则见 [custody 数据](../custody/AGENTS.md#数据) 与根规范的 [数据](../AGENTS.md#数据)。
 
 ## 1. Release 是什么
 
