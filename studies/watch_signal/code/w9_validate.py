@@ -31,3 +31,15 @@ for label, rows in (('granular', gm), ('coarse ~', [m for m in M if m['tpb'] < 2
     print('  %s D+ %+6.2f t%+4.1f | D- %+6.2f t%+4.1f | diff %+6.2f t%+4.1f | BUY %+6.2f/%+6.2f SELL %+6.2f/%+6.2f | f30 diff %+.2f'
           % (label, y[0], y[1], n_[0], n_[1], df[0], df[1], side_mean(yes, 1, 'fclose')[0], side_mean(no, 1, 'fclose')[0],
              side_mean(yes, -1, 'fclose')[0], side_mean(no, -1, 'fclose')[0], diff(yes, no, 'f30')[0]))
+print('== W10 (report only)')
+K = {'K1': lambda m: m['ret5d'] <= 0, 'K2': lambda m: m['align'] <= 0, 'K3': lambda m: m['udvol10'] <= 0,
+     'K4': lambda m: not m['pdlevel'], 'K5': lambda m: m['ret5d'] <= 0 and not m['pdlevel']}
+for k, fn in K.items():
+    yes = [m for m in gm if fn(m)]; no = [m for m in gm if not fn(m)]
+    df = diff(yes, no, 'fclose')
+    print('  %s share %4.1f%% diff close %+6.2f t%+4.1f' % (k, 100 * len(yes) / len(gm), df[0], df[1]))
+dplus = [m for m in gm if m['ret5d'] <= 0 and not m['pdlevel']]
+combo = dplus + V['V3']
+for label, rows in (('all existing marks', gm), ('D+ marks only', dplus), ('V3 only', V['V3']), ('D+ marks + V3', combo)):
+    c, a = bal(rows, 'fclose'), bal(rows, 'f30')
+    print('  %-20s dens %.2f/sd | close %+6.2f t%+4.1f | f30 %+6.2f t%+4.1f' % (label, len(rows) / max(nsd['g'], 1), c[0], c[1], a[0], a[1]))

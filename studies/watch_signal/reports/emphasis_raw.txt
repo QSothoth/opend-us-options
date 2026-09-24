@@ -1,0 +1,3 @@
+2025-06..11  fine>=5 close  +1.75 t+0.2 (n7490) | 2-5 close  -1.03 t-0.4 | fine-mid diff  +2.78 t+0.5 | fine&D+ +13.98 (n2718) fine&D-  -3.75
+selection    fine>=5 close  +3.16 t+0.6 (n15218) | 2-5 close  -3.49 t-2.3 | fine-mid diff  +6.64 t+1.4 | fine&D+ +26.44 (n5392) fine&D-  -8.40
+validation   fine>=5 close  +4.74 t+0.4 (n2122) | 2-5 close  -5.34 t-2.5 | fine-mid diff +10.08 t+1.0 | fine&D+ +49.10 (n771) fine&D- -20.01

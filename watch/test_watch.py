@@ -235,16 +235,16 @@ def test_restart_midday_reproduces_the_same_list():
         assert part == [m for m in full if m['i'] < cut], 'cut=%d diverges' % cut
 
 
-def test_fine_marks_are_bold_and_the_rest_dim():
-    """Emphasis now means a granular tape (>= FINE_TPB ticks per bar); the vol
-    tier stays in the data for de-duplication but no longer decides boldness."""
+def test_only_granular_d_plus_marks_are_bold():
+    """Bold = granular tape and daily D+; fine-but-D- or coarse-and-D+ stay dim."""
     base = {'t': '10:47', 'side': 'BUY', 'trigger': 'BOS+FVG', 'close': 78.95,
-            'vol_ratio': 3.8, 'stop': 77.1}
-    loud = w.mark_text(dict(base, tier='plain', fine=True), 100)
-    quiet = w.mark_text(dict(base, tier='vol', fine=False), 100)
+            'vol_ratio': 3.8, 'stop': 77.1, 'tier': 'plain'}
+    loud = w.mark_text(dict(base, daily=True, coarse=False, fine=False), 100)
     assert w.GREEN + w.BOLD + 'B' in loud
-    assert w.GREEN + 'b' in quiet and w.BOLD + 'b' not in quiet
-    assert quiet.startswith(w.DIM)
+    for quiet in (dict(base, daily=False, coarse=False, fine=True),
+                  dict(base, daily=True, coarse=True), dict(base, daily=None, coarse=False)):
+        line = w.mark_text(quiet, 100)
+        assert w.GREEN + 'b' in line and w.BOLD + 'b' not in line and line.startswith(w.DIM), quiet
 
 
 def test_hk_tick_table_and_a_share_tick():

@@ -484,8 +484,12 @@ def marks(bars, rule='repeat15', tick=hk_tick):
     return out, d
 
 
+def is_strong(m):
+    return m.get('daily') is True and not m.get('coarse')
+
+
 def paint_side(side, strong):
-    """Fine marks (>= FINE_TPB ticks per bar) are bold B/S, the rest dim b/s."""
+    """Strong marks (granular tape and D+) are bold B/S, the rest dim b/s."""
     ch = 'B' if side == 'BUY' else 'S'
     if not strong:
         ch = ch.lower()
@@ -518,8 +522,9 @@ def cell(text, width, color=''):
 
 
 def mark_text(m, width):
-    """One signal. Bold = granular tape, `~` = tick-bound tape (study W2)."""
-    strong = bool(m.get('fine'))
+    """One signal. Bold = granular tape AND daily D+ (the best-supported group
+    across three independent segments, studies W2/W6/W9), `~` = tick-bound."""
+    strong = is_strong(m)
     inv = '-' if m.get('stop') is None else '%.2f' % m['stop']
     rest = clip(('~' if m.get('coarse') else ' ') + cell(m['trigger'], 13) + cell('%.2f' % m['close'], 9)
                 + cell('%.1fx' % m['vol_ratio'], 6)
@@ -607,7 +612,7 @@ def frame_lines(state, at, width, rows=None):
     if width >= 100:
         head += ' src=%s:%s' % (HOST, PORT)
     legend = (GREEN + 'B' + OFF + '/' + RED + 'S' + OFF
-              + DIM + ' >=%g ticks/bar  ' % FINE_TPB + OFF
+              + DIM + ' D+ & >=%g ticks/bar  ' % GATE_TPB + OFF
               + GREEN + 'b' + OFF + '/' + RED + 's' + OFF
               + DIM + ' plain  ~ <%g ticks  D+/D- daily   ^C' % GATE_TPB + OFF)
     chrome = [BOLD + clip(head, width) + OFF, legend, '-' * width]

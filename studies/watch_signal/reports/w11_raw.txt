@@ -1,0 +1,11 @@
+== granular
+  2025-06..11                  n= 3549 | bal  -6.01 t-0.7 | BUY +16.30 (n1463) SELL -28.32 (n2086)
+  selection                    n= 4828 | bal  +6.71 t+0.8 | BUY  +3.81 (n2382) SELL  +9.61 (n2446)
+  validation                   n=  562 | bal +43.78 t+2.9 | BUY +24.30 (n307) SELL +63.27 (n255)
+  OUT-OF-SELECTION (new+val)   n= 4111 | bal  -0.33 t-0.0 | BUY +17.69 (n1770) SELL -18.34 (n2341)
+  gates [np.False_, np.False_]
+== coarse ~
+  2025-06..11                  n=13010 | bal  -0.04 t-0.0 | BUY  -4.31 (n5895) SELL  +4.24 (n7115)
+  selection                    n=17963 | bal  +2.51 t+0.7 | BUY -10.15 (n9395) SELL +15.17 (n8568)
+  validation                   n= 3278 | bal +11.15 t+2.2 | BUY  -6.00 (n1940) SELL +28.29 (n1338)
+  OUT-OF-SELECTION (new+val)   n=16288 | bal  +1.66 t+0.6 | BUY  -4.73 (n7835) SELL  +8.05 (n8453)
