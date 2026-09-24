@@ -1,0 +1,15 @@
+== VALID_AUG_SEP  stock-days 3640
+all               15.65/sd n= 56977 | d1f30  -1.59bp hit46.8% po1.25 t -3.6 | d1fclose  -1.61bp hit48.2% po1.16 t -1.4 | trade  -3.35bp hit34.9% po1.64 t -9.0
+gated             12.52/sd n= 45579 | d1f30  -1.54bp hit46.7% po1.26 t -3.6 | d1fclose  -1.42bp hit48.1% po1.18 t -1.2 | trade  -3.51bp hit34.2% po1.62 t -9.1
+kept               3.13/sd n= 11398 | d1f30  -1.76bp hit47.3% po1.15 t -1.4 | d1fclose  -2.34bp hit48.8% po1.07 t -0.7 | trade  -2.72bp hit37.6% po1.57 t -2.5
+fine               0.59/sd n=  2157 | d1f30  +2.90bp hit49.6% po1.14 t +0.7 | d1fclose  +5.33bp hit49.8% po1.09 t +0.5 | trade  +0.25bp hit40.9% po1.51 t +0.1
+gated_buy          6.44/sd n= 23430 | d1f30  -0.27bp hit46.9% po1.37 t -0.3 | d1fclose  +1.47bp hit47.7% po1.33 t +0.3 | trade  -3.00bp hit34.2% po1.70 t -4.9
+gated_sell         6.08/sd n= 22149 | d1f30  -2.90bp hit46.5% po1.16 t -2.6 | d1fclose  -4.48bp hit48.5% po1.05 t -0.8 | trade  -4.04bp hit34.2% po1.54 t -5.5
+kept_buy           1.40/sd n=  5092 | d1f30  -4.18bp hit44.9% po1.16 t -1.4 | d1fclose  -6.44bp hit46.6% po1.09 t -0.5 | trade  -4.23bp hit36.6% po1.55 t -1.8
+kept_sell          1.73/sd n=  6306 | d1f30  +0.20bp hit49.3% po1.15 t +0.1 | d1fclose  +0.97bp hit50.6% po1.05 t +0.1 | trade  -1.51bp hit38.4% po1.60 t -0.9
+HK.02513_kept      0.12/sd n=   419 | d1f30  +5.20bp hit48.8% po1.25 t +0.7 | d1fclose +11.46bp hit48.4% po1.24 t +0.5 | trade  +1.32bp hit37.7% po1.80 t +0.2
+HK.00100_kept      0.11/sd n=   384 | d1f30 +10.56bp hit50.6% po1.23 t +1.1 | d1fclose +31.09bp hit49.7% po1.31 t +1.1 | trade  +4.58bp hit39.9% po1.69 t +0.5
+HK.09988_kept      0.06/sd n=   216 | d1f30  -0.99bp hit47.1% po1.31 t -0.3 | d1fclose  -9.14bp hit40.9% po1.19 t -0.8 | trade  -5.90bp hit32.0% po1.64 t -1.9
+HK.09988_gated     0.04/sd n=   151 | d1f30  -2.15bp hit47.4% po1.20 t -0.7 | d1fclose  -3.94bp hit45.5% po1.16 t -0.8 | trade  -5.90bp hit34.8% po1.26 t -2.0
+HK.01810_kept      0.01/sd n=    25 | d1f30 -18.62bp hit34.8% po1.26 t -1.6 | d1fclose -45.55bp hit41.7% po0.62 t -1.6 | trade -23.32bp hit26.1% po1.36 t -2.3
+HK.01810_gated     0.11/sd n=   387 | d1f30  +1.89bp hit50.2% po1.31 t +0.6 | d1fclose  +1.16bp hit50.3% po1.15 t +0.2 | trade  -1.70bp hit36.0% po1.76 t -0.6

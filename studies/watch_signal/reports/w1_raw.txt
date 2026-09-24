@@ -1,0 +1,65 @@
+== TRAIN (selection) d1f30
+C1                              2.79/sd n= 19577 mean= +5.27bp hit= 57.2% payoff=1.30 pf=1.32 t_day= +8.6
+C2                              2.85/sd n= 20152 mean= +5.14bp hit= 56.7% payoff=1.41 pf=1.35 t_day=+10.1
+C3                              1.34/sd n=  9486 mean= +5.57bp hit= 57.7% payoff=1.46 pf=1.40 t_day= +8.5
+C4                              2.87/sd n= 20124 mean= +5.22bp hit= 57.2% payoff=1.31 pf=1.32 t_day= +8.3
+C5                              5.51/sd n= 38339 mean= +3.95bp hit= 55.8% payoff=1.25 pf=1.22 t_day= +7.8
+current                        15.67/sd n=104954 mean= -2.20bp hit= 46.4% payoff=1.26 pf=0.91 t_day= -3.3
+eligible ['C1', 'C2', 'C3', 'C4'] -> PICK C2
+LODO picks {'C2': 53}
+LODO out-of-sample              2.85/sd n= 20152 mean= +5.14bp hit= 56.7% payoff=1.41 pf=1.35 t_day=+10.1
+
+== VALID
+current d1f15                  15.65/sd n= 54290 mean= -1.55bp hit= 46.1% payoff=1.33 pf=0.89 t_day= -6.4
+current d1f30                  15.65/sd n= 51884 mean= -1.59bp hit= 46.8% payoff=1.25 pf=0.91 t_day= -3.6
+current d1fclose               15.65/sd n= 56759 mean= -1.61bp hit= 48.2% payoff=1.16 pf=0.95 t_day= -1.4
+C2 d1f15                        3.10/sd n= 11062 mean= +2.71bp hit= 57.2% payoff=1.47 pf=1.29 t_day= +8.3
+C2 d1f30 <PICK                  3.10/sd n= 10776 mean= +3.21bp hit= 55.5% payoff=1.34 pf=1.25 t_day= +6.6
+C2 d1fclose                     3.10/sd n= 11259 mean= +3.68bp hit= 53.0% payoff=1.19 pf=1.14 t_day= +4.5
+C1 d1f15                        3.17/sd n= 11297 mean= +2.46bp hit= 56.6% payoff=1.36 pf=1.23 t_day= +7.6
+C1 d1f30                        3.17/sd n= 10982 mean= +3.09bp hit= 55.8% payoff=1.24 pf=1.22 t_day= +6.6
+C1 d1fclose                     3.17/sd n= 11504 mean= +2.90bp hit= 53.2% payoff=1.12 pf=1.10 t_day= +2.7
+C3 d1f15                        1.42/sd n=  5108 mean= +2.72bp hit= 57.6% payoff=1.55 pf=1.31 t_day= +5.2
+C3 d1f30                        1.42/sd n=  4976 mean= +3.56bp hit= 55.7% payoff=1.40 pf=1.30 t_day= +5.5
+C3 d1fclose                     1.42/sd n=  5177 mean= +2.79bp hit= 53.1% payoff=1.17 pf=1.11 t_day= +2.3
+C4 d1f15                        3.25/sd n= 11603 mean= +2.35bp hit= 56.4% payoff=1.36 pf=1.22 t_day= +7.8
+C4 d1f30                        3.25/sd n= 11280 mean= +2.99bp hit= 55.5% payoff=1.25 pf=1.21 t_day= +6.6
+C4 d1fclose                     3.25/sd n= 11814 mean= +2.65bp hit= 53.1% payoff=1.12 pf=1.09 t_day= +2.5
+C5 d1f15                        6.09/sd n= 21646 mean= +2.42bp hit= 56.1% payoff=1.36 pf=1.23 t_day= +7.1
+C5 d1f30                        6.09/sd n= 21002 mean= +3.05bp hit= 55.3% payoff=1.24 pf=1.21 t_day= +7.1
+C5 d1fclose                     6.09/sd n= 22116 mean= +3.35bp hit= 52.6% payoff=1.16 pf=1.11 t_day= +4.7
+C2 BUY d1f30                    1.54/sd n=  5310 mean= +3.96bp hit= 55.3% payoff=1.43 pf=1.33 t_day= +3.3
+C2 SELL d1f30                   1.56/sd n=  5466 mean= +2.48bp hit= 55.6% payoff=1.26 pf=1.18 t_day= +2.2
+C2 HK.00100 d1f30              n=1
+C2 HK.01810 d1f30              n=0
+C2 HK.02513 d1f30               0.27/sd n=     7 mean=-16.07bp hit= 71.4% payoff=0.33 pf=0.82 t_day= -0.2
+C2 HK.09988 d1f30              n=2
+
+== NEW
+current d1f15                  15.54/sd n=  4167 mean= -1.89bp hit= 44.9% payoff=1.38 pf=0.85 t_day= +nan
+current d1f30                  15.54/sd n=  3995 mean= -1.90bp hit= 46.8% payoff=1.24 pf=0.88 t_day= +nan
+current d1fclose               15.54/sd n=  4342 mean= -1.53bp hit= 47.2% payoff=1.20 pf=0.95 t_day= +nan
+C2 d1f15                        3.58/sd n=   989 mean= +4.00bp hit= 59.4% payoff=1.69 pf=1.56 t_day= +nan
+C2 d1f30 <PICK                  3.58/sd n=   965 mean= +3.67bp hit= 56.9% payoff=1.44 pf=1.36 t_day= +nan
+C2 d1fclose                     3.58/sd n=  1002 mean= +3.49bp hit= 52.4% payoff=1.21 pf=1.16 t_day= +nan
+C1 d1f15                        3.49/sd n=   959 mean= +4.25bp hit= 57.8% payoff=1.69 pf=1.55 t_day= +nan
+C1 d1f30                        3.49/sd n=   938 mean= +4.86bp hit= 57.4% payoff=1.52 pf=1.45 t_day= +nan
+C1 d1fclose                     3.49/sd n=   977 mean= +6.44bp hit= 54.8% payoff=1.23 pf=1.31 t_day= +nan
+C3 d1f15                        1.77/sd n=   493 mean= +5.11bp hit= 59.2% payoff=1.89 pf=1.75 t_day= +nan
+C3 d1f30                        1.77/sd n=   485 mean= +6.15bp hit= 59.9% payoff=1.67 pf=1.68 t_day= +nan
+C3 d1fclose                     1.77/sd n=   497 mean= +5.81bp hit= 53.7% payoff=1.22 pf=1.30 t_day= +nan
+C4 d1f15                        3.59/sd n=   987 mean= +3.71bp hit= 56.7% payoff=1.66 pf=1.47 t_day= +nan
+C4 d1f30                        3.59/sd n=   966 mean= +4.69bp hit= 56.6% payoff=1.57 pf=1.44 t_day= +nan
+C4 d1fclose                     3.59/sd n=  1006 mean= +6.25bp hit= 54.5% payoff=1.23 pf=1.30 t_day= +nan
+C5 d1f15                        6.49/sd n=  1784 mean= +4.34bp hit= 60.3% payoff=1.50 pf=1.54 t_day= +nan
+C5 d1f30                        6.49/sd n=  1725 mean= +4.12bp hit= 58.3% payoff=1.31 pf=1.36 t_day= +nan
+C5 d1fclose                     6.49/sd n=  1816 mean= +5.96bp hit= 55.2% payoff=1.20 pf=1.27 t_day= +nan
+C2 BUY d1f30                    1.83/sd n=   498 mean= +2.21bp hit= 56.2% payoff=1.36 pf=1.20 t_day= +nan
+C2 SELL d1f30                   1.75/sd n=   467 mean= +5.22bp hit= 57.5% payoff=1.54 pf=1.54 t_day= +nan
+C2 HK.00100 d1f30              n=1
+C2 HK.01810 d1f30              n=0
+C2 HK.02513 d1f30              n=0
+C2 HK.09988 d1f30              n=0
+strong k8 r70 train             0.87/sd n=  6171 mean= +5.99bp hit= 57.9% payoff=1.47 pf=1.42 t_day= +6.9
+strong k8 r70 valid             0.96/sd n=  3358 mean= +4.60bp hit= 56.1% payoff=1.46 pf=1.38 t_day= +6.4
+strong k8 r70 new               1.20/sd n=   326 mean= +7.35bp hit= 60.9% payoff=1.79 pf=1.88 t_day= +nan

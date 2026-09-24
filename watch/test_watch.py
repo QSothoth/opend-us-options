@@ -235,17 +235,53 @@ def test_restart_midday_reproduces_the_same_list():
         assert part == [m for m in full if m['i'] < cut], 'cut=%d diverges' % cut
 
 
-def test_vol_tier_keeps_the_old_emphasis():
-    """High rv without the vol tier stays a dim lowercase mark."""
-    loud = w.mark_text({'t': '10:47', 'side': 'BUY', 'trigger': 'BOS+FVG',
-                        'close': 78.95, 'vol_ratio': 3.8, 'stop': 77.1,
-                        'tier': 'vol'}, 100)
-    quiet = w.mark_text({'t': '10:47', 'side': 'BUY', 'trigger': 'BOS+FVG',
-                         'close': 78.95, 'vol_ratio': 3.8, 'stop': 77.1,
-                         'tier': 'plain'}, 100)
+def test_fine_marks_are_bold_and_the_rest_dim():
+    """Emphasis now means a granular tape (>= FINE_TPB ticks per bar); the vol
+    tier stays in the data for de-duplication but no longer decides boldness."""
+    base = {'t': '10:47', 'side': 'BUY', 'trigger': 'BOS+FVG', 'close': 78.95,
+            'vol_ratio': 3.8, 'stop': 77.1}
+    loud = w.mark_text(dict(base, tier='plain', fine=True), 100)
+    quiet = w.mark_text(dict(base, tier='vol', fine=False), 100)
     assert w.GREEN + w.BOLD + 'B' in loud
     assert w.GREEN + 'b' in quiet and w.BOLD + 'b' not in quiet
     assert quiet.startswith(w.DIM)
+
+
+def test_hk_tick_table_and_a_share_tick():
+    assert w.hk_tick(0.2) == 0.001 and w.hk_tick(0.3) == 0.005
+    assert w.hk_tick(9.99) == 0.01 and w.hk_tick(10.0) == 0.02
+    assert w.hk_tick(96.0) == 0.05 and w.hk_tick(150.0) == 0.1
+    assert w.hk_tick(430.0) == 0.2 and w.hk_tick(700.0) == 0.5
+    assert w.hk_tick(1500.0) == 1.0 and w.hk_tick(9000.0) == 5.0
+    assert w.a_tick(13.2) == 0.01
+
+
+def test_ticks_per_bar_skips_the_auction_print_and_is_causal():
+    bars = [(stamp(0), 96.0, 103.0, 95.5, 96.0, 1.0),          # auction: ignored
+            (stamp(1), 96.0, 96.10, 96.0, 96.05, 1.0),          # 2 ticks of 0.05
+            (stamp(2), 96.0, 96.20, 96.0, 96.10, 1.0)]          # 4 ticks
+    tpb = w.ticks_per_bar(bars)
+    assert tpb[0] == 0.0 and abs(tpb[1] - 2.0) < 1e-9 and abs(tpb[2] - 3.0) < 1e-9, tpb
+    assert w.ticks_per_bar(bars[:2]) == tpb[:2]
+
+
+def test_tick_bound_tape_is_muted():
+    """Same shape as the fixture, but every bar spans under one tick: the
+    breakouts there are bid/ask flips, so nothing may be shown."""
+    rows = fake_bars()
+    squeezed = [rows[0]] + [(t, c, c + 0.01, c - 0.01, c, v) for t, o, h, l, c, v in rows[1:]]
+    ms, d = w.marks(squeezed)
+    assert ms == [] and d['tpb'] < w.GATE_TPB, (ms, d.get('tpb'))
+    plain = re.sub(r'\x1b\[[0-9;]*m', '', w.board(
+        {'HK.00001': {'bars': squeezed, 'marks': ms, 'read': d}}, w.now_hkt(), 100))
+    assert 'muted' in plain
+
+
+def test_marks_carry_their_tick_density():
+    ms, d = w.marks(fake_bars())
+    assert ms and all(m['tpb'] >= w.GATE_TPB for m in ms), ms
+    assert all(m['fine'] == (m['tpb'] >= w.FINE_TPB) for m in ms)
+    assert d['tpb'] >= w.GATE_TPB
 
 
 def test_board_renders_without_crashing():

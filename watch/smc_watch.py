@@ -7,10 +7,12 @@ Triggers:
     FVG    3-bar fair value gap wider than FVG_ATR x ATR14
     SWEEP  wick takes out a confirmed swing then closes back inside (stop hunt)
 
-Every trigger that passes the bias is marked. Volume expansion and the
-premium/discount half of the day's range do NOT decide whether a mark fires --
-they only split `plain` marks from `vol` ones, and measurement says `vol` marks
-are rarer, not better (see README).
+Every trigger that passes the bias is marked, then shown only when the tape
+is granular enough: a session averaging fewer than GATE_TPB ticks per bar
+turns "breaks" into bid/ask flips, and those marks pointed the wrong way out
+of sample (study W2, studies/watch_signal/). Marks at >= FINE_TPB ticks per
+bar are drawn bold. Volume expansion and the premium/discount half of the
+day's range only split `plain` from `vol` marks for de-duplication.
 
 Read-only OpenD quotes, any number of codes. Every poll re-reads the day's
 closed 1m bars and derives the whole mark list from them, so nothing accumulates
@@ -37,6 +39,10 @@ logging.getLogger().setLevel(logging.ERROR)
 
 from futu import AuType, KLType, OpenQuoteContext, RET_OK, SubType  # noqa: E402
 
+# futu prints connection notices to stdout through its own logger, which would
+# break the one-JSON-object-per-line output that `| jq` relies on.
+logging.getLogger('FTConsoleLog').setLevel(logging.ERROR)
+
 DEFAULT_CODES = ['HK.02513']
 HOST = '127.0.0.1'
 PORT = 11111
@@ -51,6 +57,10 @@ ATR_LEN = 14
 PREMIUM = 0.5           # longs below this much of the day's range, shorts above
 WARMUP_BARS = 25
 DEDUP_BARS = 15         # per direction
+GATE_TPB = 2.0          # below this many ticks per bar a "break" is a bid/ask flip
+FINE_TPB = 5.0          # marks this granular are drawn bold
+HK_TICK_BANDS = ((0.25, 0.001), (0.5, 0.005), (10, 0.01), (20, 0.02), (100, 0.05),
+                 (200, 0.1), (500, 0.2), (1000, 0.5), (2000, 1.0), (5000, 2.0))
 STALE_POLLS = 4
 LAST_BAR = ' 16:00'     # the 16:00 bar is the closing auction, not continuous trade
 HKT = timezone(timedelta(hours=8))
@@ -302,6 +312,33 @@ def structure(bars, d):
     return bull, bear
 
 
+def hk_tick(price):
+    """HKEX spread table (the part that covers listed equities)."""
+    for upper, tick in HK_TICK_BANDS:
+        if price < upper:
+            return tick
+    return 5.0
+
+
+def a_tick(_price):
+    return 0.01
+
+
+def ticks_per_bar(bars, tick=hk_tick):
+    """Session-to-date mean bar range (high - low) in ticks, one value per bar.
+
+    Bar 0 is the opening auction print (O=H=L=C), so it is left out. Causal:
+    entry i only uses bars 0..i, which keeps a restart reproducible.
+    """
+    out, total = [], 0.0
+    for i, b in enumerate(bars):
+        if i:
+            step = tick(b[4])
+            total += (b[2] - b[3]) / step if step > 0 else 0.0
+        out.append(total / max(i, 1))
+    return out
+
+
 def _emit_ok(rule, i, side, tier, d, last, anchor):
     """Whether this bar may become a mark. Indicators are already computed.
 
@@ -321,7 +358,7 @@ def _emit_ok(rule, i, side, tier, d, last, anchor):
     return i - last.get((side, tier), -10 ** 9) >= gap
 
 
-def marks(bars, rule='repeat15'):
+def marks(bars, rule='repeat15', tick=hk_tick):
     """Two tiers of marks, derived purely from `bars`.
 
     plain  bias + structure trigger.
@@ -335,10 +372,17 @@ def marks(bars, rule='repeat15'):
     repeat30, episode, and extend2, and none of the others raised that
     half without giving up the pooled mean. `vol` marks are NOT more
     accurate than `plain` ones on the older 40-day cut -- only rarer.
+
+    Tick gate (study W2, studies/watch_signal/): a mark whose bar sits in a
+    session averaging fewer than GATE_TPB ticks per bar is emitted for
+    de-duplication but not shown. There a break is the close flipping from
+    bid to ask, and those marks pointed the wrong way (t = -6.3 on 2026-06/08).
+    `fine` marks (>= FINE_TPB ticks per bar) are the drawn-bold ones.
     """
     if rule not in ('repeat15', 'repeat30', 'episode', 'extend2'):
         raise ValueError('unknown mark rule %r' % rule)
     out, last, anchor, d = [], {}, None, None
+    tpb = ticks_per_bar(bars, tick)
     for end in range(1, len(bars) + 1):
         i = end - 1
         d = read(bars[:end])
@@ -359,21 +403,26 @@ def marks(bars, rule='repeat15'):
             continue
         last[(side, tier)] = i
         anchor = (side, d['close'])
+        if tpb[i] < GATE_TPB:
+            continue
         out.append({'i': i, 't': bars[i][0][11:16], 'side': side, 'tier': tier,
+                    'tpb': round(tpb[i], 2), 'fine': tpb[i] >= FINE_TPB,
                     'trigger': trig, 'close': d['close'], 'rsi': round(d['rsi'], 1),
                     'vwap': round(d['vwap'], 3), 'vol_ratio': round(d['vol_ratio'], 2),
                     'pos': round(d['pos'], 2),
                     'stop': d['swing_low'] if side == 'BUY' else d['swing_high']})
+    if d is not None and tpb:
+        d['tpb'] = tpb[-1]
     return out, d
 
 
-def paint_side(side, vol_tier):
-    """Same mark as the old lane: vol tier is bold B/S, plain is dim b/s."""
+def paint_side(side, strong):
+    """Fine marks (>= FINE_TPB ticks per bar) are bold B/S, the rest dim b/s."""
     ch = 'B' if side == 'BUY' else 'S'
-    if not vol_tier:
+    if not strong:
         ch = ch.lower()
     color = GREEN if side == 'BUY' else RED
-    return color + (BOLD if vol_tier else '') + ch + OFF
+    return color + (BOLD if strong else '') + ch + OFF
 
 
 def disp_width(text):
@@ -401,13 +450,13 @@ def cell(text, width, color=''):
 
 
 def mark_text(m, width):
-    """One signal. Emphasis is the existing vol tier, not a new cutoff."""
-    is_vol = m.get('tier') == 'vol'
+    """One signal. Emphasis marks a granular tape (study W2), not volume."""
+    strong = bool(m.get('fine'))
     inv = '-' if m.get('stop') is None else '%.2f' % m['stop']
     rest = clip(' ' + cell(m['trigger'], 13) + cell('%.2f' % m['close'], 9)
                 + cell('%.1fx' % m['vol_ratio'], 6) + 'inv ' + inv, width - 9)
-    base = '' if is_vol else DIM
-    return base + '  ' + cell(m['t'], 6) + paint_side(m['side'], is_vol) + base + rest + OFF
+    base = '' if strong else DIM
+    return base + '  ' + cell(m['t'], 6) + paint_side(m['side'], strong) + base + rest + OFF
 
 
 def symbol_lines(code, st, width):
@@ -422,6 +471,7 @@ def symbol_lines(code, st, width):
     vwap_bp = (last / d['vwap'] - 1.0) * 10000.0 if d.get('vwap') else 0.0
     rsi = d.get('rsi')
     vr = d.get('vol_ratio', 0.0)
+    tpb = d.get('tpb')
     lines = [
         cell(code, 11) + cell(name, 10, DIM)
         + cell('%.2f' % last, 9)
@@ -429,8 +479,10 @@ def symbol_lines(code, st, width):
         + cell('vwap%+d' % int(round(vwap_bp)), 9)
         + cell('rsi%s' % ('-' if rsi is None else '%.1f' % rsi), 8)
         + cell('%.1fx' % vr, 6, BOLD if vr >= VOL_MULT else DIM)
-        + DIM + ' n%d' % len(bars) + OFF]
-    if not ms:
+        + DIM + ' tpb%s n%d' % ('-' if tpb is None else '%.1f' % tpb, len(bars)) + OFF]
+    if tpb is not None and tpb < GATE_TPB:
+        lines.append(DIM + '  (muted: %.1f ticks/bar < %g)' % (tpb, GATE_TPB) + OFF)
+    elif not ms:
         lines.append(DIM + '  (none)' + OFF)
     for m in ms:
         lines.append(mark_text(m, width))
@@ -487,7 +539,7 @@ def frame_lines(state, at, width, rows=None):
     if width >= 100:
         head += ' src=%s:%s' % (HOST, PORT)
     legend = (GREEN + 'B' + OFF + '/' + RED + 'S' + OFF
-              + DIM + ' vol tier   ' + OFF
+              + DIM + ' >=%g ticks/bar   ' % FINE_TPB + OFF
               + GREEN + 'b' + OFF + '/' + RED + 's' + OFF
               + DIM + ' plain   ^C' + OFF)
     chrome = [BOLD + clip(head, width) + OFF, legend, '-' * width]
@@ -557,7 +609,7 @@ def main():
                     continue
                 ok = True
                 names[code] = name or names.get(code, '')
-                ms, d = marks(bars)
+                ms, d = marks(bars, tick=a_tick if tencent_symbol(code) else hk_tick)
                 state[code] = {'bars': bars, 'marks': ms, 'read': d or read(bars),
                                'name': names[code]}
                 for m in ms[seen.get(code, 0):]:
