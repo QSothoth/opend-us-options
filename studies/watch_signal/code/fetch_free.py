@@ -21,7 +21,7 @@ try:
                     wait = 30 - (time.time() - t0)
                     if wait > 0: time.sleep(wait)
                     t0 = time.time()
-                ret, fr, key = ctx.request_history_kline(code, start=start, end=end, ktype=ft.KLType.K_1M,
+                ret, fr, key = ctx.request_history_kline(code, start=start, end=end, ktype=getattr(ft.KLType, __import__("os").environ.get("KTYPE", "K_1M")),
                                                          autype=ft.AuType.QFQ, max_count=1000, page_req_key=key)
                 if ret != ft.RET_OK: print('ERR', code, str(fr)[:100], flush=True); break
                 for r in fr.itertuples(index=False):

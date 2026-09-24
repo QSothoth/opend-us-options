@@ -1,0 +1,26 @@
+== SELECTION granular marks 91574
+  K1 share 51.5% | close: yes  +5.83 (t+1.5) no -11.03 (t-3.0) diff +16.86 t+2.4 | f30 yes +1.13 no -2.32 | BUY  +6.86/-12.77 SELL  +4.80/ -9.28
+  K2 share 71.4% | close: yes  +0.68 (t+0.3) no -10.21 (t-2.4) diff +10.89 t+1.8 | f30 yes +0.02 no -2.07 | BUY  +0.85/-12.63 SELL  +0.51/ -7.78
+  K3 share 51.0% | close: yes  +4.61 (t+1.3) no  -9.60 (t-3.1) diff +14.20 t+2.6 | f30 yes +0.86 no -2.00 | BUY  +4.39/-10.11 SELL  +4.82/ -9.09
+  K4 share 64.1% | close: yes  +2.39 (t+0.9) no -10.80 (t-2.5) diff +13.20 t+2.2 | f30 yes -0.16 no -1.22 | BUY  +2.46/-11.64 SELL  +2.33/ -9.96
+  K5 share 36.1% | close: yes +10.53 (t+2.1) no  -9.61 (t-3.4) diff +20.14 t+2.9 | f30 yes +1.53 no -1.71 | BUY +12.03/-10.90 SELL  +9.03/ -8.32
+PICK K5
+== selection coarse ~ (report only) marks 262965
+  K1 share 51.8% | close: yes  -2.05 (t-1.5) no  -5.21 (t-4.1) diff  +3.16 t+1.4 | f30 yes -1.97 no -2.70 | BUY  +3.07/ -0.54 SELL  -7.16/ -9.88
+  K2 share 71.9% | close: yes  -2.87 (t-3.0) no  -5.25 (t-3.2) diff  +2.38 t+1.1 | f30 yes -2.41 no -2.07 | BUY  +1.87/ -0.10 SELL  -7.61/-10.41
+  K3 share 50.1% | close: yes  -2.81 (t-2.1) no  -4.29 (t-3.7) diff  +1.48 t+0.7 | f30 yes -2.40 no -2.22 | BUY  +1.86/ +0.98 SELL  -7.48/ -9.56
+  K4 share 69.6% | close: yes  -1.57 (t-1.8) no  -8.08 (t-4.7) diff  +6.51 t+3.1 | f30 yes -2.15 no -2.72 | BUY  +3.07/ -2.95 SELL  -6.21/-13.22
+  K5 share 38.2% | close: yes  -0.20 (t-0.1) no  -5.70 (t-5.7) diff  +5.50 t+2.7 | f30 yes -1.73 no -2.72 | BUY  +5.29/ -1.33 SELL  -5.70/-10.07
+== VALIDATION granular marks 11352
+  K1 share 53.0% | close: yes  +6.42 (t+1.1) no -15.08 (t-2.3) diff +21.50 t+2.0 | f30 yes +0.75 no -5.98 | BUY  +0.37/-27.01 SELL +12.48/ -3.15
+  K2 share 73.3% | close: yes  +4.03 (t+1.1) no -24.09 (t-2.7) diff +28.12 t+2.7 | f30 yes -0.52 no -6.87 | BUY  -2.05/-38.35 SELL +10.11/ -9.83
+  K3 share 52.0% | close: yes  +1.67 (t+0.4) no  -8.76 (t-1.2) diff +10.43 t+1.1 | f30 yes -0.39 no -4.21 | BUY  -4.97/-18.04 SELL  +8.32/ +0.52
+  K4 share 64.5% | close: yes  +6.32 (t+1.4) no -20.50 (t-1.9) diff +26.82 t+2.0 | f30 yes -0.70 no -4.77 | BUY  -1.36/-26.84 SELL +13.99/-14.17
+  K5 share 35.2% | close: yes +17.64 (t+2.5) no -14.70 (t-2.8) diff +32.34 t+3.1 | f30 yes +2.27 no -4.67 | BUY +10.70/-23.58 SELL +24.58/ -5.81
+== validation coarse ~ (report only) marks 49168
+  K1 share 52.5% | close: yes  +2.65 (t+1.2) no  -6.83 (t-2.9) diff  +9.49 t+2.4 | f30 yes -0.54 no -2.91 | BUY  +4.20/ -5.93 SELL  +1.11/ -7.73
+  K2 share 71.1% | close: yes  -0.81 (t-0.5) no  -4.23 (t-1.3) diff  +3.41 t+0.8 | f30 yes -1.19 no -2.76 | BUY  +1.79/ -3.16 SELL  -3.42/ -5.29
+  K3 share 51.0% | close: yes  -0.38 (t-0.2) no  -3.32 (t-1.9) diff  +2.94 t+0.9 | f30 yes -0.81 no -2.46 | BUY  +1.57/ -1.55 SELL  -2.33/ -5.09
+  K4 share 70.9% | close: yes  +1.47 (t+0.8) no  -9.42 (t-2.9) diff +10.90 t+2.4 | f30 yes -1.04 no -3.23 | BUY  +2.45/ -6.07 SELL  +0.50/-12.78
+  K5 share 39.0% | close: yes  +5.41 (t+2.0) no  -6.72 (t-3.7) diff +12.12 t+3.1 | f30 yes +0.05 no -2.85 | BUY  +7.84/ -6.54 SELL  +2.97/ -6.90
+gates K5 [np.True_, np.True_, np.True_, True] PASS

@@ -1,0 +1,122 @@
+== GRANULAR tpb>=2
+   all                            n= 87310 | f30 bal  -0.54 t -0.9 | close bal  -2.34 t -1.3
+   align(daily stage x side)=1    n= 24982 | f30 bal  -2.07 t -1.8 | close bal -10.21 t -2.4
+   align(daily stage x side)=0    n= 36453 | f30 bal  -0.97 t -1.3 | close bal  -2.14 t -0.9
+   align(daily stage x side)=-1   n= 25875 | f30 bal  +1.30 t +1.0 | close bal  +4.22 t +0.9
+   pdlevel broken                 n= 31313 | f30 bal  -1.22 t -1.0 | close bal -10.80 t -2.5
+   pdlevel not                    n= 55997 | f30 bal  -0.16 t -0.2 | close bal  +2.39 t +0.9
+   rvol_d1
+   q1 [0,0.66)                    n= 17501 | f30 bal  -1.11 t -1.2 | close bal  -1.67 t -0.6
+   q2 [0.66,0.851)                n= 17483 | f30 bal  +0.54 t +0.6 | close bal  +0.03 t +0.0
+   q3 [0.851,1.07)                n= 17460 | f30 bal  -0.03 t -0.0 | close bal  -4.19 t -1.5
+   q4 [1.07,1.44)                 n= 17450 | f30 bal  -1.77 t -2.1 | close bal  -7.87 t -3.1
+   q5 [1.44,19.3)                 n= 17416 | f30 bal  -0.39 t -0.3 | close bal  +1.89 t +0.6
+   contract5
+   q1 [0.675,1.69)                n= 17465 | f30 bal  -0.28 t -0.2 | close bal  +3.35 t +1.1
+   q2 [1.69,2.06)                 n= 17466 | f30 bal  -1.13 t -1.2 | close bal  -4.21 t -1.7
+   q3 [2.06,2.46)                 n= 17520 | f30 bal  +0.66 t +0.6 | close bal  -2.11 t -0.8
+   q4 [2.46,3.04)                 n= 17426 | f30 bal  -1.12 t -1.2 | close bal  -2.26 t -0.8
+   q5 [3.04,10.5)                 n= 17433 | f30 bal  -0.92 t -0.9 | close bal  -6.74 t -2.2
+   udvol10
+   q1 [-20.4,-0.686)              n= 17381 | f30 bal  +0.55 t +0.4 | close bal  +0.57 t +0.1
+   q2 [-0.686,-0.223)             n= 17422 | f30 bal  +1.37 t +1.2 | close bal +10.52 t +2.4
+   q3 [-0.223,0.181)              n= 17520 | f30 bal  +0.44 t +0.4 | close bal  +2.53 t +0.9
+   q4 [0.181,0.645)               n= 17532 | f30 bal  -2.26 t -2.0 | close bal -13.05 t -3.4
+   q5 [0.645,19.8)                n= 17455 | f30 bal  -2.83 t -2.3 | close bal -12.29 t -2.7
+   ret5d
+   q1 [-1.2,-0.0657)              n= 17258 | f30 bal  +2.28 t +1.3 | close bal +11.53 t +1.5
+   q2 [-0.0657,-0.0202)           n= 17526 | f30 bal  -0.38 t -0.4 | close bal  +3.37 t +0.8
+   q3 [-0.0202,0.0157)            n= 17581 | f30 bal  +0.70 t +0.7 | close bal  +0.48 t +0.2
+   q4 [0.0157,0.0594)             n= 17543 | f30 bal  -1.57 t -1.6 | close bal -10.09 t -3.0
+   q5 [0.0594,1.2)                n= 17402 | f30 bal  -3.76 t -2.4 | close bal -16.92 t -2.6
+   ret20d
+   q1 [-1.58,-0.129)              n= 17283 | f30 bal  +0.65 t +0.4 | close bal  +4.43 t +0.7
+   q2 [-0.129,-0.0372)            n= 17494 | f30 bal  +0.86 t +0.7 | close bal  +3.35 t +0.8
+   q3 [-0.0372,0.0349)            n= 17630 | f30 bal  -0.60 t -0.8 | close bal  -3.77 t -1.9
+   q4 [0.0349,0.13)               n= 17547 | f30 bal  -1.88 t -1.6 | close bal  -6.23 t -1.6
+   q5 [0.13,1.58)                 n= 17356 | f30 bal  -1.88 t -1.4 | close bal  -9.75 t -1.8
+   ema20slope
+   q1 [-0.32,-0.0289)             n= 17331 | f30 bal  +1.02 t +0.6 | close bal  +2.52 t +0.4
+   q2 [-0.0289,-0.00899)          n= 17497 | f30 bal  +0.06 t +0.1 | close bal  -1.75 t -0.5
+   q3 [-0.00899,0.00852)          n= 17589 | f30 bal  -0.85 t -0.9 | close bal  -1.68 t -0.6
+   q4 [0.00852,0.0285)            n= 17553 | f30 bal  -0.74 t -0.7 | close bal  -1.96 t -0.5
+   q5 [0.0285,0.32)               n= 17340 | f30 bal  -2.43 t -1.8 | close bal  -9.25 t -1.8
+   gap
+   q1 [-0.153,-0.0127)            n= 17284 | f30 bal  -1.78 t -0.8 | close bal  -1.29 t -0.1
+   q2 [-0.0127,-0.00247)          n= 17440 | f30 bal  -0.48 t -0.4 | close bal  +3.99 t +0.9
+   q3 [-0.00247,0.00134)          n= 17532 | f30 bal  -1.05 t -1.2 | close bal  -2.15 t -0.9
+   q4 [0.00134,0.0119)            n= 17639 | f30 bal  -0.54 t -0.5 | close bal  -9.92 t -2.5
+   q5 [0.0119,0.153)              n= 17415 | f30 bal  +1.00 t +0.5 | close bal  -3.24 t -0.4
+   dist20
+   q1 [-1.55,-0.201)              n= 17208 | f30 bal  +1.32 t +0.7 | close bal  +9.87 t +1.4
+   q2 [-0.201,-0.127)             n= 17449 | f30 bal  +1.16 t +1.0 | close bal  +1.39 t +0.3
+   q3 [-0.127,-0.0765)            n= 17503 | f30 bal  -1.62 t -1.6 | close bal  -2.97 t -0.9
+   q4 [-0.0765,-0.036)            n= 17563 | f30 bal  +0.19 t +0.2 | close bal  -4.54 t -1.2
+   q5 [-0.036,0)                  n= 17587 | f30 bal  -3.64 t -3.0 | close bal -14.44 t -3.0
+   dayret
+   q1 [-0.19,-0.00724)            n= 17231 | f30 bal  -0.76 t -0.6 | close bal  +2.89 t +0.6
+   q2 [-0.00724,0.00495)          n= 17657 | f30 bal  +0.42 t +0.5 | close bal  +1.67 t +0.9
+   q3 [0.00495,0.0157)            n= 17664 | f30 bal  -1.09 t -1.3 | close bal  -4.77 t -2.2
+   q4 [0.0157,0.0316)             n= 17635 | f30 bal  -1.46 t -1.3 | close bal  -8.69 t -2.7
+   q5 [0.0316,0.383)              n= 17123 | f30 bal  -0.02 t -0.0 | close bal  -3.49 t -0.6
+== COARSE tpb<2
+   all                            n=235855 | f30 bal  -2.30 t -9.1 | close bal  -3.56 t -5.1
+   align(daily stage x side)=1    n= 66374 | f30 bal  -2.07 t -4.5 | close bal  -5.25 t -3.2
+   align(daily stage x side)=0    n=104224 | f30 bal  -2.64 t -9.0 | close bal  -4.12 t -5.9
+   align(daily stage x side)=-1   n= 65257 | f30 bal  -2.01 t -4.2 | close bal  -0.71 t -0.4
+   pdlevel broken                 n= 71884 | f30 bal  -2.72 t -6.4 | close bal  -8.08 t -4.7
+   pdlevel not                    n=163971 | f30 bal  -2.15 t -6.6 | close bal  -1.57 t -1.8
+   rvol_d1
+   q1 [0,0.606)                   n= 47254 | f30 bal  -2.26 t -5.4 | close bal  -2.92 t -2.5
+   q2 [0.606,0.783)               n= 47161 | f30 bal  -2.61 t -7.3 | close bal  -3.65 t -4.3
+   q3 [0.783,0.973)               n= 47179 | f30 bal  -2.14 t -6.2 | close bal  -3.11 t -3.2
+   q4 [0.973,1.27)                n= 47221 | f30 bal  -2.21 t -6.0 | close bal  -3.58 t -3.9
+   q5 [1.27,21.9)                 n= 47040 | f30 bal  -2.31 t -5.9 | close bal  -4.52 t -4.5
+   contract5
+   q1 [0.577,1.62)                n= 47200 | f30 bal  -2.37 t -6.5 | close bal  -2.64 t -2.7
+   q2 [1.62,1.95)                 n= 47161 | f30 bal  -2.58 t -7.1 | close bal  -3.16 t -3.7
+   q3 [1.95,2.31)                 n= 47212 | f30 bal  -2.18 t -6.5 | close bal  -4.04 t -4.7
+   q4 [2.31,2.83)                 n= 47166 | f30 bal  -2.43 t -7.1 | close bal  -4.60 t -4.8
+   q5 [2.83,8.61)                 n= 47116 | f30 bal  -1.97 t -4.9 | close bal  -3.37 t -2.8
+   udvol10
+   q1 [-22.4,-0.668)              n= 47214 | f30 bal  -2.59 t -5.1 | close bal  -2.81 t -1.4
+   q2 [-0.668,-0.201)             n= 47046 | f30 bal  -2.17 t -5.5 | close bal  -2.26 t -1.7
+   q3 [-0.201,0.197)              n= 47145 | f30 bal  -2.29 t -6.7 | close bal  -3.56 t -3.7
+   q4 [0.197,0.669)               n= 47216 | f30 bal  -2.35 t -6.3 | close bal  -4.76 t -3.7
+   q5 [0.669,22.3)                n= 47234 | f30 bal  -2.16 t -4.4 | close bal  -4.33 t -2.4
+   ret5d
+   q1 [-0.616,-0.0377)            n= 46849 | f30 bal  -1.52 t -2.5 | close bal  -0.63 t -0.3
+   q2 [-0.0377,-0.0117)           n= 47255 | f30 bal  -2.26 t -6.3 | close bal  -2.28 t -1.9
+   q3 [-0.0117,0.00921)           n= 47302 | f30 bal  -2.18 t -6.8 | close bal  -3.33 t -3.7
+   q4 [0.00921,0.0352)            n= 47397 | f30 bal  -2.66 t -8.1 | close bal  -4.55 t -4.1
+   q5 [0.0352,0.616)              n= 47052 | f30 bal  -3.00 t -4.6 | close bal  -7.02 t -3.0
+   ret20d
+   q1 [-1.32,-0.0759)             n= 46951 | f30 bal  -2.48 t -3.8 | close bal  -3.31 t -1.3
+   q2 [-0.0759,-0.0222)           n= 47213 | f30 bal  -2.73 t -6.9 | close bal  -2.80 t -2.0
+   q3 [-0.0222,0.0246)            n= 47219 | f30 bal  -2.48 t -8.5 | close bal  -3.17 t -4.2
+   q4 [0.0246,0.0794)             n= 47430 | f30 bal  -2.16 t -5.9 | close bal  -3.84 t -2.9
+   q5 [0.0794,1.32)               n= 47042 | f30 bal  -1.76 t -2.8 | close bal  -4.43 t -1.9
+   ema20slope
+   q1 [-0.32,-0.0171)             n= 46965 | f30 bal  -2.34 t -3.7 | close bal  -2.35 t -1.0
+   q2 [-0.0171,-0.00476)          n= 47142 | f30 bal  -2.41 t -6.5 | close bal  -3.28 t -2.5
+   q3 [-0.00476,0.00542)          n= 47328 | f30 bal  -2.81 t -9.4 | close bal  -2.73 t -3.5
+   q4 [0.00542,0.0179)            n= 47355 | f30 bal  -2.23 t -6.1 | close bal  -4.69 t -3.9
+   q5 [0.0179,0.32)               n= 47065 | f30 bal  -1.82 t -3.2 | close bal  -4.46 t -2.1
+   gap
+   q1 [-0.109,-0.00625)           n= 46370 | f30 bal  -1.80 t -2.3 | close bal  +0.32 t +0.1
+   q2 [-0.00625,0)                n= 41596 | f30 bal  -2.17 t -5.5 | close bal  -1.52 t -1.1
+   q3 [0,0)                       n=     0 | f30 bal   +nan t +nan | close bal   +nan t +nan
+   q4 [0,0.00544)                 n=100500 | f30 bal  -2.46 t -9.3 | close bal  -4.14 t -5.1
+   q5 [0.00544,0.0954)            n= 47389 | f30 bal  -2.53 t -4.3 | close bal  -8.06 t -3.3
+   dist20
+   q1 [-1.37,-0.126)              n= 46784 | f30 bal  -1.80 t -2.7 | close bal  -2.69 t -1.1
+   q2 [-0.126,-0.0786)            n= 47106 | f30 bal  -2.45 t -6.5 | close bal  -2.99 t -2.2
+   q3 [-0.0786,-0.0489)           n= 47254 | f30 bal  -2.44 t -7.2 | close bal  -3.44 t -3.2
+   q4 [-0.0489,-0.0241)           n= 47285 | f30 bal  -2.57 t -7.0 | close bal  -4.36 t -3.4
+   q5 [-0.0241,0)                 n= 47426 | f30 bal  -2.28 t -4.8 | close bal  -4.38 t -2.5
+   dayret
+   q1 [-0.11,-0.00594)            n= 45978 | f30 bal  -1.75 t -3.1 | close bal  +1.21 t +0.7
+   q2 [-0.00594,0.002)            n= 47663 | f30 bal  -2.27 t -7.0 | close bal  -1.60 t -1.8
+   q3 [0.002,0.00888)             n= 47846 | f30 bal  -2.22 t -7.4 | close bal  -2.91 t -3.5
+   q4 [0.00888,0.0185)            n= 47676 | f30 bal  -2.46 t -6.5 | close bal  -4.95 t -4.1
+   q5 [0.0185,0.167)              n= 46692 | f30 bal  -2.89 t -5.4 | close bal  -9.29 t -4.5

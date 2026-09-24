@@ -6,7 +6,7 @@ import sys
 import types
 
 _futu = types.ModuleType('futu')
-_futu.AuType = _futu.KLType = _futu.SubType = type('X', (), {'K_1M': None, 'NONE': None})
+_futu.AuType = _futu.KLType = _futu.SubType = type('X', (), {'K_1M': None, 'K_DAY': None, 'NONE': None, 'QFQ': None})
 _futu.OpenQuoteContext = object
 _futu.RET_OK = 0
 _futu.PeriodType = type('P', (), {'INTRADAY': None})
@@ -317,6 +317,53 @@ def test_session_flow_keeps_only_today():
 class Frame2(dict):
     def __len__(self):
         return len(next(iter(self.values())))
+
+
+def _daily(closes, last_high=11.0, last_low=9.0, today='2026-09-24'):
+    rows = [('2026-09-%02d' % (10 + k), c, c + 0.5, c - 0.5, c, 1000.0) for k, c in enumerate(closes)]
+    rows[-1] = rows[-1][:2] + (last_high, last_low) + rows[-1][4:]
+    rows.append((today, 99.0, 99.0, 99.0, 99.0, 1.0))           # today's forming bar: must be ignored
+    return rows
+
+
+def test_daily_context_uses_only_closed_sessions():
+    ctx = w.daily_context(_daily([10, 10, 10, 10, 10, 9.5]), '2026-09-24')
+    assert abs(ctx['ret5d'] - (9.5 / 10 - 1)) < 1e-12
+    assert ctx['pdh'] == 11.0 and ctx['pdl'] == 9.0 and ctx['day'] == '2026-09-15'
+    assert w.daily_context(_daily([10, 10, 10, 10, 9.5]), '2026-09-24') is None   # five closed sessions only
+
+
+def test_daily_support_is_w6_k5():
+    down = w.daily_context(_daily([10, 10, 10, 10, 10, 9.5]), '2026-09-24')   # fell over five sessions
+    up = w.daily_context(_daily([10, 10, 10, 10, 10, 10.5]), '2026-09-24')
+    buy = {'side': 'BUY', 'close': 10.0}
+    sell = {'side': 'SELL', 'close': 10.0}
+    assert w.daily_support(buy, down) is True                    # against the week, below yesterday's high
+    assert w.daily_support(dict(buy, close=11.5), down) is False  # broke yesterday's high
+    assert w.daily_support(buy, up) is False                     # with the week
+    assert w.daily_support(sell, up) is True
+    assert w.daily_support(dict(sell, close=8.5), up) is False    # broke yesterday's low
+    assert w.daily_support(sell, None) is None
+
+
+def test_daily_tag_is_optional_and_shown():
+    bars = fake_bars()
+    ms, _d = w.marks(bars)
+    assert [m['i'] for m in w.with_daily(ms, None)] == [m['i'] for m in ms]
+    assert all(m['daily'] is None for m in w.with_daily(ms, None))
+    base = {'t': '10:47', 'side': 'BUY', 'trigger': 'BOS', 'close': 10.0, 'vol_ratio': 1.0,
+            'stop': 9.9, 'tier': 'plain'}
+    assert 'D+' in w.mark_text(dict(base, daily=True), 100)
+    assert 'D-' in w.mark_text(dict(base, daily=False), 100)
+    none = re.sub(r'\x1b\[[0-9;]*m', '', w.mark_text(dict(base, daily=None), 100))
+    assert 'D+' not in none and 'D-' not in none
+    broken = types.SimpleNamespace(get_cur_kline=lambda *a: 1 / 0)
+    assert w.hk_daily(broken, 'HK.00001') is None
+
+
+def test_tencent_daily_maps_close_high_low():
+    payload = {'data': {'sz300795': {'qfqday': [['2026-09-23', '14.040', '13.500', '14.190', '13.440', '270449.000']]}}}
+    assert w.parse_tencent_day(payload, 'sz300795') == [('2026-09-23', 14.04, 14.19, 13.44, 13.5, 270449.0)]
 
 
 def test_marks_carry_their_tick_density():

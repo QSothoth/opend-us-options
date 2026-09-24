@@ -49,6 +49,8 @@ PORT = 11111
 POLL_SEC = 30
 KLINE_BACK = 400        # > one HK session of 1m bars
 TENCENT_M1 = 'https://ifzq.gtimg.cn/appstock/app/kline/mkline?param=%s,m1,,320'
+TENCENT_DAY = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=%s,day,,,12,qfq'
+DAILY_BACK = 12         # daily bars requested; the tag needs the last 6 closed sessions
 SWING_LEFT = 3          # bars confirmed on BOTH sides of a swing
 VOL_MULT = 1.5          # trigger bar volume vs the trailing 20-bar mean
 VOL_LOOKBACK = 20
@@ -183,6 +185,72 @@ def flow_score(bars, flow, i, side, n=FLOW_BARS):
 
 def with_flow(ms, bars, flow):
     return [dict(m, flow=flow_score(bars, flow, m['i'], m['side'])) for m in ms]
+
+
+def daily_context(rows, day):
+    """Pre-open daily context from sessions strictly before `day`.
+
+    rows: [(YYYY-MM-DD, open, high, low, close, volume)], any order. Returns
+    None when fewer than six closed sessions are available.
+    """
+    prev = sorted(r for r in rows if r[0] < day)
+    if len(prev) < 6:
+        return None
+    return {'ret5d': prev[-1][4] / prev[-6][4] - 1.0, 'pdh': prev[-1][2],
+            'pdl': prev[-1][3], 'day': prev[-1][0]}
+
+
+def daily_support(m, dctx):
+    """Study W6 (K5): the mark goes against the last five sessions AND has not
+    broken the previous session's high (BUY) / low (SELL). None without data.
+
+    Validation 2026-08-17..09-23, granular marks, held to the close: supported
+    +17.6bp (t=+2.5) vs not supported -14.7bp (t=-2.8), both sides agreeing.
+    """
+    if not dctx:
+        return None
+    if m['side'] == 'BUY':
+        return dctx['ret5d'] <= 0 and m['close'] <= dctx['pdh']
+    return dctx['ret5d'] >= 0 and m['close'] >= dctx['pdl']
+
+
+def with_daily(ms, dctx):
+    return [dict(m, daily=daily_support(m, dctx)) for m in ms]
+
+
+def hk_daily(ctx, code):
+    """Daily bars from OpenD (subscription quota only, never history quota)."""
+    try:
+        ret, frame = ctx.get_cur_kline(code, DAILY_BACK, KLType.K_DAY, AuType.QFQ)
+    except Exception:
+        return None
+    if ret != RET_OK:
+        return None
+    return [(b[0][:10],) + b[1:] for b in frame_bars(frame)]
+
+
+def parse_tencent_day(payload, symbol):
+    """Tencent daily row is date, open, close, high, low, volume."""
+    node = (payload.get('data') or {}).get(symbol) or {}
+    out = []
+    for row in node.get('qfqday') or node.get('day') or []:
+        try:
+            out.append((str(row[0]), float(row[1]), float(row[3]), float(row[4]), float(row[2]), float(row[5] or 0)))
+        except (TypeError, ValueError, IndexError):
+            continue
+    return out
+
+
+def tencent_daily(code):
+    symbol = tencent_symbol(code)
+    if not symbol:
+        return None
+    try:
+        req = urllib.request.Request(TENCENT_DAY % symbol, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            return parse_tencent_day(json.loads(resp.read().decode('utf-8')), symbol) or None
+    except Exception:
+        return None
 
 
 def tencent_symbol(code):
@@ -503,7 +571,9 @@ def mark_text(m, width):
     inv = '-' if m.get('stop') is None else '%.2f' % m['stop']
     fl = m.get('flow')
     rest = clip(('~' if m.get('coarse') else ' ') + cell(m['trigger'], 13) + cell('%.2f' % m['close'], 9)
-                + cell('%.1fx' % m['vol_ratio'], 6) + cell('' if fl is None else 'f%+.2f' % fl, 7)
+                + cell('%.1fx' % m['vol_ratio'], 6)
+                + cell({True: 'D+', False: 'D-'}.get(m.get('daily'), ''), 3)
+                + cell('' if fl is None else 'f%+.2f' % fl, 7)
                 + 'inv ' + inv, width - 9)
     base = '' if strong else DIM
     return base + '  ' + cell(m['t'], 6) + paint_side(m['side'], strong) + base + rest + OFF
@@ -587,9 +657,9 @@ def frame_lines(state, at, width, rows=None):
     if width >= 100:
         head += ' src=%s:%s' % (HOST, PORT)
     legend = (GREEN + 'B' + OFF + '/' + RED + 'S' + OFF
-              + DIM + ' >=%g ticks/bar   ' % FINE_TPB + OFF
+              + DIM + ' >=%g ticks/bar  ' % FINE_TPB + OFF
               + GREEN + 'b' + OFF + '/' + RED + 's' + OFF
-              + DIM + ' plain   ~ <%g ticks/bar   f flow (unvalidated)   ^C' % GATE_TPB + OFF)
+              + DIM + ' plain  ~ <%g ticks  D+/D- daily  f flow(unvalidated) ^C' % GATE_TPB + OFF)
     chrome = [BOLD + clip(head, width) + OFF, legend, '-' * width]
     blocks = [symbol_lines(code, st, width) for code, st in state.items()]
     body = _stack(blocks)
@@ -642,9 +712,11 @@ def main():
             if ret != RET_OK:
                 emit('FAILED', {'error': 'subscribe %s' % err})
                 return 1
+            # separate call: a failed K_DAY subscription only costs the D+/D- tag
+            ctx.subscribe(hk_codes, [SubType.K_DAY], subscribe_push=False)
         emit('START', {'codes': codes, 'until': deadline.isoformat(),
                        'poll_sec': POLL_SEC, 'log': str(log_path())})
-        seen, fails, state, names, prev = {}, 0, {}, {}, None
+        seen, fails, state, names, prev, dctxs = {}, 0, {}, {}, None, {}
         while True:
             ok = False
             for code in codes:
@@ -660,6 +732,13 @@ def main():
                 ms, d = marks(bars, tick=a_tick if tencent_symbol(code) else hk_tick)
                 if ctx is not None and not tencent_symbol(code):
                     ms = with_flow(ms, bars, session_flow(ctx, code))
+                today = bars[-1][0][:10]
+                if dctxs.get(code, (None,))[0] != today:
+                    rows = tencent_daily(code) if tencent_symbol(code) else hk_daily(ctx, code)
+                    dc = daily_context(rows or [], today)
+                    if dc:
+                        dctxs[code] = (today, dc)
+                ms = with_daily(ms, dctxs.get(code, (None, None))[1])
                 state[code] = {'bars': bars, 'marks': ms, 'read': d or read(bars),
                                'name': names[code]}
                 for m in ms[seen.get(code, 0):]:
