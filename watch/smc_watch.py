@@ -10,9 +10,10 @@ Triggers:
 Every trigger that passes the bias is marked. A session averaging fewer than
 GATE_TPB ticks per bar turns many "breaks" into bid/ask flips; those marks
 leaned slightly the wrong way out of sample (study W2, studies/watch_signal/),
-so they are shown dim and tagged `~` rather than hidden. Marks at >= FINE_TPB
-ticks per bar are drawn bold. Volume expansion and the premium/discount half of the
-day's range only split `plain` from `vol` marks for de-duplication.
+so they are shown dim and tagged `~` rather than hidden. Each mark also gets a
+daily-context tag, D+ or D- (study W6), and only granular D+ marks are drawn
+bold. Volume expansion and the premium/discount half of the day's range only
+split `plain` from `vol` marks for de-duplication.
 
 Read-only OpenD quotes, any number of codes. Every poll re-reads the day's
 closed 1m bars and derives the whole mark list from them, so nothing accumulates
@@ -60,7 +61,7 @@ PREMIUM = 0.5           # longs below this much of the day's range, shorts above
 WARMUP_BARS = 25
 DEDUP_BARS = 15         # per direction
 GATE_TPB = 2.0          # below this many ticks per bar a "break" is a bid/ask flip
-FINE_TPB = 5.0          # marks this granular are drawn bold
+FINE_TPB = 5.0          # `fine` flag in the log; no longer decides emphasis (W9)
 HK_TICK_BANDS = ((0.25, 0.001), (0.5, 0.005), (10, 0.01), (20, 0.02), (100, 0.05),
                  (200, 0.1), (500, 0.2), (1000, 0.5), (2000, 1.0), (5000, 2.0))
 STALE_POLLS = 4
@@ -156,8 +157,9 @@ def daily_support(m, dctx):
     """Study W6 (K5): the mark goes against the last five sessions AND has not
     broken the previous session's high (BUY) / low (SELL). None without data.
 
-    Validation 2026-08-17..09-23, granular marks, held to the close: supported
-    +17.6bp (t=+2.5) vs not supported -14.7bp (t=-2.8), both sides agreeing.
+    Granular marks held to the close, D+ minus D-: +11.5bp (t=2.0) over the
+    two segments not used for selection (2025-06..11 and 2026-08-17..09-23),
+    with BUY and SELL agreeing in every segment. Below round-trip cost.
     """
     if not dctx:
         return None
@@ -445,8 +447,8 @@ def marks(bars, rule='repeat15', tick=hk_tick):
     a session averaging fewer than GATE_TPB ticks per bar is `coarse`. There
     a break is often the close flipping from bid to ask; those marks averaged
     -1.88bp out of sample (t = -6.6), about 0.2 tick -- real but small, so
-    they are downgraded on the board, not dropped. `fine` marks (>= FINE_TPB
-    ticks per bar) are the drawn-bold ones.
+    they are downgraded on the board, not dropped. `fine` (>= FINE_TPB ticks
+    per bar) is logged only: on its own it was never significant (W9).
     """
     if rule not in ('repeat15', 'repeat30', 'episode', 'extend2'):
         raise ValueError('unknown mark rule %r' % rule)

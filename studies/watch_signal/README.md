@@ -11,7 +11,7 @@
 
 港股 1 分钟 K 线上，**「突破 / 缺口」这类顺势标注的对错，几乎完全取决于一根 K 线跨过几个价位（`tpb`）**：
 不到 2 跳时它们系统性反向（样本外 t=−6.6），因为那里的「突破」多半是成交从买一翻到卖一；
-2 跳以上就与抛硬币无显著差异，5 跳以上可能略正（样本外 t=+2.0）。盯盘已据此加了价位闸（W2）。
+2 跳以上就与抛硬币无显著差异，5 跳以上可能略正（样本外 t=+2.0）。盯盘已据此加了价位闸（W2；同日改为只打 `~` 标记，W9 后「5 跳以上加粗」也取消）。
 
 在价位细的标的上，本轮试过的任何价量特征（多尺度动量 / 反转、相对恒指、VWAP 偏离、RSI、量比、RVOL、日内动量、时段）
 **都不能把 30 分钟方向排序到显著优于 50%**。反转信号的表面优势（W1）是价位离散化的产物，以价位计只有 0.29 跳。
@@ -21,7 +21,14 @@
 | 文件 | 内容 |
 |---|---|
 | [notes/W1_PREREG.md](notes/W1_PREREG.md) / [reports/W1_RESULTS_CN.md](reports/W1_RESULTS_CN.md) | 相对恒指超涨超跌取反：过了门槛，事后诊断判无效，不采用 |
-| [notes/W2_PREREG.md](notes/W2_PREREG.md) / [reports/W2_RESULTS_CN.md](reports/W2_RESULTS_CN.md) | 价位闸：样本外通过，已进盯盘 |
+| [notes/W2_PREREG.md](notes/W2_PREREG.md) / [reports/W2_RESULTS_CN.md](reports/W2_RESULTS_CN.md) | 价位分层：样本外通过，盯盘里是 `~` 标记 |
+| [reports/W3_RESULTS_CN.md](reports/W3_RESULTS_CN.md) | 价位细的标的上再提纯：无效 |
+| [notes/W4_PREREG.md](notes/W4_PREREG.md) / [reports/FLOW_2026-09-24_CN.md](reports/FLOW_2026-09-24_CN.md) | 分钟资金流：单日测试无改善，搁置 |
+| [notes/W5_PREREG.md](notes/W5_PREREG.md) / [reports/W5_RESULTS_CN.md](reports/W5_RESULTS_CN.md) | `~` 改看最近 N 根：未通过 |
+| [notes/W6_PREREG.md](notes/W6_PREREG.md) / [reports/W6_RESULTS_CN.md](reports/W6_RESULTS_CN.md) | 日线背景 `D+`/`D-`：通过，已进盯盘 |
+| [notes/W7_PREREG.md](notes/W7_PREREG.md) / [reports/W7_RESULTS_CN.md](reports/W7_RESULTS_CN.md) | 价位反应信号（30 分钟）：失败 |
+| [notes/W8_PREREG.md](notes/W8_PREREG.md) / [reports/W8_RESULTS_CN.md](reports/W8_RESULTS_CN.md) | 不追 VWAP / 压缩 / 非钉住日：失败 |
+| [notes/W9_PREREG.md](notes/W9_PREREG.md)、[W10](notes/W10_PREREG.md)、[W11](notes/W11_PREREG.md) / [reports/W9_W11_RESULTS_CN.md](reports/W9_W11_RESULTS_CN.md) | 全新 2025H2 留出段：价位反应到收盘失败；`D+` 复核成立（约 +11bp）；日线偏向失败 |
 | [reports/DATA_SHA256.txt](reports/DATA_SHA256.txt) | 数据文件哈希（数据本身在 `data/`，不进 git） |
 | `code/` | 研究脚本（numpy，只用于研究；盯盘运行时仍只用标准库） |
 
