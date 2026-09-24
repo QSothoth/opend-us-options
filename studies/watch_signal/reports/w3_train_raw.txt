@@ -1,0 +1,88 @@
+train
+  all                          bal= -0.28bp | BUY n=40732  -3.35 t-2.1 | SELL n=49437  +2.79 t+1.9
+  all trade                    bal= -1.44bp | BUY n=42606  -3.43 t-3.0 | SELL n=51757  +0.55 t+0.5
+  all f60                      bal= +0.16bp | BUY n=38406  -4.52 t-1.6 | SELL n=46993  +4.85 t+1.8
+  all fclose                   bal= -1.41bp | BUY n=42694  -1.04 t-0.2 | SELL n=51826  -1.78 t-0.3
+  bos only                     bal= +0.01bp | BUY n=17240  -2.91 t-1.7 | SELL n=21356  +2.94 t+2.0
+  fvg only                     bal= +0.18bp | BUY n= 9526  -3.46 t-1.8 | SELL n=12173  +3.82 t+2.2
+  bos+fvg                      bal= -1.35bp | BUY n=10185  -3.75 t-2.0 | SELL n=11329  +1.06 t+0.6
+  sweep                        bal= -0.15bp | BUY n= 3831  -3.95 t-1.8 | SELL n= 4632  +3.66 t+1.8
+  vol tier                     bal= -0.56bp | BUY n= 3458  -2.09 t-0.9 | SELL n= 3112  +0.96 t+0.5
+TPB
+  tpb q1 [2,2.3)               bal= -0.35bp | BUY n= 8183  -2.63 t-1.9 | SELL n= 9515  +1.93 t+1.6
+  tpb q2 [2.3,2.73)            bal= -1.64bp | BUY n= 8041  -4.34 t-2.9 | SELL n= 9878  +1.05 t+0.8
+  tpb q3 [2.73,3.4)            bal= -1.20bp | BUY n= 8155  -3.28 t-2.1 | SELL n= 9915  +0.88 t+0.6
+  tpb q4 [3.4,4.81)            bal= -0.91bp | BUY n= 8216  -3.81 t-2.0 | SELL n= 9993  +1.99 t+1.1
+  tpb q5 [4.81,53.8)           bal= +2.61bp | BUY n= 8137  -2.70 t-0.7 | SELL n=10136  +7.92 t+2.7
+RSIS
+  rsis q1 [0.000564,6.11)      bal= +0.55bp | BUY n= 8405  -3.43 t-1.8 | SELL n= 9698  +4.54 t+2.5
+  rsis q2 [6.11,9.26)          bal= -0.49bp | BUY n= 7921  -4.39 t-2.7 | SELL n=10023  +3.41 t+2.0
+  rsis q3 [9.26,12.5)          bal= +0.16bp | BUY n= 7890  -2.56 t-1.4 | SELL n=10064  +2.87 t+1.6
+  rsis q4 [12.5,17.1)          bal= -1.01bp | BUY n= 8146  -4.11 t-2.0 | SELL n= 9855  +2.09 t+1.4
+  rsis q5 [17.1,46.5)          bal= -0.63bp | BUY n= 8370  -2.27 t-1.0 | SELL n= 9797  +1.02 t+0.6
+EXT
+  ext q1 [0.143,0.5)           bal= -0.56bp | BUY n= 9207  -2.04 t-1.0 | SELL n= 8681  +0.92 t+0.5
+  ext q2 [0.5,0.692)           bal= -0.23bp | BUY n= 8609  -4.50 t-2.2 | SELL n= 9339  +4.05 t+2.3
+  ext q3 [0.692,0.836)         bal= -0.60bp | BUY n= 8483  -5.60 t-3.2 | SELL n= 9511  +4.40 t+2.4
+  ext q4 [0.836,0.938)         bal= +1.77bp | BUY n= 7580  -1.00 t-0.5 | SELL n=10471  +4.54 t+2.5
+  ext q5 [0.938,1)             bal= -1.63bp | BUY n= 6853  -3.47 t-1.5 | SELL n=11435  +0.22 t+0.1
+VR
+  vr q1 [0,0.433)              bal= -0.74bp | BUY n= 7844  -4.79 t-3.1 | SELL n=10786  +3.32 t+2.1
+  vr q2 [0.433,0.766)          bal= -0.10bp | BUY n= 7957  -3.26 t-1.7 | SELL n=10282  +3.07 t+1.8
+  vr q3 [0.766,1.21)           bal= +0.24bp | BUY n= 8024  -2.01 t-0.9 | SELL n= 9824  +2.49 t+1.4
+  vr q4 [1.21,2)               bal= -1.02bp | BUY n= 8145  -4.51 t-2.3 | SELL n= 9514  +2.46 t+1.4
+  vr q5 [2,17.6)               bal= +0.11bp | BUY n= 8762  -2.28 t-1.2 | SELL n= 9031  +2.49 t+1.6
+DV
+  dv q1 [0.000123,1.23)        bal= -0.66bp | BUY n= 9118  -3.82 t-1.9 | SELL n= 9059  +2.51 t+1.3
+  dv q2 [1.23,2.83)            bal= -0.13bp | BUY n= 9021  -5.05 t-2.2 | SELL n= 9348  +4.79 t+2.3
+  dv q3 [2.83,4.97)            bal= +0.36bp | BUY n= 8488  -3.91 t-2.0 | SELL n= 9827  +4.64 t+2.5
+  dv q4 [4.97,8.54)            bal= -0.23bp | BUY n= 7837  -2.76 t-1.4 | SELL n=10200  +2.29 t+1.2
+  dv q5 [8.54,220)             bal= -0.04bp | BUY n= 6268  -0.20 t-0.1 | SELL n=11003  +0.12 t+0.1
+EMA
+  ema q1 [1.32e-05,0.149)      bal= +0.27bp | BUY n= 7984  -2.22 t-1.2 | SELL n= 9714  +2.77 t+1.8
+  ema q2 [0.149,0.356)         bal= -1.34bp | BUY n= 8186  -6.03 t-3.4 | SELL n= 9621  +3.35 t+1.9
+  ema q3 [0.356,0.656)         bal= -0.75bp | BUY n= 8173  -4.31 t-2.3 | SELL n= 9812  +2.82 t+1.8
+  ema q4 [0.656,1.09)          bal= -0.11bp | BUY n= 8247  -2.29 t-1.0 | SELL n= 9938  +2.07 t+1.3
+  ema q5 [1.09,14.6)           bal= +0.54bp | BUY n= 8142  -1.85 t-0.9 | SELL n=10352  +2.93 t+1.4
+R15
+  r15 q1 [-28,0.55)            bal= +0.01bp | BUY n= 8001  -4.15 t-2.4 | SELL n=10009  +4.17 t+2.2
+  r15 q2 [0.55,1.64)           bal= -0.14bp | BUY n= 7720  -3.12 t-1.6 | SELL n= 9997  +2.83 t+1.7
+  r15 q3 [1.64,2.67)           bal= -1.09bp | BUY n= 7883  -3.66 t-2.0 | SELL n= 9992  +1.49 t+0.9
+  r15 q4 [2.67,4.02)           bal= -0.94bp | BUY n= 8292  -4.71 t-2.3 | SELL n= 9831  +2.83 t+1.8
+  r15 q5 [4.02,77.5)           bal= +0.67bp | BUY n= 8836  -1.27 t-0.6 | SELL n= 9608  +2.61 t+1.4
+RDAY
+  rday q1 [-264,-4.24)         bal= -0.94bp | BUY n= 8732  -1.88 t-0.9 | SELL n= 8958  -0.01 t-0.0
+  rday q2 [-4.24,2.79)         bal= +0.09bp | BUY n= 8778  -4.64 t-2.0 | SELL n= 9678  +4.82 t+2.2
+  rday q3 [2.79,8.69)          bal= +1.17bp | BUY n= 8416  -3.20 t-1.4 | SELL n=10078  +5.54 t+2.9
+  rday q4 [8.69,17.7)          bal= -0.85bp | BUY n= 7655  -3.74 t-1.8 | SELL n=10597  +2.04 t+1.0
+  rday q5 [17.7,507)           bal= -0.98bp | BUY n= 7151  -3.31 t-1.5 | SELL n=10126  +1.34 t+0.7
+MDAY
+  mday q1 [-89.6,-1.85)        bal= -2.05bp | BUY n= 8766  -4.11 t-2.0 | SELL n= 8804  +0.02 t+0.0
+  mday q2 [-1.85,0.122)        bal= +1.16bp | BUY n= 8597  -3.40 t-0.9 | SELL n= 9689  +5.71 t+1.9
+  mday q3 [0.122,1.81)         bal= +0.18bp | BUY n= 8841  -2.78 t-0.9 | SELL n= 9618  +3.14 t+1.0
+  mday q4 [1.81,4.54)          bal= +1.29bp | BUY n= 7765  -2.45 t-0.9 | SELL n=10514  +5.02 t+2.0
+  mday q5 [4.54,72.7)          bal= -2.08bp | BUY n= 6763  -4.07 t-2.2 | SELL n=10812  -0.08 t-0.0
+M15
+  m15 q1 [-59.6,-0.383)        bal= -0.97bp | BUY n= 8336  -5.16 t-2.5 | SELL n= 9681  +3.21 t+1.6
+  m15 q2 [-0.383,0.105)        bal= -0.38bp | BUY n= 8423  -3.14 t-1.2 | SELL n= 9332  +2.39 t+1.2
+  m15 q3 [0.105,0.56)          bal= -0.23bp | BUY n= 8007  -2.41 t-1.0 | SELL n= 9857  +1.94 t+1.0
+  m15 q4 [0.56,1.23)           bal= +0.34bp | BUY n= 7809  -3.11 t-1.5 | SELL n=10276  +3.80 t+1.9
+  m15 q5 [1.23,35.6)           bal= -0.16bp | BUY n= 8157  -2.85 t-1.3 | SELL n=10291  +2.53 t+1.1
+ATRBP
+  atrbp q1 [0.425,11)          bal= -1.39bp | BUY n= 7431  -3.30 t-3.0 | SELL n=10085  +0.53 t+0.5
+  atrbp q2 [11,15)             bal= -1.20bp | BUY n= 7532  -3.67 t-3.0 | SELL n= 9890  +1.28 t+1.1
+  atrbp q3 [15,20.1)           bal= +0.07bp | BUY n= 8040  -2.19 t-1.4 | SELL n=10066  +2.32 t+1.5
+  atrbp q4 [20.1,28.7)         bal= -0.64bp | BUY n= 8433  -3.85 t-1.8 | SELL n=10013  +2.57 t+1.4
+  atrbp q5 [28.7,375)          bal= +1.93bp | BUY n= 9296  -3.67 t-1.0 | SELL n= 9383  +7.53 t+2.2
+STOPDIST
+  stopdist q1 [0,1.96)         bal= +0.08bp | BUY n= 7675  -3.84 t-2.2 | SELL n= 9953  +4.00 t+2.4
+  stopdist q2 [1.96,2.8)       bal= -0.74bp | BUY n= 7604  -4.02 t-2.2 | SELL n= 9972  +2.53 t+1.6
+  stopdist q3 [2.8,3.57)       bal= -0.91bp | BUY n= 7923  -3.63 t-2.0 | SELL n= 9874  +1.81 t+1.1
+  stopdist q4 [3.57,4.67)      bal= +0.68bp | BUY n= 8349  -2.37 t-1.2 | SELL n= 9667  +3.73 t+2.2
+  stopdist q5 [4.67,126)       bal= -0.50bp | BUY n= 8815  -2.90 t-1.2 | SELL n= 9577  +1.91 t+1.0
+T
+  t q1 [595,616)               bal= +0.54bp | BUY n= 8711  -7.46 t-2.0 | SELL n=10197  +8.54 t+2.5
+  t q2 [616,652)               bal= -0.26bp | BUY n= 8326  -4.28 t-1.3 | SELL n=10345  +3.77 t+1.0
+  t q3 [652,709)               bal= -0.59bp | BUY n= 8473  -1.98 t-0.7 | SELL n=10598  +0.81 t+0.4
+  t q4 [709,846)               bal= +0.72bp | BUY n= 8216  -2.28 t-0.7 | SELL n=10697  +3.73 t+1.5
+  t q5 [846,959)               bal= -2.43bp | BUY n= 7006  -0.02 t-0.0 | SELL n= 7600  -4.84 t-2.5
