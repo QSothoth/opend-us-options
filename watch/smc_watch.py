@@ -7,11 +7,11 @@ Triggers:
     FVG    3-bar fair value gap wider than FVG_ATR x ATR14
     SWEEP  wick takes out a confirmed swing then closes back inside (stop hunt)
 
-Every trigger that passes the bias is marked, then shown only when the tape
-is granular enough: a session averaging fewer than GATE_TPB ticks per bar
-turns "breaks" into bid/ask flips, and those marks pointed the wrong way out
-of sample (study W2, studies/watch_signal/). Marks at >= FINE_TPB ticks per
-bar are drawn bold. Volume expansion and the premium/discount half of the
+Every trigger that passes the bias is marked. A session averaging fewer than
+GATE_TPB ticks per bar turns many "breaks" into bid/ask flips; those marks
+leaned slightly the wrong way out of sample (study W2, studies/watch_signal/),
+so they are shown dim and tagged `~` rather than hidden. Marks at >= FINE_TPB
+ticks per bar are drawn bold. Volume expansion and the premium/discount half of the
 day's range only split `plain` from `vol` marks for de-duplication.
 
 Read-only OpenD quotes, any number of codes. Every poll re-reads the day's
@@ -373,11 +373,12 @@ def marks(bars, rule='repeat15', tick=hk_tick):
     half without giving up the pooled mean. `vol` marks are NOT more
     accurate than `plain` ones on the older 40-day cut -- only rarer.
 
-    Tick gate (study W2, studies/watch_signal/): a mark whose bar sits in a
-    session averaging fewer than GATE_TPB ticks per bar is emitted for
-    de-duplication but not shown. There a break is the close flipping from
-    bid to ask, and those marks pointed the wrong way (t = -6.3 on 2026-06/08).
-    `fine` marks (>= FINE_TPB ticks per bar) are the drawn-bold ones.
+    Tick density (study W2, studies/watch_signal/): a mark whose bar sits in
+    a session averaging fewer than GATE_TPB ticks per bar is `coarse`. There
+    a break is often the close flipping from bid to ask; those marks averaged
+    -1.88bp out of sample (t = -6.6), about 0.2 tick -- real but small, so
+    they are downgraded on the board, not dropped. `fine` marks (>= FINE_TPB
+    ticks per bar) are the drawn-bold ones.
     """
     if rule not in ('repeat15', 'repeat30', 'episode', 'extend2'):
         raise ValueError('unknown mark rule %r' % rule)
@@ -403,10 +404,9 @@ def marks(bars, rule='repeat15', tick=hk_tick):
             continue
         last[(side, tier)] = i
         anchor = (side, d['close'])
-        if tpb[i] < GATE_TPB:
-            continue
         out.append({'i': i, 't': bars[i][0][11:16], 'side': side, 'tier': tier,
                     'tpb': round(tpb[i], 2), 'fine': tpb[i] >= FINE_TPB,
+                    'coarse': tpb[i] < GATE_TPB,
                     'trigger': trig, 'close': d['close'], 'rsi': round(d['rsi'], 1),
                     'vwap': round(d['vwap'], 3), 'vol_ratio': round(d['vol_ratio'], 2),
                     'pos': round(d['pos'], 2),
@@ -450,10 +450,10 @@ def cell(text, width, color=''):
 
 
 def mark_text(m, width):
-    """One signal. Emphasis marks a granular tape (study W2), not volume."""
+    """One signal. Bold = granular tape, `~` = tick-bound tape (study W2)."""
     strong = bool(m.get('fine'))
     inv = '-' if m.get('stop') is None else '%.2f' % m['stop']
-    rest = clip(' ' + cell(m['trigger'], 13) + cell('%.2f' % m['close'], 9)
+    rest = clip(('~' if m.get('coarse') else ' ') + cell(m['trigger'], 13) + cell('%.2f' % m['close'], 9)
                 + cell('%.1fx' % m['vol_ratio'], 6) + 'inv ' + inv, width - 9)
     base = '' if strong else DIM
     return base + '  ' + cell(m['t'], 6) + paint_side(m['side'], strong) + base + rest + OFF
@@ -480,9 +480,7 @@ def symbol_lines(code, st, width):
         + cell('rsi%s' % ('-' if rsi is None else '%.1f' % rsi), 8)
         + cell('%.1fx' % vr, 6, BOLD if vr >= VOL_MULT else DIM)
         + DIM + ' tpb%s n%d' % ('-' if tpb is None else '%.1f' % tpb, len(bars)) + OFF]
-    if tpb is not None and tpb < GATE_TPB:
-        lines.append(DIM + '  (muted: %.1f ticks/bar < %g)' % (tpb, GATE_TPB) + OFF)
-    elif not ms:
+    if not ms:
         lines.append(DIM + '  (none)' + OFF)
     for m in ms:
         lines.append(mark_text(m, width))
@@ -541,7 +539,7 @@ def frame_lines(state, at, width, rows=None):
     legend = (GREEN + 'B' + OFF + '/' + RED + 'S' + OFF
               + DIM + ' >=%g ticks/bar   ' % FINE_TPB + OFF
               + GREEN + 'b' + OFF + '/' + RED + 's' + OFF
-              + DIM + ' plain   ^C' + OFF)
+              + DIM + ' plain   ~ <%g ticks/bar, leans wrong   ^C' % GATE_TPB + OFF)
     chrome = [BOLD + clip(head, width) + OFF, legend, '-' * width]
     blocks = [symbol_lines(code, st, width) for code, st in state.items()]
     body = _stack(blocks)

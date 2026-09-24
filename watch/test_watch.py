@@ -265,21 +265,24 @@ def test_ticks_per_bar_skips_the_auction_print_and_is_causal():
     assert w.ticks_per_bar(bars[:2]) == tpb[:2]
 
 
-def test_tick_bound_tape_is_muted():
+def test_tick_bound_tape_is_shown_but_tagged():
     """Same shape as the fixture, but every bar spans under one tick: the
-    breakouts there are bid/ask flips, so nothing may be shown."""
+    marks stay on the board, dimmed and tagged `~`, never hidden."""
     rows = fake_bars()
     squeezed = [rows[0]] + [(t, c, c + 0.01, c - 0.01, c, v) for t, o, h, l, c, v in rows[1:]]
     ms, d = w.marks(squeezed)
-    assert ms == [] and d['tpb'] < w.GATE_TPB, (ms, d.get('tpb'))
+    assert ms and all(m['coarse'] and not m['fine'] for m in ms), ms
+    assert d['tpb'] < w.GATE_TPB
+    line = w.mark_text(ms[0], 100)
+    assert line.startswith(w.DIM) and '~' in line
     plain = re.sub(r'\x1b\[[0-9;]*m', '', w.board(
         {'HK.00001': {'bars': squeezed, 'marks': ms, 'read': d}}, w.now_hkt(), 100))
-    assert 'muted' in plain
+    assert 'muted' not in plain and ms[0]['t'] in plain
 
 
 def test_marks_carry_their_tick_density():
     ms, d = w.marks(fake_bars())
-    assert ms and all(m['tpb'] >= w.GATE_TPB for m in ms), ms
+    assert ms and all(m['coarse'] == (m['tpb'] < w.GATE_TPB) for m in ms), ms
     assert all(m['fine'] == (m['tpb'] >= w.FINE_TPB) for m in ms)
     assert d['tpb'] >= w.GATE_TPB
 
