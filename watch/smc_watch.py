@@ -27,6 +27,7 @@ import re
 import shutil
 import sys
 import time
+import urllib.request
 from datetime import datetime, timedelta, timezone
 import unicodedata
 from pathlib import Path
@@ -41,6 +42,7 @@ HOST = '127.0.0.1'
 PORT = 11111
 POLL_SEC = 30
 KLINE_BACK = 400        # > one HK session of 1m bars
+TENCENT_M1 = 'https://ifzq.gtimg.cn/appstock/app/kline/mkline?param=%s,m1,,320'
 SWING_LEFT = 3          # bars confirmed on BOTH sides of a swing
 VOL_MULT = 1.5          # trigger bar volume vs the trailing 20-bar mean
 VOL_LOOKBACK = 20
@@ -51,12 +53,11 @@ WARMUP_BARS = 25
 DEDUP_BARS = 15         # per direction
 STALE_POLLS = 4
 LAST_BAR = ' 16:00'     # the 16:00 bar is the closing auction, not continuous trade
-RECENT_MARKS = 8
 HKT = timezone(timedelta(hours=8))
 LOG_DIR = Path(__file__).resolve().parent / 'logs'
 
-DIM, GREEN, RED, BOLD, OFF = '\033[2m', '\033[32m', '\033[31m', '\033[1m', '\033[0m'
-BLOCKS = '▁▂▃▄▅▆▇█'
+DIM, BOLD, OFF = '\033[2m', '\033[1m', '\033[0m'
+GREEN, RED = '\033[32m', '\033[31m'
 
 
 def now_hkt():
@@ -101,6 +102,16 @@ def frame_bars(frame):
     return out
 
 
+def closed_session(bars):
+    """Today's finished 1-minute bars. The bar still forming is dropped."""
+    now = now_hkt()
+    day = now.strftime('%Y-%m-%d')
+    out = [b for b in bars if day <= b[0] < day + LAST_BAR]
+    if out and out[-1][0].startswith(now.strftime('%Y-%m-%d %H:%M')):
+        out.pop()
+    return out
+
+
 def session_bars(ctx, code):
     """(today's CLOSED 1m bars, display name), or (None, '') on failure.
 
@@ -111,12 +122,80 @@ def session_bars(ctx, code):
     ret, frame = ctx.get_cur_kline(code, KLINE_BACK, KLType.K_1M, AuType.NONE)
     if ret != RET_OK:
         return None, ''
-    now = now_hkt()
-    day = now.strftime('%Y-%m-%d')
-    bars = [b for b in frame_bars(frame) if day <= b[0] < day + LAST_BAR]
-    if bars and bars[-1][0].startswith(now.strftime('%Y-%m-%d %H:%M')):
-        bars.pop()
-    return bars, frame_name(frame)
+    return closed_session(frame_bars(frame)), frame_name(frame)
+
+
+def tencent_symbol(code):
+    """Futu-style or bare A-share code -> sz300795. HK codes return None."""
+    raw = code.strip().upper().replace(' ', '')
+    if raw.startswith('HK.') or not raw:
+        return None
+    prefix = {'SH': 'sh', 'SZ': 'sz', 'BJ': 'bj'}
+    if '.' in raw:
+        left, right = raw.split('.', 1)
+        if left in prefix and right.isdigit() and len(right) == 6:
+            return prefix[left] + right
+        if right in prefix and left.isdigit() and len(left) == 6:
+            return prefix[right] + left
+        return None
+    low = code.strip().lower()
+    if len(low) == 8 and low[:2] in ('sh', 'sz', 'bj') and low[2:].isdigit():
+        return low
+    if len(raw) == 6 and raw.isdigit():
+        head = {'6': 'sh', '0': 'sz', '3': 'sz', '4': 'bj', '8': 'bj'}.get(raw[0])
+        return head + raw if head else None
+    return None
+
+
+def canonical_code(code):
+    symbol = tencent_symbol(code)
+    if not symbol:
+        return code.strip()
+    return '%s.%s' % (symbol[:2].upper(), symbol[2:])
+
+
+def parse_tencent_m1(payload, symbol):
+    """Tencent m1 row is time, open, close, high, low, volume."""
+    node = (payload.get('data') or {}).get(symbol) or {}
+    qt = (node.get('qt') or {}).get(symbol) or []
+    name = str(qt[1]) if len(qt) > 1 else ''
+    bars = []
+    for row in node.get('m1') or []:
+        if not row or len(row) < 6:
+            continue
+        stamp = str(row[0])
+        if len(stamp) != 12 or not stamp.isdigit():
+            continue
+        try:
+            o, c, h, l, v = (float(row[1]), float(row[2]), float(row[3]), float(row[4]), float(row[5] or 0))
+        except (TypeError, ValueError):
+            continue
+        if not all(x == x for x in (o, h, l, c, v)):
+            continue
+        bars.append(('%s-%s-%s %s:%s:00' % (stamp[0:4], stamp[4:6], stamp[6:8], stamp[8:10], stamp[10:12]),
+                     o, h, l, c, v))
+    return bars, name
+
+
+def fetch_tencent_m1(symbol):
+    req = urllib.request.Request(TENCENT_M1 % symbol, headers={'User-Agent': 'Mozilla/5.0'})
+    with urllib.request.urlopen(req, timeout=12) as resp:
+        payload = json.loads(resp.read().decode('utf-8'))
+    if payload.get('code') not in (0, None):
+        return [], ''
+    return parse_tencent_m1(payload, symbol)
+
+
+def tencent_session(code):
+    symbol = tencent_symbol(code)
+    if not symbol:
+        return None, ''
+    try:
+        bars, name = fetch_tencent_m1(symbol)
+    except Exception:
+        return None, ''
+    bars = closed_session(bars)
+    return (bars, name) if bars else (None, name)
 
 
 def ema_last(closes, period):
@@ -220,18 +299,43 @@ def structure(bars, d):
     return bull, bear
 
 
-def marks(bars):
+def _emit_ok(rule, i, side, tier, d, last, anchor):
+    """Whether this bar may become a mark. Indicators are already computed.
+
+    repeat15  current rule: same side and tier, quiet for 15 bars.
+    repeat30  the same quiet stretch, 30 bars.
+    episode   one mark per side until the opposite side prints.
+    extend2   repeat15, and drop a same-side mark once price has run more
+              than 2x ATR past the close of the last emitted mark of that side.
+    """
+    if rule == 'episode':
+        return not (anchor and anchor[0] == side)
+    if rule == 'extend2' and anchor and anchor[0] == side:
+        moved = (d['close'] - anchor[1]) if side == 'BUY' else (anchor[1] - d['close'])
+        if d['atr'] > 0 and moved > 2.0 * d['atr']:
+            return False
+    gap = 30 if rule == 'repeat30' else DEDUP_BARS
+    return i - last.get((side, tier), -10 ** 9) >= gap
+
+
+def marks(bars, rule='repeat15'):
     """Two tiers of marks, derived purely from `bars`.
 
-    plain  bias + structure trigger. ~14/day per code. Noisy on purpose: plenty
-           of false positives, but it is what shows the tape is doing something.
+    plain  bias + structure trigger.
     vol    the same trigger with volume expansion AND in the right half of the
-           day's range. ~1.2/day.
+           day's range.
 
-    Measured over 4 codes x 40 days, `vol` marks are NOT more accurate than
-    `plain` ones -- only rarer. The tier says what fired, not how reliable.
+    `rule` only changes emission. Bias stays VWAP / EMA9 / EMA21 / RSI14, and
+    triggers stay BOS / FVG / SWEEP. The live default is `repeat15`: on
+    HK.02513 / HK.09988 / HK.01810 / HK.00100 from 2026-07-28 through
+    2026-09-22 it had the best second-half 30-bar mean among repeat15,
+    repeat30, episode, and extend2, and none of the others raised that
+    half without giving up the pooled mean. `vol` marks are NOT more
+    accurate than `plain` ones on the older 40-day cut -- only rarer.
     """
-    out, last, d = [], {}, None
+    if rule not in ('repeat15', 'repeat30', 'episode', 'extend2'):
+        raise ValueError('unknown mark rule %r' % rule)
+    out, last, anchor, d = [], {}, None, None
     for end in range(1, len(bars) + 1):
         i = end - 1
         d = read(bars[:end])
@@ -248,10 +352,10 @@ def marks(bars):
         if side is None:
             continue
         tier = 'vol' if (d['vol_ratio'] >= VOL_MULT and ok_zone) else 'plain'
-        key = (side, tier)
-        if i - last.get(key, -10 ** 9) < DEDUP_BARS:
+        if not _emit_ok(rule, i, side, tier, d, last, anchor):
             continue
-        last[key] = i
+        last[(side, tier)] = i
+        anchor = (side, d['close'])
         out.append({'i': i, 't': bars[i][0][11:16], 'side': side, 'tier': tier,
                     'trigger': trig, 'close': d['close'], 'rsi': round(d['rsi'], 1),
                     'vwap': round(d['vwap'], 3), 'vol_ratio': round(d['vol_ratio'], 2),
@@ -260,54 +364,13 @@ def marks(bars):
     return out, d
 
 
-def spark(bars, width):
-    """Session close path as blocks, scaled to the day's own range."""
-    lo = min(b[3] for b in bars)
-    span = (max(b[2] for b in bars) - lo) or 1.0
-    return ''.join(
-        BLOCKS[min(7, int((bars[max(x * len(bars) // width + 1,
-                                    (x + 1) * len(bars) // width) - 1][4] - lo) / span * 8))]
-        for x in range(width))
-
-
-def vol_row(bars, width):
-    """Volume per time slot, same scale as the curve above it."""
-    slots = []
-    for x in range(width):
-        a = x * len(bars) // width
-        b = max(a + 1, (x + 1) * len(bars) // width)
-        slots.append(sum(k[5] for k in bars[a:b]) / (b - a))
-    top = max(slots) or 1.0
-    return ''.join(BLOCKS[min(7, int(s / top * 8))] for s in slots)
-
-
-def mark_row(bars, ms, width):
-    """All marks on one row, aligned to the curve above it.
-
-    One slot is about six minutes. When several marks land in a slot the
-    EARLIEST one wins -- where a move started matters more than that it kept
-    going -- and a volume-confirmed mark upgrades the slot to upper case.
-    Every mark, collided or not, is still listed in full underneath.
-    """
-    slot = {}
-    for m in ms:
-        x = m['i'] * width // len(bars)
-        if x in slot:
-            if m['tier'] == 'vol':
-                slot[x] = (slot[x][0], True)   # keep the earlier side, raise the case
-            continue
-        slot[x] = ('B' if m['side'] == 'BUY' else 'S', m['tier'] == 'vol')
-    if not slot:
-        return ''
-    out = []
-    for x in range(width):
-        if x not in slot:
-            out.append(DIM + '·' + OFF)
-            continue
-        ch, strong = slot[x]
-        col = GREEN if ch == 'B' else RED
-        out.append(col + (BOLD + ch if strong else DIM + ch.lower()) + OFF)
-    return ''.join(out)
+def paint_side(side, vol_tier):
+    """Same mark as the old lane: vol tier is bold B/S, plain is dim b/s."""
+    ch = 'B' if side == 'BUY' else 'S'
+    if not vol_tier:
+        ch = ch.lower()
+    color = GREEN if side == 'BUY' else RED
+    return color + (BOLD if vol_tier else '') + ch + OFF
 
 
 def disp_width(text):
@@ -334,75 +397,158 @@ def cell(text, width, color=''):
     return (color + text + OFF if color else text) + pad
 
 
+def mark_text(m, width):
+    """One signal. Emphasis is the existing vol tier, not a new cutoff."""
+    is_vol = m.get('tier') == 'vol'
+    inv = '-' if m.get('stop') is None else '%.2f' % m['stop']
+    rest = clip(' ' + cell(m['trigger'], 13) + cell('%.2f' % m['close'], 9)
+                + cell('%.1fx' % m['vol_ratio'], 6) + 'inv ' + inv, width - 9)
+    base = '' if is_vol else DIM
+    return base + '  ' + cell(m['t'], 6) + paint_side(m['side'], is_vol) + base + rest + OFF
+
+
+def symbol_lines(code, st, width):
+    """One symbol's quote and every signal, oldest first."""
+    name = st.get('name', '')
+    if st.get('error'):
+        return [cell(code, 11) + cell(name, 10, DIM) + DIM + st['error'] + OFF]
+    bars, ms, d = st['bars'], st['marks'], st['read']
+    last = bars[-1][4]
+    op = bars[0][1] or last
+    ret_bp = (last / op - 1.0) * 10000.0
+    vwap_bp = (last / d['vwap'] - 1.0) * 10000.0 if d.get('vwap') else 0.0
+    rsi = d.get('rsi')
+    vr = d.get('vol_ratio', 0.0)
+    lines = [
+        cell(code, 11) + cell(name, 10, DIM)
+        + cell('%.2f' % last, 9)
+        + cell('%+dbp' % int(round(ret_bp)), 8)
+        + cell('vwap%+d' % int(round(vwap_bp)), 9)
+        + cell('rsi%s' % ('-' if rsi is None else '%.1f' % rsi), 8)
+        + cell('%.1fx' % vr, 6, BOLD if vr >= VOL_MULT else DIM)
+        + DIM + ' n%d' % len(bars) + OFF]
+    if not ms:
+        lines.append(DIM + '  (none)' + OFF)
+    for m in ms:
+        lines.append(mark_text(m, width))
+    return lines
+
+
+def _plain_width(text):
+    return disp_width(re.sub(r'\x1b\[[0-9;]*m', '', text))
+
+
+def _pad(text, width):
+    gap = width - _plain_width(text)
+    return text + (' ' * gap) if gap > 0 else text
+
+
+def _stack(blocks):
+    lines = []
+    for i, block in enumerate(blocks):
+        if i:
+            lines.append('')
+        lines.extend(block)
+    return lines
+
+
+def _columns(blocks, width):
+    """Two columns of whole symbol blocks. A block is never split."""
+    col_w = (width - 1) // 2
+    left, right, hl, hr = [], [], 0, 0
+    for block in blocks:
+        if hl <= hr:
+            if left:
+                left.append('')
+                hl += 1
+            left.extend(block)
+            hl += len(block)
+        else:
+            if right:
+                right.append('')
+                hr += 1
+            right.extend(block)
+            hr += len(block)
+    lines = []
+    for i in range(max(len(left), len(right))):
+        a = left[i] if i < len(left) else ''
+        b = right[i] if i < len(right) else ''
+        lines.append(_pad(a, col_w) + ' ' + b)
+    return lines
+
+
+def frame_lines(state, at, width, rows=None):
+    """Grouped log. Two columns only when that keeps every signal on screen."""
+    head = 'kline.1m %s+08 poll=%ds n=%d until=16:10' % (
+        at.strftime('%Y-%m-%d %H:%M:%S'), POLL_SEC, len(state))
+    if width >= 100:
+        head += ' src=%s:%s' % (HOST, PORT)
+    legend = (GREEN + 'B' + OFF + '/' + RED + 'S' + OFF
+              + DIM + ' vol tier   ' + OFF
+              + GREEN + 'b' + OFF + '/' + RED + 's' + OFF
+              + DIM + ' plain   ^C' + OFF)
+    chrome = [BOLD + clip(head, width) + OFF, legend, '-' * width]
+    blocks = [symbol_lines(code, st, width) for code, st in state.items()]
+    body = _stack(blocks)
+    room = None if rows is None else rows - 1 - len(chrome)
+    if room is not None and len(body) > room and width >= 136:
+        col_w = (width - 1) // 2
+        narrow = [symbol_lines(code, st, col_w) for code, st in state.items()]
+        side = _columns(narrow, width)
+        if len(side) <= room:
+            body = side
+    return chrome + body
+
+
 def board(state, at, width):
-    spark_w = max(20, width - 69)
-    lines = ['%s盯盘%s %s HKT   %d 个标的   每 %ds 刷新   Ctrl-C 退出' % (
-        BOLD, OFF, at.strftime('%Y-%m-%d %H:%M:%S'), len(state), POLL_SEC), '-' * width]
-    lines.append(''.join(cell(h, wd) for h, wd in (
-        ('标的', 11), ('名称', 11), ('最新', 9), ('开盘起', 9), ('距VWAP', 8), ('RSI', 5),
-        ('量比', 6), ('区间位', 8)))
-        + '走势 / 信号 / 成交量   (大写=带量)')
-    feed = []
-    for code, st in state.items():
-        if st.get('error'):
-            lines.append(cell(code, 11) + cell(st.get('name', ''), 11) + RED + st['error'] + OFF)
-            continue
-        bars, ms, d = st['bars'], st['marks'], st['read']
-        last = bars[-1][4]
-        chg = (last / bars[0][1] - 1) * 100
-        dv = (last / d['vwap'] - 1) * 100 if d.get('vwap') else 0.0
-        vr = d.get('vol_ratio', 0.0)
-        lines.append(
-            cell(code, 11) + cell(st.get('name', ''), 11, BOLD)
-            + cell('%.2f' % last, 9)
-            + cell('%+.2f%%' % chg, 9, GREEN if chg > 0 else RED)
-            + cell('%+.2f%%' % dv, 8, GREEN if dv > 0 else RED)
-            + cell('-' if d.get('rsi') is None else '%.0f' % d['rsi'], 5)
-            + cell('%.1fx' % vr, 6, BOLD if vr >= VOL_MULT else DIM)
-            + cell('%.0f%%' % (d.get('pos', 0.5) * 100), 8)
-            + spark(bars, spark_w))
-        row = mark_row(bars, ms, spark_w)
-        lines.append(cell('  信号', 69, BOLD)
-                     + (row if row else DIM + '(今日无标注)' + OFF))
-        lines.append(cell('  成交量', 69, DIM) + DIM + vol_row(bars, spark_w) + OFF)
-        feed += [dict(m, code=code, name=st.get('name', '')) for m in ms]
-    vol_ms = [m for m in feed if m['tier'] == 'vol']
-    lines += ['-' * width,
-              '%s最近标注%s  %s大写=带量+位置好（更少，非更准）  小写=普通%s' % (BOLD, OFF, DIM, OFF)]
-    feed.sort(key=lambda m: m['t'])
-    if not feed:
-        lines.append(DIM + '  (暂无)' + OFF)
-    for m in feed[-RECENT_MARKS:]:
-        is_vol = m['tier'] == 'vol'
-        col = GREEN if m['side'] == 'BUY' else RED
-        stop = '' if m['stop'] is None else '  失效 %.2f' % m['stop']
-        body = ('  ' + cell(m['t'], 7) + cell(m['code'], 11)
-                + cell(m.get('name', ''), 11, BOLD if is_vol else '')
-                + cell(m['side'] if is_vol else m['side'].lower(), 6, col)
-                + cell(m['trigger'], 12, BOLD if is_vol else '')
-                + '@%.2f  量 %.1fx  rsi %.0f  区间位 %.0f%%%s'
-                % (m['close'], m['vol_ratio'], m['rsi'], m['pos'] * 100, stop))
-        lines.append(body if is_vol else DIM + re.sub(r'\x1b\[[0-9;]*m', '', body) + OFF)
-    lines.append('%s今日 带量 %d 个 / 普通 %d 个%s' % (DIM, len(vol_ms), len(feed) - len(vol_ms), OFF))
-    return '\n'.join(lines)
+    """One log per symbol. No price chart."""
+    return '\n'.join(frame_lines(state, at, width))
+
+
+def paint(lines, prev, rows):
+    """Redraw the grouped log. Unchanged lines stay put.
+
+    A new signal changes the length, so the whole frame is rewritten with
+    that signal still inside its own symbol block. Absolute row updates are
+    only used when the frame fits; a taller frame is written in full so
+    nothing is dropped.
+    """
+    title = '\033]0;kline.1m\007'
+    if prev is None or len(lines) != len(prev) or len(lines) > rows - 1:
+        sys.stdout.write('\033[H\033[J' + title + '\n'.join(lines) + '\n')
+    else:
+        parts = [title]
+        for i, (old, new) in enumerate(zip(prev, lines)):
+            if old != new:
+                parts.append('\033[%d;1H\033[2K%s' % (i + 1, new))
+        if len(parts) > 1:
+            sys.stdout.write(''.join(parts))
+    sys.stdout.flush()
+    return lines
 
 
 def main():
-    codes = sys.argv[1:] or DEFAULT_CODES
+    codes = [canonical_code(c) for c in (sys.argv[1:] or DEFAULT_CODES)]
     deadline = close_hkt()
-    ctx = OpenQuoteContext(host=HOST, port=PORT)
+    hk_codes = [c for c in codes if not tencent_symbol(c)]
+    ctx = None
     try:
-        ret, err = ctx.subscribe(codes, [SubType.K_1M], subscribe_push=False)
-        if ret != RET_OK:
-            emit('FAILED', {'error': 'subscribe %s' % err})
-            return 1
+        if hk_codes:
+            ctx = OpenQuoteContext(host=HOST, port=PORT)
+            ret, err = ctx.subscribe(hk_codes, [SubType.K_1M], subscribe_push=False)
+            if ret != RET_OK:
+                emit('FAILED', {'error': 'subscribe %s' % err})
+                return 1
         emit('START', {'codes': codes, 'until': deadline.isoformat(),
                        'poll_sec': POLL_SEC, 'log': str(log_path())})
-        seen, fails, state, names = {}, 0, {}, {}
+        seen, fails, state, names, prev = {}, 0, {}, {}, None
         while True:
             ok = False
             for code in codes:
-                bars, name = session_bars(ctx, code)
+                if tencent_symbol(code):
+                    bars, name = tencent_session(code)
+                else:
+                    bars, name = session_bars(ctx, code)
                 if not bars:
                     state[code] = {'error': 'no data', 'name': names.get(code, '')}
                     continue
@@ -421,9 +567,9 @@ def main():
                 if fails == STALE_POLLS:
                     emit('STALE', {'failed_polls': fails, 'at': now_hkt().isoformat()})
             if sys.stdout.isatty():
-                width = min(140, max(80, shutil.get_terminal_size((100, 24)).columns))
-                sys.stdout.write('\033[H\033[J' + board(state, now_hkt(), width) + '\n')
-                sys.stdout.flush()
+                size = shutil.get_terminal_size((100, 40))
+                width = min(140, max(80, size.columns))
+                prev = paint(frame_lines(state, now_hkt(), width, size.lines), prev, size.lines)
             if now_hkt() >= deadline:
                 break
             time.sleep(POLL_SEC)
@@ -436,10 +582,11 @@ def main():
         emit('FAILED', {'error': str(exc)})
         return 1
     finally:
-        try:
-            ctx.close()
-        except Exception:
-            pass
+        if ctx is not None:
+            try:
+                ctx.close()
+            except Exception:
+                pass
 
 
 if __name__ == '__main__':

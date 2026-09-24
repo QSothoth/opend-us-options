@@ -138,6 +138,34 @@ def test_session_bars_drops_the_minute_still_forming():
     assert [b[0] for b in w.session_bars(ctx, 'X')[0]] == [day + ' 09:30:00']
 
 
+def test_tencent_m1_maps_ohlc_and_a_share_codes():
+    assert w.tencent_symbol('SZ.300795') == 'sz300795'
+    assert w.tencent_symbol('300795.SZ') == 'sz300795'
+    assert w.tencent_symbol('300795') == 'sz300795'
+    assert w.tencent_symbol('SH.600519') == 'sh600519'
+    assert w.tencent_symbol('HK.02513') is None
+    assert w.canonical_code('sz300795') == 'SZ.300795'
+    payload = {'code': 0, 'data': {'sz300795': {
+        'qt': {'sz300795': ['51', '米奥会展', '300795']},
+        'm1': [['202609221110', '14.09', '14.20', '14.25', '14.08', '896.00', {}, '5.14']],
+    }}}
+    bars, name = w.parse_tencent_m1(payload, 'sz300795')
+    assert name == '米奥会展'
+    assert bars == [('2026-09-22 11:10:00', 14.09, 14.25, 14.08, 14.20, 896.0)]
+
+
+def test_closed_session_drops_yesterday_and_the_live_minute():
+    now = w.now_hkt()
+    day = now.strftime('%Y-%m-%d')
+    live = now.strftime('%Y-%m-%d %H:%M:00')
+    bars = [
+        ('2020-01-01 10:00:00', 1, 1, 1, 1, 1),
+        (day + ' 09:30:00', 1, 1, 1, 1, 1),
+        (live, 2, 2, 2, 2, 2),
+    ]
+    assert [b[0] for b in w.closed_session(bars)] == [day + ' 09:30:00']
+
+
 def test_watch_never_touches_the_trade_api():
     """watch/ is quote-only; custody's own scan does not reach this directory."""
     import ast as _ast
@@ -174,6 +202,24 @@ def test_flat_volume_leaves_only_plain_marks():
     assert {m['tier'] for m in ms} == {'plain'}, ms
 
 
+def test_same_side_same_tier_waits_fifteen_bars():
+    """A steady decline keeps reprinting the same sell. The shipped rule
+    drops the reprints inside 15 bars and allows the next one after the gap."""
+    def stamp(i):
+        return '2026-09-21 %02d:%02d:00' % (9 + (30 + i) // 60, (30 + i) % 60)
+
+    px = 100.0
+    bars = []
+    for i in range(90):
+        px -= 0.15
+        bars.append((stamp(i), px + 0.05, px + 0.1, px - 0.1, px, 1000.0))
+    ms, _d = w.marks(bars)
+    idxs = [m['i'] for m in ms if m['side'] == 'SELL' and m['tier'] == 'plain']
+    assert idxs[0] == 25 and 40 in idxs, idxs
+    assert all(b - a >= 15 for a, b in zip(idxs, idxs[1:]))
+    assert not any(i in idxs for i in range(26, 40))
+
+
 def test_no_marks_during_the_opening_warmup():
     ms, _d = w.marks(fake_bars())
     assert min(m['i'] for m in ms) >= w.WARMUP_BARS
@@ -188,28 +234,17 @@ def test_restart_midday_reproduces_the_same_list():
         assert part == [m for m in full if m['i'] < cut], 'cut=%d diverges' % cut
 
 
-def test_rows_line_up_under_the_curve():
-    bars = fake_bars()
-    curve = w.spark(bars, 24)
-    vols = w.vol_row(bars, 24)
-    assert len(curve) == len(vols) == 24
-    assert set(curve) <= set(w.BLOCKS) and set(vols) <= set(w.BLOCKS)
-    ms = [{'i': 0, 'side': 'BUY', 'tier': 'vol'},
-          {'i': len(bars) - 1, 'side': 'SELL', 'tier': 'plain'}]
-    row = re.sub(r'\x1b\[[0-9;]*m', '', w.mark_row(bars, ms, 24))
-    assert len(row) == 24, repr(row)
-    assert row[0] == 'B' and row[-1] == 's', repr(row)
-    assert set(row[1:-1]) == {'·'}, repr(row)
-
-
-def test_an_early_buy_is_not_overwritten_by_a_later_sell():
-    """One row, so a slot can collide; the earlier mark must survive it."""
-    bars = fake_bars()
-    ms = [{'i': 0, 'side': 'BUY', 'tier': 'plain'},
-          {'i': 1, 'side': 'SELL', 'tier': 'plain'},
-          {'i': 2, 'side': 'SELL', 'tier': 'vol'}]
-    row = re.sub(r'\x1b\[[0-9;]*m', '', w.mark_row(bars, ms, 8))
-    assert row[0] == 'B', repr(row)   # earlier BUY kept, case raised by the vol mark
+def test_vol_tier_keeps_the_old_emphasis():
+    """High rv without the vol tier stays a dim lowercase mark."""
+    loud = w.mark_text({'t': '10:47', 'side': 'BUY', 'trigger': 'BOS+FVG',
+                        'close': 78.95, 'vol_ratio': 3.8, 'stop': 77.1,
+                        'tier': 'vol'}, 100)
+    quiet = w.mark_text({'t': '10:47', 'side': 'BUY', 'trigger': 'BOS+FVG',
+                         'close': 78.95, 'vol_ratio': 3.8, 'stop': 77.1,
+                         'tier': 'plain'}, 100)
+    assert w.GREEN + w.BOLD + 'B' in loud
+    assert w.GREEN + 'b' in quiet and w.BOLD + 'b' not in quiet
+    assert quiet.startswith(w.DIM)
 
 
 def test_board_renders_without_crashing():
@@ -217,7 +252,28 @@ def test_board_renders_without_crashing():
     ms, d = w.marks(bars)
     out = w.board({'HK.00001': {'bars': bars, 'marks': ms, 'read': d},
                    'HK.00002': {'error': 'no data'}}, w.now_hkt(), 100)
-    assert 'HK.00001' in out and 'no data' in out
+    plain = re.sub(r'\x1b\[[0-9;]*m', '', out)
+    assert 'HK.00001' in plain and 'no data' in plain
+    assert 'earlier' not in plain
+    for m in ms:
+        assert m['t'] in plain
+    assert 'kline.1m' in plain and 'evt.log' not in plain and 'x' in plain
+    assert '盯盘' not in plain and 'BUY' not in plain and 'SELL' not in plain
+    assert '┌' not in plain and '█' not in plain
+    both = w.board({'HK.00001': {'bars': bars, 'marks': ms, 'read': d, 'name': '甲'},
+                    'HK.00002': {'bars': bars, 'marks': ms, 'read': d, 'name': '乙'}},
+                   w.now_hkt(), 100)
+    both = re.sub(r'\x1b\[[0-9;]*m', '', both)
+    head, tail = both.split('HK.00002', 1)
+    assert 'HK.00001' in head and re.search(r'\d\d:\d\d', head)
+    assert re.search(r'\d\d:\d\d', tail)
+    assert '\033[32m' in out and '\033[31m' in out
+    for wide in (80, 100):
+        rendered = re.sub(r'\x1b\[[0-9;]*m', '', w.board(
+            {'HK.00001': {'bars': bars, 'marks': ms, 'read': d, 'name': '腾讯控股'}},
+            w.now_hkt(), wide))
+        for line in rendered.splitlines():
+            assert w.disp_width(line) <= wide, (wide, w.disp_width(line), line)
 
 
 if __name__ == '__main__':
