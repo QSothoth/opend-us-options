@@ -22,9 +22,9 @@
 
 ## 数据
 
-已按用途发布为 4 个 GitHub Release（登记与哈希见 [docs/DATA.md](../../docs/DATA.md) 附录）：
+已按用途发布为 5 个 GitHub Release（登记与哈希见 [docs/DATA.md](../../docs/DATA.md) 附录）：
 `watch-hk1m-train-v1`（2025-12-01 → 2026-08-14）、`watch-hk1m-valid-v1`（08-17 → 09-23）、
-`watch-hk-index1m-v1`（恒指等）、`watch-hk-flow-2026-09-24-partial`（资金流单日测试）。
+`watch-hk-index1m-v1`（恒指等）、`watch-hk-daily-v1`（日 K，W6）、`watch-hk-flow-2026-09-24-partial`（资金流单日测试）。
 
 全部来自本机 OpenD（只读），1m K 线**只拉 30 天内已扣费的标的**（`code/fetch_free.py` 遇到未扣费的直接拒绝），
 历史 K 线额度始终 180 已用 / 120 剩余。研究脚本当时读的是 `data/` 下未拆分的原始文件（哈希见 [reports/DATA_SHA256.txt](reports/DATA_SHA256.txt)），
