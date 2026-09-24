@@ -79,6 +79,8 @@ def emit(kind, payload):
         fh.write(line + '\n')
     if not sys.stdout.isatty():
         print(line, flush=True)
+    elif kind == 'FAILED':  # the board never shows it, so say why we exit
+        print('FAILED: %s' % payload.get('error'), file=sys.stderr, flush=True)
 
 
 def frame_name(frame):
@@ -148,6 +150,7 @@ def tencent_symbol(code):
 
 
 def canonical_code(code):
+    code = code.encode('ascii', 'ignore').decode()  # pasted args can carry stray bytes
     symbol = tencent_symbol(code)
     if not symbol:
         return code.strip()

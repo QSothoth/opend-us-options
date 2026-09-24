@@ -144,6 +144,7 @@ def test_tencent_m1_maps_ohlc_and_a_share_codes():
     assert w.tencent_symbol('300795') == 'sz300795'
     assert w.tencent_symbol('SH.600519') == 'sh600519'
     assert w.tencent_symbol('HK.02513') is None
+    assert w.canonical_code('HK.02208\udcef\udcbf') == 'HK.02208'
     assert w.canonical_code('sz300795') == 'SZ.300795'
     payload = {'code': 0, 'data': {'sz300795': {
         'qt': {'sz300795': ['51', '米奥会展', '300795']},
