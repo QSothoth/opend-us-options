@@ -62,6 +62,7 @@ FINE_TPB = 5.0          # marks this granular are drawn bold
 HK_TICK_BANDS = ((0.25, 0.001), (0.5, 0.005), (10, 0.01), (20, 0.02), (100, 0.05),
                  (200, 0.1), (500, 0.2), (1000, 0.5), (2000, 1.0), (5000, 2.0))
 STALE_POLLS = 4
+FLOW_BARS = 15          # window of the optional capital-flow score
 LAST_BAR = ' 16:00'     # the 16:00 bar is the closing auction, not continuous trade
 HKT = timezone(timedelta(hours=8))
 LOG_DIR = Path(__file__).resolve().parent / 'logs'
@@ -135,6 +136,53 @@ def session_bars(ctx, code):
     if ret != RET_OK:
         return None, ''
     return closed_session(frame_bars(frame)), frame_name(frame)
+
+
+def session_flow(ctx, code):
+    """Today's cumulative net buy-initiated turnover by minute, {'HH:MM': x}.
+
+    Optional: OpenD keeps this only for the latest session, so it cannot be
+    backtested yet (study W4 is collecting it). Any failure returns None and
+    the marks go out without a score.
+    """
+    try:
+        from futu import PeriodType
+        ret, frame = ctx.get_capital_flow(code, period_type=PeriodType.INTRADAY)
+    except Exception:
+        return None
+    if ret != RET_OK or frame is None or len(frame) == 0:
+        return None
+    day = now_hkt().strftime('%Y-%m-%d')
+    out = {}
+    for t, v in zip(frame['capital_flow_item_time'], frame['in_flow']):
+        t = str(t)
+        try:
+            if t.startswith(day):
+                out[t[11:16]] = float(v)
+        except (TypeError, ValueError):
+            continue
+    return out or None
+
+
+def flow_score(bars, flow, i, side, n=FLOW_BARS):
+    """Net buy-initiated turnover over the last `n` bars as a share of traded
+    value (close x volume), signed so that positive agrees with the mark.
+    None when the flow is missing -- never a reason to drop the mark.
+    """
+    if not flow or i < n:
+        return None
+    now, then = flow.get(bars[i][0][11:16]), flow.get(bars[i - n][0][11:16])
+    if now is None or then is None:
+        return None
+    value = sum(b[4] * b[5] for b in bars[i - n + 1:i + 1])
+    if value <= 0:
+        return None
+    x = (now - then) / value
+    return round(x if side == 'BUY' else -x, 3)
+
+
+def with_flow(ms, bars, flow):
+    return [dict(m, flow=flow_score(bars, flow, m['i'], m['side'])) for m in ms]
 
 
 def tencent_symbol(code):
@@ -453,8 +501,10 @@ def mark_text(m, width):
     """One signal. Bold = granular tape, `~` = tick-bound tape (study W2)."""
     strong = bool(m.get('fine'))
     inv = '-' if m.get('stop') is None else '%.2f' % m['stop']
+    fl = m.get('flow')
     rest = clip(('~' if m.get('coarse') else ' ') + cell(m['trigger'], 13) + cell('%.2f' % m['close'], 9)
-                + cell('%.1fx' % m['vol_ratio'], 6) + 'inv ' + inv, width - 9)
+                + cell('%.1fx' % m['vol_ratio'], 6) + cell('' if fl is None else 'f%+.2f' % fl, 7)
+                + 'inv ' + inv, width - 9)
     base = '' if strong else DIM
     return base + '  ' + cell(m['t'], 6) + paint_side(m['side'], strong) + base + rest + OFF
 
@@ -539,7 +589,7 @@ def frame_lines(state, at, width, rows=None):
     legend = (GREEN + 'B' + OFF + '/' + RED + 'S' + OFF
               + DIM + ' >=%g ticks/bar   ' % FINE_TPB + OFF
               + GREEN + 'b' + OFF + '/' + RED + 's' + OFF
-              + DIM + ' plain   ~ <%g ticks/bar, leans wrong   ^C' % GATE_TPB + OFF)
+              + DIM + ' plain   ~ <%g ticks/bar   f flow (unvalidated)   ^C' % GATE_TPB + OFF)
     chrome = [BOLD + clip(head, width) + OFF, legend, '-' * width]
     blocks = [symbol_lines(code, st, width) for code, st in state.items()]
     body = _stack(blocks)
@@ -608,6 +658,8 @@ def main():
                 ok = True
                 names[code] = name or names.get(code, '')
                 ms, d = marks(bars, tick=a_tick if tencent_symbol(code) else hk_tick)
+                if ctx is not None and not tencent_symbol(code):
+                    ms = with_flow(ms, bars, session_flow(ctx, code))
                 state[code] = {'bars': bars, 'marks': ms, 'read': d or read(bars),
                                'name': names[code]}
                 for m in ms[seen.get(code, 0):]:

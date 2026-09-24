@@ -9,6 +9,7 @@ _futu = types.ModuleType('futu')
 _futu.AuType = _futu.KLType = _futu.SubType = type('X', (), {'K_1M': None, 'NONE': None})
 _futu.OpenQuoteContext = object
 _futu.RET_OK = 0
+_futu.PeriodType = type('P', (), {'INTRADAY': None})
 sys.modules.setdefault('futu', _futu)
 
 _spec = importlib.util.spec_from_file_location(
@@ -278,6 +279,44 @@ def test_tick_bound_tape_is_shown_but_tagged():
     plain = re.sub(r'\x1b\[[0-9;]*m', '', w.board(
         {'HK.00001': {'bars': squeezed, 'marks': ms, 'read': d}}, w.now_hkt(), 100))
     assert 'muted' not in plain and ms[0]['t'] in plain
+
+
+def test_flow_is_optional_and_never_drops_a_mark():
+    bars = fake_bars()
+    ms, _d = w.marks(bars)
+    assert w.with_flow(ms, bars, None) == [dict(m, flow=None) for m in ms]
+    broken = types.SimpleNamespace(get_capital_flow=lambda *a, **k: (-1, 'freq limit'))
+    assert w.session_flow(broken, 'HK.00001') is None
+    raising = types.SimpleNamespace(get_capital_flow=lambda *a, **k: 1 / 0)
+    assert w.session_flow(raising, 'HK.00001') is None
+    line = w.mark_text(dict(ms[0], flow=None), 100)
+    assert ' f+' not in line and ' f-' not in line
+
+
+def test_flow_score_is_signed_toward_the_mark():
+    bars = [(stamp(i), 10.0, 10.0, 10.0, 10.0, 100.0) for i in range(20)]   # 1,000 traded per bar
+    flow = {b[0][11:16]: 0.0 for b in bars}
+    flow[bars[19][0][11:16]] = 6000.0          # +6,000 net over the last 15 bars of 15,000 traded
+    assert w.flow_score(bars, flow, 19, 'BUY') == 0.4
+    assert w.flow_score(bars, flow, 19, 'SELL') == -0.4
+    assert w.flow_score(bars, flow, 10, 'BUY') is None          # not enough history
+    assert w.flow_score(bars, {}, 19, 'BUY') is None
+    m = {'t': '10:47', 'side': 'BUY', 'trigger': 'BOS', 'close': 10.0, 'vol_ratio': 1.0,
+         'stop': 9.9, 'tier': 'plain', 'flow': 0.4}
+    assert 'f+0.40' in w.mark_text(m, 100)
+
+
+def test_session_flow_keeps_only_today():
+    day = w.now_hkt().strftime('%Y-%m-%d')
+    frame = {'capital_flow_item_time': ['2020-01-01 10:00:00', day + ' 09:31:00', day + ' 09:32:00'],
+             'in_flow': [5.0, -1.0, 2.5]}
+    ctx = types.SimpleNamespace(get_capital_flow=lambda *a, **k: (0, Frame2(frame)))
+    assert w.session_flow(ctx, 'X') == {'09:31': -1.0, '09:32': 2.5}
+
+
+class Frame2(dict):
+    def __len__(self):
+        return len(next(iter(self.values())))
 
 
 def test_marks_carry_their_tick_density():

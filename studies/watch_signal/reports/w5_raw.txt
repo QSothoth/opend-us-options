@@ -1,0 +1,16 @@
+loaded old1m.csv.gz 2025-12-01
+loaded hk1m_long.csv.gz 2026-06-01
+loaded hk1m_long.csv.gz 2026-08-17
+loaded new1m.csv.gz 2026-09-22
+== SELECTION 2025-12-01..2026-08-14
+  S0    >=2: n= 90169 bal= -0.28bp | <2: n=235962 bal= -2.29bp | diff=+2.01
+  L15   >=2: n= 45223 bal= +0.26bp | <2: n=280908 bal= -2.03bp | diff=+2.29
+  L30   >=2: n= 51252 bal= +0.32bp | <2: n=274879 bal= -2.10bp | diff=+2.42
+  L60   >=2: n= 61376 bal= +0.32bp | <2: n=264755 bal= -2.20bp | diff=+2.52
+PICK L60
+== VALIDATION 2026-08-17..09-23
+  S0    >=2: n= 11500 bal= -1.90bp | <2: n= 44379 bal= -1.65bp | diff=-0.25
+  L15   >=2: n=  5478 bal= -1.36bp | <2: n= 50401 bal= -1.68bp | diff=+0.32
+  L30   >=2: n=  6391 bal= -1.83bp | <2: n= 49488 bal= -1.64bp | diff=-0.19
+  L60   >=2: n=  7831 bal= -2.26bp | <2: n= 48048 bal= -1.58bp | diff=-0.68
+gates: diff>S0 False | lo<0 True | hi>=S0 hi False -> FAIL
