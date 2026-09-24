@@ -385,18 +385,14 @@ class CustodyService:
         sets a specific attention code. Never swallows the error into a silent reconcile.
         """
         message = '%s: %s' % (type(exc).__name__, exc)
-        unlock = isinstance(exc, UnlockRequiredError) or (
-            isinstance(exc, Exception) and 'unlock' in str(exc).lower())
-        hard = isinstance(exc, HardSubmitError) or getattr(exc, 'never_submitted', False)
-        if order['kind'] == 'CANCEL':
-            attention = 'TRADE_UNLOCK_REQUIRED' if unlock else 'RECONCILE_ORDER_STATUS'
-        elif order['side'] == 'BUY_OPEN':
-            attention = 'TRADE_UNLOCK_REQUIRED' if unlock else (
-                'ENTRY_ORDER_REJECTED' if hard else 'RECONCILE_ORDER_STATUS')
+        hard = isinstance(exc, HardSubmitError) and order['kind'] == 'LIMIT'
+        if isinstance(exc, UnlockRequiredError):
+            attention = 'TRADE_UNLOCK_REQUIRED'
+        elif hard:
+            attention = 'ENTRY_ORDER_REJECTED' if order['side'] == 'BUY_OPEN' else 'EXIT_ORDER_REJECTED'
         else:
-            attention = 'TRADE_UNLOCK_REQUIRED' if unlock else (
-                'EXIT_ORDER_REJECTED' if hard else 'RECONCILE_ORDER_STATUS')
-        if hard and order['kind'] == 'LIMIT':
+            attention = 'RECONCILE_ORDER_STATUS'
+        if hard:
             # Authoritative: nothing reached the book. Reject so a fresh client id can be minted.
             self.apply_update(OrderUpdate(order['client_order_id'], 1, 'REJECTED', 0, now), now)
             with self._tx() as db:

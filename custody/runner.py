@@ -194,7 +194,7 @@ class Runner:
             return None
         dispatch = getattr(self.controller, 'last_dispatch', None)
         if isinstance(dispatch, dict) and (dispatch.get('error') or dispatch.get('unknown') or dispatch.get('rejected')):
-            self.log('dispatch_result', job_id=self.job_id, **{k: dispatch[k] for k in dispatch})
+            self.log('dispatch_result', job_id=self.job_id, **dispatch)
         self._log_orders(state)
         if self.simulate_fills:
             state = self._simulate_fills(state, now, mark)

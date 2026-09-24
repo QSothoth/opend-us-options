@@ -30,8 +30,10 @@ class FakeTradeContext:
 
     def place_order(self, **order):
         self.placed.append(order)
-        if 'place_order' in self.fail:  # never reached OpenD
-            return -1, 'timeout'
+        if 'place_order' in self.fail:  # OpenD refused it
+            return -1, 'insufficient buying power'
+        if 'place_timeout' in self.fail:  # transport failure: outcome unknown
+            return -1, 'Abnormal event timeout'
         self.orders.append({'code': order['code'], 'trd_side': order['trd_side'], 'order_status': 'SUBMITTED',
                             'order_id': str(len(self.placed)), 'dealt_qty': 0.0, 'dealt_avg_price': 0.0,
                             'remark': order['remark']})
@@ -140,6 +142,12 @@ class BrokerTests(unittest.TestCase):
         self.assertIsNone(self.broker.lookup(dict(unknown, status='OPEN'), T + timedelta(minutes=3)))
         rejected = self.broker.lookup(unknown, T + timedelta(minutes=3))
         self.assertEqual((rejected.status, rejected.sequence), ('REJECTED', 1))
+
+    def test_transport_timeout_stays_ambiguous(self):
+        self.ctx.fail.add('place_timeout')
+        with self.assertRaises(RuntimeError) as raised:
+            self.broker.submit(intent(), T)
+        self.assertNotIsInstance(raised.exception, HardSubmitError)
 
     def test_lost_place_reply_recovers_from_order_list(self):
         self.ctx.fail = {'response_lost'}  # the order exists, only the reply was lost

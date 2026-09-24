@@ -136,8 +136,6 @@ class OrderUpdate:
 class HardSubmitError(RuntimeError):
     """Broker refused the order before accepting it; a new client order id is safe."""
 
-    never_submitted = True
-
 
 class UnlockRequiredError(HardSubmitError):
     """Live trade unlock is required (or unlock with the env password failed)."""

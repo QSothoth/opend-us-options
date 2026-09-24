@@ -7,9 +7,9 @@ The only module that uses the OpenD trade API. It implements :class:`custody.por
   restart - even with a lost or different database - and is never placed twice;
 * US limit orders only (``NORMAL``, DAY, regular hours); BUY opens, SELL only closes what
   the account holds (checked right before sending);
-* a failed ``place_order`` that OpenD clearly rejected (or that never reached the book)
-  raises :class:`HardSubmitError` so the service can mint a new client order id; an
-  ambiguous outcome (timeout mid-flight with no order row yet) still raises a plain
+* a failed ``place_order`` that OpenD answered with an error, and whose id is not in the
+  order list, raises :class:`HardSubmitError` so the service can mint a new client order id;
+  a transport failure (timeout, disconnect: the order may still land) raises a plain
   exception so the service keeps the order UNKNOWN and reconciles via :meth:`lookup`.
 
 Order state is polled; a fill is stamped with the poll that first sees it.
@@ -37,7 +37,8 @@ _UNLOCK_RE = re.compile(
     r'unlock|未解锁|解锁|trade.?pwd|trading.?password|password.*trade|需要.*交易密码|请先解锁',
     re.IGNORECASE,
 )
-
+# futu-api transport failures (PacketErr / connect): the request may have reached OpenD.
+_TRANSPORT_RE = re.compile(r'time ?out|disconnect|send ?fail|packeterr|failed: invalid$|超时|断开', re.IGNORECASE)
 
 
 def trade_password_present():
@@ -52,9 +53,19 @@ def _credentials():
     return password, digest
 
 
-def _is_unlock_error(exc_or_msg):
-    text = str(exc_or_msg or '')
-    return bool(_UNLOCK_RE.search(text))
+def _is_unlock_error(exc):
+    return bool(_UNLOCK_RE.search(str(exc)))
+
+
+def _classify(exc):
+    """Hard reject only when OpenD answered; transport failures stay ambiguous."""
+    if isinstance(exc, HardSubmitError) or _TRANSPORT_RE.search(str(exc)):
+        return exc
+    if _is_unlock_error(exc):
+        return UnlockRequiredError(str(exc))
+    if isinstance(exc, RuntimeError) and str(exc).startswith('OpenD place_order failed:'):
+        return HardSubmitError(str(exc))
+    return exc
 
 
 def _rows(result, what):
@@ -97,19 +108,18 @@ class OpenDBroker:
                 acc_id, self.env, [(a['acc_id'], a['trd_env'], a.get('acc_type')) for a in accounts]))
 
     @classmethod
-    def connect(cls, market, mode, acc_id, security_firm='FUTUSECURITIES', require_live_password=True):
+    def connect(cls, market, mode, acc_id, security_firm='FUTUSECURITIES'):
         futu = _futu()
         context = futu.OpenSecTradeContext(filter_trdmarket=futu.TrdMarket.US, host=market.host, port=market.port,
                                            security_firm=security_firm)
         try:
             broker = cls(context, market, mode, acc_id)
             if mode == 'live':
-                if require_live_password and not trade_password_present():
+                if not trade_password_present():
                     raise ValueError(
                         'live mode requires FUTU_TRADE_PASSWORD or FUTU_TRADE_PASSWORD_MD5; '
                         'GUI unlock alone expires and leaves place_order stuck until restarted')
-                if trade_password_present():
-                    broker.unlock_trade()
+                broker.unlock_trade()
             return broker
         except BaseException:
             context.close()
@@ -146,22 +156,17 @@ class OpenDBroker:
             self.unlock_trade()
         except Exception:  # noqa: BLE001 - place_order still runs; unlock errors classify below
             pass
-        try:
-            return self._place(intent, side, code, qty, cid, now)
-        except Exception as first:  # noqa: BLE001 - may be hard reject, unlock, or ambiguous
-            recovered = self._recover_after_place_failure(cid, now)
-            if recovered is not None:
-                return recovered
-            if _is_unlock_error(first) and trade_password_present():
-                try:
+        for retry in (False, True):
+            try:
+                if retry:
                     self.unlock_trade()
-                    return self._place(intent, side, code, qty, cid, now)
-                except Exception as second:  # noqa: BLE001
-                    recovered = self._recover_after_place_failure(cid, now)
-                    if recovered is not None:
-                        return recovered
-                    raise self._classify_submit_error(second) from second
-            raise self._classify_submit_error(first) from first
+                return self._place(intent, side, code, qty, cid, now)
+            except Exception as exc:  # noqa: BLE001 - may be hard reject, unlock, or ambiguous
+                row = self._find(cid) or self._find(cid, refresh=True)
+                if row is not None:  # the order exists despite the error reply
+                    return self._update(cid, row, now)
+                if retry or not (_is_unlock_error(exc) and trade_password_present()):
+                    raise _classify(exc) from exc
 
     def cancel(self, target_client_order_id, cancel_id):
         row = self._find(target_client_order_id)
@@ -172,16 +177,16 @@ class OpenDBroker:
                 self.unlock_trade()
             except Exception:  # noqa: BLE001 - cancel may still work if already unlocked
                 pass
-            try:
-                _rows(self.ctx.modify_order('CANCEL', row['order_id'], 0, 0, trd_env=self.env, acc_id=self.acc_id),
-                      'modify_order')
-            except Exception as exc:  # noqa: BLE001
-                if _is_unlock_error(exc) and trade_password_present():
-                    self.unlock_trade()
-                    _rows(self.ctx.modify_order('CANCEL', row['order_id'], 0, 0, trd_env=self.env, acc_id=self.acc_id),
-                          'modify_order')
-                else:
-                    raise
+            for retry in (False, True):
+                try:
+                    if retry:
+                        self.unlock_trade()
+                    _rows(self.ctx.modify_order('CANCEL', row['order_id'], 0, 0, trd_env=self.env,
+                                                acc_id=self.acc_id), 'modify_order')
+                    return
+                except Exception as exc:  # noqa: BLE001
+                    if retry or not (_is_unlock_error(exc) and trade_password_present()):
+                        raise _classify(exc) from exc
 
     def lookup(self, order, now):
         cid = order['client_order_id']
@@ -200,21 +205,6 @@ class OpenDBroker:
                                           order_type='NORMAL', trd_env=self.env, acc_id=self.acc_id, remark=cid,
                                           time_in_force='DAY', fill_outside_rth=False), 'place_order')
         return self._update(cid, rows[0], now)
-
-    def _recover_after_place_failure(self, cid, now):
-        """If the order row exists despite an error reply, treat submission as acknowledged."""
-        row = self._find(cid) or self._find(cid, refresh=True)
-        return None if row is None else self._update(cid, row, now)
-
-    def _classify_submit_error(self, exc):
-        if _is_unlock_error(exc):
-            return UnlockRequiredError(str(exc))
-        # OpenD API ret!=0 (order not on the book) is a hard reject; other exceptions stay ambiguous.
-        if isinstance(exc, RuntimeError) and str(exc).startswith('OpenD place_order failed:'):
-            return HardSubmitError(str(exc))
-        if isinstance(exc, HardSubmitError):
-            return exc
-        return exc if isinstance(exc, BaseException) else RuntimeError(str(exc))
 
     def _find(self, client_order_id, refresh=False):
         rows = _rows(self.ctx.order_list_query(trd_env=self.env, acc_id=self.acc_id, refresh_cache=refresh),
