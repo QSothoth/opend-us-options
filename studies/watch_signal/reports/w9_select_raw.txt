@@ -1,0 +1,5 @@
+  'dist20h': c[p] / h[p - 19:p + 1].max() - 1, 'dist20l': c[p] / l[p - 19:p + 1].min() - 1,
+V1 n= 40901 dens=8.43/sd | close bal  +5.30 t+2.3 | f30 bal  -0.82 t-1.0 | BUY  +0.12 SELL +10.48
+V2 n= 18607 dens=3.84/sd | close bal  +7.21 t+2.1 | f30 bal  -0.38 t-0.3 | BUY  +3.39 SELL +11.02
+V3 n= 21771 dens=4.49/sd | close bal +14.32 t+3.1 | f30 bal  -0.21 t-0.1 | BUY  +8.12 SELL +20.52
+PICK V3

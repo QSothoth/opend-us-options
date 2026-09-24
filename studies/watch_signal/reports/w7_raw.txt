@@ -1,0 +1,31 @@
+  'dist20h': c[p] / h[p - 19:p + 1].max() - 1, 'dist20l': c[p] / l[p - 19:p + 1].min() - 1,
+loaded old1m.csv.gz 2025-12-01 220547
+loaded hk1m_long.csv.gz 2026-06-01 321122
+loaded hk1m_long.csv.gz 2026-08-17 367345
+loaded new1m.csv.gz 2026-09-22 370859
+== train granular  (existing marks bal f30 -0.54 t-0.9)
+  R1  2.21/sd n= 10697 | f30 bal  -1.26 t-0.9 | close bal  +2.17 t+0.6 | BUY  -3.76 SELL  +1.24
+  R2  3.23/sd n= 15668 | f30 bal  -0.82 t-0.6 | close bal  +4.02 t+1.0 | BUY  -3.18 SELL  +1.55
+  R3  2.90/sd n= 14083 | f30 bal  -0.81 t-0.6 | close bal  +4.84 t+1.5 | BUY  -6.54 SELL  +4.93
+  R4  3.84/sd n= 18607 | f30 bal  -0.38 t-0.3 | close bal  +7.21 t+2.1 | BUY  -4.43 SELL  +3.68
+  R5  8.43/sd n= 40901 | f30 bal  -0.82 t-1.0 | close bal  +5.30 t+2.3 | BUY  -4.44 SELL  +2.80
+== train coarse ~  (existing marks bal f30 -2.30 t-9.1)
+  R1  1.04/sd n= 18962 | f30 bal  -0.47 t-0.9 | close bal  +0.86 t+0.6 | BUY  -1.54 SELL  +0.60
+  R2  1.66/sd n= 30089 | f30 bal  -1.06 t-2.3 | close bal  +1.33 t+0.9 | BUY  -2.27 SELL  +0.16
+  R3  1.72/sd n= 31238 | f30 bal  -0.40 t-1.1 | close bal  +0.55 t+0.5 | BUY  -1.43 SELL  +0.64
+  R4  2.58/sd n= 46865 | f30 bal  -1.62 t-4.5 | close bal  +0.59 t+0.5 | BUY  -2.24 SELL  -0.99
+  R5  5.17/sd n= 94012 | f30 bal  -0.92 t-3.2 | close bal  +1.01 t+1.0 | BUY  -1.73 SELL  -0.11
+PICK R4
+== valid granular  (existing marks bal f30 -2.17 t-1.7)
+  R1  2.54/sd n=  1431 | f30 bal  +1.97 t+0.6 | close bal +12.30 t+1.6 | BUY  -7.86 SELL +11.81
+  R2  3.76/sd n=  2119 | f30 bal  -1.77 t-0.5 | close bal  +9.63 t+1.3 | BUY  -7.23 SELL  +3.70
+  R3  3.10/sd n=  1748 | f30 bal  -3.93 t-1.5 | close bal  +6.63 t+0.9 | BUY  -9.07 SELL  +1.21
+  R4  4.22/sd n=  2375 | f30 bal  -3.62 t-1.8 | close bal +10.31 t+1.4 | BUY -10.12 SELL  +2.88
+  R5  9.58/sd n=  5391 | f30 bal  -3.23 t-1.7 | close bal  +8.01 t+1.4 | BUY -10.38 SELL  +3.93
+== valid coarse ~  (existing marks bal f30 -1.65 t-4.1)
+  R1  0.95/sd n=  3130 | f30 bal  -0.74 t-0.7 | close bal  +5.86 t+2.0 | BUY  +1.35 SELL  -2.82
+  R2  1.59/sd n=  5254 | f30 bal  +0.51 t+0.5 | close bal  +5.19 t+1.5 | BUY  +0.62 SELL  +0.40
+  R3  1.50/sd n=  4951 | f30 bal  +0.55 t+0.6 | close bal  -0.00 t-0.0 | BUY  +1.44 SELL  -0.35
+  R4  2.35/sd n=  7775 | f30 bal  -1.04 t-1.5 | close bal  +1.54 t+0.6 | BUY  -0.04 SELL  -2.04
+  R5  4.71/sd n= 15563 | f30 bal  -0.50 t-0.8 | close bal  +2.53 t+1.0 | BUY  +0.54 SELL  -1.54
+gates R4 [np.False_, np.True_, np.False_, np.False_] FAIL
