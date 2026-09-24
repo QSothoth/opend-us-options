@@ -1,0 +1,14 @@
+marks with flow score, d1f30, day 2026-09-24 (partial session)
+  all marks                          n=1187 mean= -6.00bp bal= -7.25bp hit=42.1% codes=140
+  scored                             n=1187 mean= -6.00bp bal= -7.25bp hit=42.1% codes=140
+  f > 0 (flow agrees)                n= 857 mean= -6.56bp bal= -7.51bp hit=42.1% codes=140
+  f <= 0                             n= 330 mean= -4.53bp bal= -6.16bp hit=42.0% codes=129
+  f > 0.2                            n= 589 mean= -9.21bp bal= -9.89bp hit=40.4% codes=138
+  f < -0.2                           n= 143 mean= -4.43bp bal= -7.52bp hit=36.4% codes=96
+  granular f>0                       n= 159 mean= -5.77bp bal=-12.22bp hit=46.1% codes=42
+  granular f<=0                      n=  61 mean= -0.00bp bal= -8.01bp hit=44.8% codes=31
+  coarse ~ f>0                       n= 698 mean= -6.74bp bal= -7.12bp hit=41.2% codes=128
+  coarse ~ f<=0                      n= 269 mean= -5.56bp bal= -6.34bp hit=41.3% codes=113
+W4 F1 standalone: imb15>0.2 -> BUY, <-0.2 -> SELL, dedup 15, warmup 25
+  F1 flow follow                     n=1410 mean= -3.16bp bal= -3.10bp hit=46.2% codes=140
+  F4 flow fade                       n=1410 mean= +3.16bp bal= +3.10bp hit=53.8% codes=140

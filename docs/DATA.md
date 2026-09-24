@@ -202,3 +202,22 @@ gh release create custody-0dte-v6 data/custody-0dte-v6.zip data/custody-0dte-v6.
 
 [`studies/hk_near_expiry_flow/dataset/`](../studies/hk_near_expiry_flow/dataset/)（`manifest.json` + CSV）。不走 `data/` Release 规则；仅供后续自行筛选，不接入 `custody check`。
 
+
+## 附录：盯盘信号研究数据（非 custody Release）
+
+`studies/watch_signal/`（盯盘 `watch/` 的信号研究）的数据，按用途分成 4 个 Release。只供该研究使用，**不接入 `custody check` / `evaluate`**，
+也不受上文 0DTE 冻结流程约束；但同样不可变，变化发新 tag。每个 zip 内有 `manifest.json`（来源、窗口、行数、字段说明）和 `CHECKSUMS.sha256`。
+
+| tag | 角色 | 内容 | zip SHA256 | CHECKSUMS.sha256 的 SHA256 |
+|---|---|---|---|---|
+| `watch-hk1m-train-v1` | 训练 / 选择 | 140 只港股通 1m（QFQ），2025-12-01 → 2026-08-14，172 天，774.9 万行 | `cd1af1ab66a6591f33b3b230e047a94c6a5fc010fd0ef8122e6b443618ab49ce` | `93b010478ea49b474de4b5352ba8e3884967808db455ce32748b217aeb4aab26` |
+| `watch-hk1m-valid-v1` | 验证（只评测） | 同 140 只，2026-08-17 → 09-23，28 天，129.8 万行 | `ffc9cc3f0be2197cfd67d681aef22d3e9f5a4e94dbccf9d530cb4576d7045ad8` | `0283e569bb34d9b0dcfda12b7e80e0b9c2d84c92a54ff2c2b29a1afcdd5d3c6a` |
+| `watch-hk-index1m-v1` | 大盘参照 | 恒指 2025-12-01 → 2026-09-23；恒生科技、盈富 2026-06-01 → 09-23 | `f140204d499ac8ee389cd8ffdbd43f97aab3a659fb9fd7b597059db911f5500d` | `30a6c836373c2564f94c5d5f349d5b408b35336bcbfe549187a74eef44d1183d` |
+| `watch-hk-flow-2026-09-24-partial` | 资金流单日测试 | 140 只分钟资金流 + 同日 1m，**只到 13:53 HKT（未收盘）** | `0ed5c3c13801954e0b07ae3b7f1d5178891b7a77dd3fe12c8462d310bcd0be50` | `b2c7d6c5f11fd01bf7d023e5e139d0979785e8002cd969e265e777ba5584b387` |
+
+```bash
+gh release download watch-hk1m-train-v1 --repo QSothoth/s-alpha --dir data
+cd data && sha256sum -c watch-hk1m-train-v1.zip.sha256 && unzip watch-hk1m-train-v1.zip
+```
+
+全部为只读行情；1m K 线只拉了 30 天内已扣费的标的，没有消耗新的历史 K 线额度。
