@@ -5,7 +5,7 @@
 当前主线细节：**末日期权（0DTE）单笔择时。**上游选好标的、方向和当天到期的合约后，本项目只决定这一张期权当天何时买、何时卖：
 每张合约当天争取完成一笔、最多一笔；无信号可以不交易，完成分占综合分的 20%（同一标的可以同时有做多和做空的合约），信号只看当天正股 1 分钟 K 线，盈亏按期权成交价计算，目标是放大盈亏比。
 
-项目规范（Release、训练数据、策略与评测的约定）见 **[AGENTS.md](AGENTS.md)**（`CLAUDE.md` 引用此文件）。
+项目规范分层：**[AGENTS.md](AGENTS.md)**（定位、能力地图、全仓库规则）→ 各能力目录的 `AGENTS.md`（[custody](custody/AGENTS.md)、[watch](watch/AGENTS.md)、[studies](studies/AGENTS.md)）。每个目录的 `CLAUDE.md` 都只引用同目录的 `AGENTS.md`。
 
 | 文档 | 内容 |
 |---|---|

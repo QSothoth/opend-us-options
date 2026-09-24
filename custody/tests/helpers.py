@@ -1,7 +1,7 @@
 """Test fixtures: hand-built 1m paths for mechanics tests only.
 
 These are *not* market data and must never be used to evaluate a strategy
-(AGENTS.md: evaluation uses real frozen Releases only).
+(custody/AGENTS.md: evaluation uses real frozen Releases only).
 """
 import json
 from datetime import datetime, time, timedelta

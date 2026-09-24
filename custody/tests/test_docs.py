@@ -10,8 +10,14 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class DocsTests(unittest.TestCase):
     def test_claude_references_agents(self):
-        self.assertTrue((ROOT / 'AGENTS.md').is_file())
-        self.assertEqual((ROOT / 'CLAUDE.md').read_text(encoding='utf-8'), '@AGENTS.md\n')
+        """Layered rules: the root and every capability directory carry an
+        AGENTS.md, and each CLAUDE.md is the one-line pointer to its sibling."""
+        for folder in (ROOT, ROOT / 'custody', ROOT / 'watch', ROOT / 'studies'):
+            self.assertTrue((folder / 'AGENTS.md').is_file(), folder)
+            self.assertEqual((folder / 'CLAUDE.md').read_text(encoding='utf-8'), '@AGENTS.md\n', folder)
+        root = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
+        for sub in ('custody/AGENTS.md', 'watch/AGENTS.md', 'studies/AGENTS.md'):
+            self.assertIn('(%s)' % sub, root, sub)
 
     def test_standard_document_matches_the_code_constants(self):
         text = (ROOT / 'docs' / 'STANDARD.md').read_text(encoding='utf-8')
@@ -32,7 +38,7 @@ class DocsTests(unittest.TestCase):
         self.assertIn('16 分', text)
 
     def test_both_sides_rule_is_written_everywhere_it_applies(self):
-        for name in ('AGENTS.md', 'docs/DATA.md', 'docs/STANDARD.md'):
+        for name in ('custody/AGENTS.md', 'docs/DATA.md', 'docs/STANDARD.md'):
             text = (ROOT / name).read_text(encoding='utf-8')
             self.assertIn('CALL 和 PUT', text, name)
             self.assertIn('custody check', text, name)

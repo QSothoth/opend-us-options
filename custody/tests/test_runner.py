@@ -184,12 +184,16 @@ class DryRunSafetyTests(unittest.TestCase):
         self.assertEqual(events[-1]['event'], 'done')
 
     def test_only_the_broker_references_the_trade_api(self):
+        """Repo-wide (AGENTS.md): custody, watch and studies alike."""
         forbidden = {'OpenSecTradeContext', 'place_order', 'unlock_trade', 'modify_order'}
-        package = Path(__file__).resolve().parents[1]
-        for path in package.rglob('*.py'):
-            if 'tests' in path.relative_to(package).parts or path.name == 'broker.py':
+        repo = Path(__file__).resolve().parents[2]
+        broker = repo / 'custody' / 'broker.py'
+        tracked = [repo / d for d in ('custody', 'watch', 'studies')]
+        for path in (p for d in tracked for p in d.rglob('*.py')):
+            parts = path.relative_to(repo).parts
+            if 'tests' in parts or path == broker or path.name.startswith('test_'):
                 continue
-            name = path.name
+            name = str(path.relative_to(repo))
             tree = ast.parse(path.read_text(encoding='utf-8'))
             used = set()
             for node in ast.walk(tree):

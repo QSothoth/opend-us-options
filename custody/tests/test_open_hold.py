@@ -1,4 +1,4 @@
-"""open_hold: the no-timing execution engine (AGENTS.md exception, 2026-09-20)."""
+"""open_hold: the no-timing execution engine (custody/AGENTS.md exception, 2026-09-20)."""
 import sys
 import unittest
 from datetime import time, timedelta

@@ -16,7 +16,7 @@
 
 ### 唯一 `accepted` 的版本
 
-**`zero_dte_timing_v6.5`（accepted，破例）**：2026-09-18 用户决定在未经评测 ACCEPT 的情况下改为 `accepted`（结论 PROVISIONAL，样本外交易日 0，验证集那一天 −15.2%），用于每单 1 张的实盘链路试运行。这违反 AGENTS.md「只有评测 ACCEPT 才能改为 accepted」，仅此一次；样本外交易日满 20 个后按标准重新评测，未 ACCEPT 则改回 `candidate`。它也是 2026-09-18 至 09-20 期间的默认策略与研究基线。
+**`zero_dte_timing_v6.5`（accepted，破例）**：2026-09-18 用户决定在未经评测 ACCEPT 的情况下改为 `accepted`（结论 PROVISIONAL，样本外交易日 0，验证集那一天 −15.2%），用于每单 1 张的实盘链路试运行。这违反 custody/AGENTS.md「只有评测 ACCEPT 才能改为 accepted」，仅此一次；样本外交易日满 20 个后按标准重新评测，未 ACCEPT 则改回 `candidate`。它也是 2026-09-18 至 09-20 期间的默认策略与研究基线。
 
 ### 其余已注册版本（全部 `candidate`，保留供比较）
 
@@ -758,7 +758,7 @@ U1 / U3 / U4 / U5 是「锁盈启动点 +100% / +50%」×「是否保留 2 ATR �
 | 「前 20 分钟是发现期，不是交易期」（@azrael_options）；「先看 30–60 分钟再决定」（r/GEXOptionsTrading）；盈利交易者约 10:15 入场（Option Alpha） | 候选 Y3：开盘区间 15 → 30 分钟 |
 | 用布林带与肯特纳通道判断大行情将至（SMB Capital） | 候选 Y4：突破前 10 根内出现过波动压缩 |
 | 「只做第一次触碰」「亏一笔就停」「一天一笔」 | 一天一笔已是产品规则；「第一次触碰」没有可验证的量化定义，本轮不做 |
-| 11:00–14:00 不交易 | 不做：按时钟限制入场违反 AGENTS |
+| 11:00–14:00 不交易 | 不做：按时钟限制入场违反 custody/AGENTS |
 | +15% ~ +100% 止盈、−12.5% ~ −25% 止损的括号单 | 不做：降低盈亏比，与产品优先盈亏比相反 |
 | 便宜期权来回成交损失 30%–50% | 已由估算权利金至少 5 ATR 覆盖 |
 
@@ -1569,7 +1569,7 @@ R23 确定这条线的离场只保留翻倍止盈（`take_profit_premium`=1.0）
 
 ## 修改策略
 
-1. 先记录假设、少量候选和选择规则，遵守 [研究规范](../AGENTS.md#策略与评测)。
+1. 先记录假设、少量候选和选择规则，遵守 [研究方法](../AGENTS.md#研究方法全仓库通用) 与 [custody 策略与评测](../custody/AGENTS.md#策略与评测)。
 2. 引擎实现 `__init__(params, direction, session, strike)`、`on_bar(bar)`、`on_entry_filled(at, underlying_mark)` 和严格参数校验；支持 `flatten_before_close_minutes`。
 3. 参数修改使用新的 strategy_id 和文件，在 `index.json` 登记 SHA256 与 candidate 状态。
 4. 跑完整测试与统一评测，报告和研究结果随代码提交。

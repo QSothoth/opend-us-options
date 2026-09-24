@@ -1,6 +1,6 @@
 # 数据规范（DATA）
 
-实现：`custody/dataset.py`（读取与校验）、`custody/freeze.py`（每日冻结）。总则见 [数据约束](../AGENTS.md#数据约束)。
+实现：`custody/dataset.py`（读取与校验）、`custody/freeze.py`（每日冻结）。总则见 [custody 数据约束](../custody/AGENTS.md#数据约束) 与根规范的 [数据](../AGENTS.md#数据)。
 
 ## 1. Release 是什么
 
@@ -194,7 +194,7 @@ gh release create custody-0dte-v6 data/custody-0dte-v6.zip data/custody-0dte-v6.
   --repo QSothoth/s-alpha --title "Custody 0DTE dataset V6 (both sides)" --notes "<窗口、标的、case 数、两个 SHA256>"
 ```
 
-发布后只在本文件登记 tag、角色、窗口和两个 SHA256（zip 与 `CHECKSUMS.sha256`）。若正式替换当前训练集，再更新 `AGENTS.md` 的可用数据约束；发布验证集不会自动使它成为训练集。
+发布后只在本文件登记 tag、角色、窗口和两个 SHA256（zip 与 `CHECKSUMS.sha256`）。若正式替换当前训练集，再更新 `custody/AGENTS.md` 的可用数据约束；发布验证集不会自动使它成为训练集。
 
 ## 附录：港股近月流量研究数据（非 custody Release）
 
